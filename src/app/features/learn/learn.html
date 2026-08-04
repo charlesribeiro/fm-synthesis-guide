@@ -1,0 +1,21 @@
+<h1>Learn</h1>
+<p class="intro">
+  Guided lessons teach one FM synthesis concept at a time: an objective, a short explanation, a "try
+  this" experiment, and a completion check. The curriculum starts simple and adds complexity
+  gradually — you never have to memorize all 32 algorithms up front.
+</p>
+
+<p class="status" role="status">
+  The guided lesson player isn't built yet — this route is a placeholder from the foundation phase.
+  The first two lessons below are next on the roadmap.
+</p>
+
+<ul class="lesson-list">
+  @for (lesson of upcomingLessons; track lesson.algorithm) {
+    <li class="lesson-card">
+      <span class="lesson-card__algorithm">Algorithm {{ lesson.algorithm }}</span>
+      <h2>{{ lesson.title }}</h2>
+      <p>{{ lesson.teaches }}</p>
+    </li>
+  }
+</ul>
