@@ -1,0 +1,20 @@
+<h1>Algorithms</h1>
+<p class="intro">
+  The DX7 defines 32 operator-routing algorithms. Every one is generated from the same structured
+  data the audio engine reads — nothing here is hand-drawn artwork.
+</p>
+
+<p class="status" role="status">
+  The interactive 32-algorithm browser and accessible SVG diagram aren't built yet — this route is a
+  placeholder from the foundation phase. Algorithms are grouped below by recurring structure.
+</p>
+
+<ul class="group-list">
+  @for (group of groups; track group.name) {
+    <li class="group-card">
+      <span class="group-card__range">{{ group.range }}</span>
+      <h2>{{ group.name }}</h2>
+      <p>{{ group.description }}</p>
+    </li>
+  }
+</ul>

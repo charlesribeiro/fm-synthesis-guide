@@ -1,0 +1,28 @@
+@use '../../../styles/layout';
+
+:host {
+  @include layout.page;
+  padding-block: var(--space-8);
+  max-width: 60rem; // narrower than the default content width — this is prose
+}
+
+section {
+  margin-bottom: var(--space-6);
+}
+
+h2 {
+  font-size: var(--font-size-lg);
+}
+
+p {
+  color: var(--color-text-muted);
+  max-width: 68ch;
+}
+
+code {
+  font-family: var(--font-mono);
+  background: var(--color-surface);
+  padding: 0.1em 0.35em;
+  border-radius: var(--radius-sm);
+  font-size: 0.9em;
+}

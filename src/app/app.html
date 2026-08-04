@@ -1,0 +1,33 @@
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<header class="shell-header">
+  <div class="shell-header__inner">
+    <a class="brand" routerLink="/">
+      <span class="brand__mark" aria-hidden="true">FM</span>
+      DX7 Algorithm Lab
+    </a>
+
+    <nav class="primary-nav" aria-label="Primary">
+      <a routerLink="/learn" routerLinkActive="is-active">Learn</a>
+      <a routerLink="/algorithms" routerLinkActive="is-active">Algorithms</a>
+      <a routerLink="/playground" routerLinkActive="is-active">Playground</a>
+      <a routerLink="/about" routerLinkActive="is-active">About</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main-content" class="shell-main" tabindex="-1">
+  <router-outlet />
+</main>
+
+<footer class="shell-footer">
+  <div class="shell-footer__inner">
+    <p>
+      Unofficial and educational — no affiliation with Yamaha or Dexed.
+      <a routerLink="/about">Full disclaimer</a>.
+    </p>
+    <p class="motion-indicator">
+      Motion preference: {{ prefersReducedMotion() ? 'reduced' : 'full' }}
+    </p>
+  </div>
+</footer>

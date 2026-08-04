@@ -1,0 +1,10 @@
+// Shared layout primitives for route-level feature pages. Kept as a
+// pure-SCSS mixin/placeholder partial (no selectors emitted on @use) so each
+// feature stays visually consistent without duplicating the same rules.
+
+@mixin page {
+  display: block;
+  max-width: var(--content-max-width);
+  margin-inline: auto;
+  padding-inline: var(--space-4);
+}
