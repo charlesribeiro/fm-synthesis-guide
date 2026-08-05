@@ -38,4 +38,28 @@ module.exports = defineConfig([
     extends: [angular.configs.templateRecommended, angular.configs.templateAccessibility],
     rules: {},
   },
+  {
+    files: ['src/app/domain/**/*.ts'],
+    rules: {
+      // DOMAIN-04: domain/graph/frequency/envelope/patch/DSP logic stays framework-independent.
+      // A framework symbol needed here belongs behind an injected boundary under src/app/core/
+      // instead. Value and type-only imports are both violations (allowTypeImports: false).
+      'no-restricted-imports': 'off',
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@angular/*', '@angular/*/**'],
+              message:
+                'DOMAIN-04: domain logic (graph, frequency, envelope, patch, DSP) must stay ' +
+                'framework-independent of Angular. Put the Angular dependency behind an ' +
+                'injected boundary under src/app/core/ instead of importing it here.',
+              allowTypeImports: false,
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
