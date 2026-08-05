@@ -42,11 +42,11 @@ Milestone 1). Each maps to a roadmap phase.
 
 ### Instrument State
 
-- [ ] **STATE-01**: A signal-based facade exposes read-only selectors over selected algorithm,
+- [x] **STATE-01**: A signal-based facade exposes read-only selectors over selected algorithm,
       operator parameters, and feedback level
 
-- [ ] **STATE-02**: Operator parameter updates are immutable and do not mutate prior snapshots
-- [ ] **STATE-03**: A/B snapshot and reset restore a known deterministic state
+- [x] **STATE-02**: Operator parameter updates are immutable and do not mutate prior snapshots
+- [x] **STATE-03**: A/B snapshot and reset restore a known deterministic state
 
 ### Algorithm Visualization
 
@@ -119,9 +119,9 @@ current roadmap.
 | DOMAIN-02 | Phase 2 | Complete |
 | DOMAIN-03 | Phase 2 | Complete |
 | DOMAIN-04 | Phase 2 | Complete |
-| STATE-01 | Phase 3 | Pending |
-| STATE-02 | Phase 3 | Pending |
-| STATE-03 | Phase 3 | Pending |
+| STATE-01 | Phase 3 | Complete |
+| STATE-02 | Phase 3 | Complete |
+| STATE-03 | Phase 3 | Complete |
 | VIS-01 | Phase 4 | Pending |
 | VIS-02 | Phase 4 | Pending |
 | VIS-03 | Phase 4 | Pending |
@@ -139,4 +139,4 @@ current roadmap.
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-04 after initial definition*
+*Last updated: 2026-08-05 after Phase 3 (signal-instrument-state) completion — STATE-01, STATE-02, STATE-03 all marked Complete*

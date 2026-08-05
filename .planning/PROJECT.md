@@ -24,10 +24,15 @@ a parameter, and immediately understand why the sound changed.
       Alg 19 marked unresolved. DOMAIN-04 is machine-enforced by a proven ESLint gate. D-09 initial
       approved-as-is sign-off is superseded — see
       `.planning/phases/02-algorithm-domain/02-DATASET-REVIEW.md` Section 5.
+- [x] Signal-based instrument state facade with immutable updates and read-only selectors —
+      Validated in Phase 3: signal-instrument-state (2026-08-05). STATE-01 through STATE-03 all
+      complete: `InstrumentState` exposes read-only computed selectors over algorithm/operators/
+      feedback, immutable per-operator updates, and A/B full-patch snapshot slots with reset.
+      11/11 must-haves verified in `03-VERIFICATION.md`; 456/456 tests passing.
 
 ### Active
 
-- [ ] Signal-based instrument state facade with immutable updates and read-only selectors
+
 - [ ] Data-driven, accessible SVG algorithm diagrams
 - [ ] Monophonic educational audio engine behind an injected browser-audio boundary
 - [ ] Guided lessons starting with Algorithm 32 (pure additive) and Algorithm 1 (stack + tower)
@@ -96,4 +101,4 @@ a parameter, and immediately understand why the sound changed.
 | Phase 2: a code-review blocker (shallow `Object.freeze` — nested edge objects stayed mutable despite the file's own "frozen, cannot be mutated" comment) was found and fixed after all 5 plans executed, before marking the phase complete | CLAUDE.md requires immutable readonly models and running the full gate before declaring work done; a code-review pass surfaced a real gap the plan-level tests didn't catch | ✓ Good — CR-01 + 3 warnings fixed, 364/364 tests passing, freeze now reaches nested edge objects |
 
 ---
-*Last updated: 2026-08-05 after Phase 2 (algorithm-domain) completion, including the post-review fix pass recorded in `02-REVIEW-FIX.md`*
+*Last updated: 2026-08-05 after Phase 3 (signal-instrument-state) completion*

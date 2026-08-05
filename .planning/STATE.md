@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 3
-current_phase_name: Signal instrument state
+current_phase: 4
+current_phase_name: Algorithm browser and SVG
 status: planning
-stopped_at: Completed 02-05-PLAN.md — Phase 02 complete
-last_updated: "2026-08-05T01:14:34.794Z"
+stopped_at: Completed 03-02-PLAN.md
+last_updated: "2026-08-05T20:57:40.896Z"
 last_activity: 2026-08-05
-last_activity_desc: Phase 02 dataset review superseded (Alg 26/27 corrected, Alg 19 marked unresolved); Phase 02 itself completed 2026-08-04, transitioned to Phase 3
+last_activity_desc: Phase 03 complete, transitioned to Phase 4
 progress:
   total_phases: 14
-  completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  completed_phases: 3
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # Project State
@@ -24,25 +24,25 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 3 — Signal instrument state
+**Current focus:** Phase 04 — algorithm-browser-and-svg
 
 ## Current Position
 
-Phase: 3 — Signal instrument state
+Phase: 4 — Algorithm browser and SVG
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-05 — Phase 02 dataset review superseded (Alg 26/27 corrected, Alg 19 marked unresolved); Phase 02 itself completed 2026-08-04, transitioned to Phase 3
+Last activity: 2026-08-05 — Phase 03 complete, transitioned to Phase 4
 lazy routes (Learn/Algorithms/Playground/About/Home), design tokens, a11y baseline (skip link,
 focus rings, reduced-motion signal + CSS), typed `SynthEngine` placeholder, `OperatorId`/
 `AlgorithmId` domain types, README, and hand-authored `.planning/`. All three quality gates green.
 
-Progress: Phase 2/14 complete (100% of Phase 2's plans; Phase 3 not yet planned, plan count TBD)
+Progress: Phase 3/14 complete ([██████████] 100% of Phase 3's plans; Phase 4 not yet planned, plan count TBD)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 6
+- Total plans completed: 8
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -52,6 +52,7 @@ Progress: Phase 2/14 complete (100% of Phase 2's plans; Phase 3 not yet planned,
 |-------|-------|-------|----------|
 | 1. Angular 22 foundation | 1 | - | - |
 | 02 | 5 | - | - |
+| 03 | 2 | - | - |
 
 **Recent Trend:**
 
@@ -68,6 +69,8 @@ Progress: Phase 2/14 complete (100% of Phase 2's plans; Phase 3 not yet planned,
 | Phase 02 P03 | 15min | 3 tasks | 4 files |
 | Phase 02 P04 | 6min | 3 tasks | 3 files |
 | Phase 02 P05 | 8min | 3 tasks | 2 files |
+| Phase 03 P01 | 35min | 3 tasks | 6 files |
+| Phase 03 P02 | 25min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -97,6 +100,9 @@ Full log in `.planning/PROJECT.md` → Key Decisions. Recent:
 - [Phase 02]: Phase 02 (02-04): 14 self-inconsistent RESEARCH.md rows reconciled by repairing edges (never carrier sets) per the plan's binding rule; 7 rows had a unique forced repair, 7 rows had a forced-shape repair with one ambiguous edge target (documented with the alternative not chosen); no row needed 'unresolved' status.
 - [Phase 02]: Phase 02 (02-04): EXPECTED_CARRIERS/EXPECTED_FEEDBACK_OP cross-check tables in algorithms.spec.ts are hand-populated directly from RESEARCH.md's columns, never derived from ALGORITHMS itself, so a transcription slip in an edge fails a named test instead of shipping silently (T-02-07).
 - [Phase 02]: Phase 02 (02-05): Human reviewer approved the 32-row ALGORITHMS dataset as-is on 2026-08-04 (D-09); superseded 2026-08-05 — Alg 26/27 edges corrected to 6→4,5→4,3→2; Alg 19 marked unresolved with stated edges; Alg 4/6 remain self-loop feedback under D-01.
+- [Phase ?]: [Phase 03] Plan 03-01: Facade at src/app/state/instrument-state.ts (new layer, distinct from core/'s browser adapters); one private patch signal (not three) for atomic D-03 snapshot capture; selected operator NOT tracked here (Phase 4's view state); invalid command input throws RangeError; default algorithm id 1.
+- [Phase ?]: [Phase 03] Plan 03-01: Task 1's tracer over-implemented Tasks 2 and 3's production scope (validators, setFeedback, derived selectors) in the same commit; Tasks 2-3 supplied only the missing test coverage rather than re-implementing, documented as a TDD Gate Compliance note (RED did not precede GREEN, mirroring the 02-03 precedent).
+- [Phase ?]: [Phase 3] Plan 03-02: SnapshotSlot/SNAPSHOT_SLOTS mirror the OperatorId/OPERATOR_IDS restricted-union convention; captureSnapshot stores the patch signal's current reference directly (no clone), relying on plan 01's immutable-update contract for exactness; recallSnapshot returns boolean (false/no-op on an uncaptured slot), reset returns void and never touches the snapshots signal.
 
 ### Pending Todos
 
@@ -116,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-05T00:48:43.891Z
-Stopped at: Completed 02-05-PLAN.md — Phase 02 complete (2026-08-04); dataset review superseded 2026-08-05
+Last session: 2026-08-05T19:24:22.898Z
+Stopped at: Completed 03-02-PLAN.md
 Resume file: None
