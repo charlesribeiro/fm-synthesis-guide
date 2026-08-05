@@ -1,0 +1,450 @@
+import { TestBed } from '@angular/core/testing';
+import { InstrumentState, SNAPSHOT_SLOTS, type SnapshotSlot } from './instrument-state';
+import { ALGORITHMS } from '../domain/dx7/models/algorithms';
+import { deriveCarriers, getFeedbackOperator, getOperatorRole } from '../domain/dx7/models/derive-role';
+import type { OperatorId } from '../domain/dx7/models/operator';
+
+describe('InstrumentState', () => {
+  function setup() {
+    TestBed.configureTestingModule({});
+    return { service: TestBed.inject(InstrumentState) };
+  }
+
+  // D-11: a fresh facade reports the uniform default patch.
+  it('reports the default patch on fresh injection', () => {
+    const { service } = setup();
+
+    expect(service.algorithmId()).toBe(1);
+    expect(service.operators()[1].outputLevel).toBe(50);
+  });
+
+  // STATE-01 / ROADMAP SC1: setAlgorithm round-trips synchronously through
+  // both the raw id selector and the resolved AlgorithmDefinition selector.
+  it('round-trips an algorithm selection through algorithmId() and algorithm()', () => {
+    const { service } = setup();
+    const row32 = ALGORITHMS.find((a) => a.id === 32);
+    if (!row32) {
+      throw new Error('fixture assumption failed: ALGORITHMS has no row with id 32');
+    }
+
+    service.setAlgorithm(32);
+
+    expect(service.algorithmId()).toBe(32);
+    expect(service.algorithm().id).toBe(32);
+    expect(service.algorithm().name).toBe(row32.name);
+  });
+
+  // STATE-02: updateOperator produces a new operators object; a
+  // previously-captured reference is never mutated.
+  it('updates one operator immutably, leaving a prior reference unchanged', () => {
+    const { service } = setup();
+    const before = service.operators();
+
+    service.updateOperator(3, { outputLevel: 72 });
+
+    expect(service.operators()[3].outputLevel).toBe(72);
+    expect(before[3].outputLevel).toBe(50);
+    expect(service.operators()).not.toBe(before);
+  });
+
+  // Phase 2 D-02: feedback() reads the depth value; setFeedback() writes it.
+  it('reports feedback 0 by default and setFeedback(5) round-trips', () => {
+    const { service } = setup();
+
+    expect(service.feedback()).toBe(0);
+    service.setFeedback(5);
+    expect(service.feedback()).toBe(5);
+  });
+
+  // D-10: setFeedback rejects out-of-range/non-integer input without partially applying it.
+  it('rejects an out-of-range or non-integer setFeedback call, leaving feedback() unchanged', () => {
+    const { service } = setup();
+
+    expect(() => service.setFeedback(8)).toThrow(RangeError);
+    expect(() => service.setFeedback(-1)).toThrow(RangeError);
+    expect(() => service.setFeedback(2.5)).toThrow(RangeError);
+    expect(service.feedback()).toBe(0);
+  });
+
+  // STATE-02: a rejected updateOperator call must not partially apply.
+  it('rejects an out-of-range updateOperator call, leaving the operator unchanged', () => {
+    const { service } = setup();
+
+    expect(() => service.updateOperator(1, { outputLevel: 120 })).toThrow(RangeError);
+    expect(service.operators()[1].outputLevel).toBe(50);
+  });
+
+  // Regression: operatorId is a compile-time-restricted type, but a caller
+  // can still bypass it with a cast or a value from outside TypeScript's
+  // reach, so updateOperator must reject it at runtime too — mirroring
+  // setAlgorithm's posture — before touching operators() or patch() at all.
+  it('rejects an out-of-range or non-integer operatorId in updateOperator, leaving state unchanged', () => {
+    const { service } = setup();
+    const beforePatch = service.patch();
+    const beforeOperators = service.operators();
+
+    expect(() => service.updateOperator(0 as unknown as OperatorId, { outputLevel: 80 })).toThrow(RangeError);
+    expect(() => service.updateOperator(7 as unknown as OperatorId, { outputLevel: 80 })).toThrow(RangeError);
+    expect(() => service.updateOperator(1.5 as unknown as OperatorId, { outputLevel: 80 })).toThrow(RangeError);
+    expect(service.patch()).toBe(beforePatch);
+    expect(service.operators()).toBe(beforeOperators);
+  });
+
+  // STATE-01: setAlgorithm rejects an id absent from ALGORITHMS, leaving algorithmId() unchanged.
+  it('rejects an out-of-range or non-integer setAlgorithm call, leaving algorithmId() unchanged', () => {
+    const { service } = setup();
+
+    expect(() => service.setAlgorithm(0)).toThrow(RangeError);
+    expect(() => service.setAlgorithm(33)).toThrow(RangeError);
+    expect(() => service.setAlgorithm(1.5)).toThrow(RangeError);
+    expect(service.algorithmId()).toBe(1);
+  });
+
+  // Phase 2 D-05/D-07: carriers()/operatorRole() delegate to derive-role.ts, never stored.
+  it('derives carriers() and operatorRole() from the selected algorithm via derive-role.ts', () => {
+    const { service } = setup();
+    const row32 = ALGORITHMS.find((a) => a.id === 32);
+    if (!row32) {
+      throw new Error('fixture assumption failed: ALGORITHMS has no row with id 32');
+    }
+
+    service.setAlgorithm(32);
+
+    expect(service.carriers()).toEqual(deriveCarriers(row32));
+    expect(service.operatorRole(6)).toBe(getOperatorRole(row32, 6));
+  });
+
+  // Phase 2 D-02: feedbackOperator() delegates to derive-role.ts's getFeedbackOperator.
+  it('derives feedbackOperator() from the selected algorithm', () => {
+    const { service } = setup();
+    const row1 = ALGORITHMS.find((a) => a.id === 1);
+    if (!row1) {
+      throw new Error('fixture assumption failed: ALGORITHMS has no row with id 1');
+    }
+
+    expect(service.feedbackOperator()).toBe(getFeedbackOperator(row1));
+  });
+
+  // D-01 carryover: switching algorithm carries operator parameters over unchanged.
+  it('carries operator parameters over unchanged (same reference) across setAlgorithm (D-01)', () => {
+    const { service } = setup();
+    service.updateOperator(2, { outputLevel: 80 });
+    service.updateOperator(5, { detune: -3 });
+    const operatorsBeforeSwitch = service.operators();
+
+    service.setAlgorithm(7);
+
+    expect(service.operators()[2].outputLevel).toBe(80);
+    expect(service.operators()[5].detune).toBe(-3);
+    expect(service.operators()).toBe(operatorsBeforeSwitch);
+  });
+
+  // D-02 carryover: switching algorithm carries the feedback depth over unchanged.
+  it('carries feedback depth over unchanged across setAlgorithm (D-02)', () => {
+    const { service } = setup();
+    service.setFeedback(6);
+
+    service.setAlgorithm(19);
+
+    expect(service.feedback()).toBe(6);
+  });
+
+  // STATE-02: a previously captured patch snapshot is never mutated by later commands.
+  it('never mutates a previously captured patch reference (STATE-02)', () => {
+    const { service } = setup();
+    const beforePatch = service.patch();
+    const beforePatchClone = structuredClone(beforePatch);
+
+    service.updateOperator(4, { ratio: 2 });
+    service.setFeedback(3);
+
+    expect(beforePatch).toEqual(beforePatchClone);
+    expect(service.patch()).not.toBe(beforePatch);
+  });
+
+  // STATE-02: updateOperator must not disturb any operator other than its target.
+  it('leaves every non-target operator reference-identical after updateOperator (STATE-02)', () => {
+    const { service } = setup();
+    const operator5Before = service.operators()[5];
+
+    service.updateOperator(4, { ratio: 2 });
+
+    expect(service.operators()[5]).toBe(operator5Before);
+  });
+
+  // STATE-02: an empty changes object still produces a new patch object, not a short-circuit.
+  it('produces a new patch object for an empty updateOperator changes argument', () => {
+    const { service } = setup();
+    const patchBefore = service.patch();
+
+    expect(() => service.updateOperator(4, {})).not.toThrow();
+
+    expect(service.patch()).not.toBe(patchBefore);
+  });
+
+  // ROADMAP SC1: every selector resolves synchronously, no await, no fixture change detection.
+  it('reflects a setAlgorithm call synchronously in the same block, with no await', () => {
+    const { service } = setup();
+
+    service.setAlgorithm(12);
+
+    expect(service.algorithm().id).toBe(12);
+    expect(service.carriers()).toEqual(deriveCarriers(service.algorithm()));
+    expect(service.feedbackOperator()).toBe(getFeedbackOperator(service.algorithm()));
+  });
+
+  // D-03: a fresh facade reports both slots empty.
+  it('reports both snapshot slots empty on fresh injection', () => {
+    const { service } = setup();
+
+    expect(service.hasSnapshot('a')).toBe(false);
+    expect(service.hasSnapshot('b')).toBe(false);
+    expect(service.snapshots()).toEqual({ a: null, b: null });
+  });
+
+  // Regression: slot is a compile-time-restricted type, but a caller can
+  // still bypass it with a cast or a value from outside TypeScript's reach,
+  // so captureSnapshot/recallSnapshot/hasSnapshot must reject it at runtime
+  // too — mirroring updateOperator's operatorId posture — before touching
+  // _snapshots or _patch at all.
+  it('rejects a slot outside the fixed A/B contract in captureSnapshot, recallSnapshot, and hasSnapshot', () => {
+    const { service } = setup();
+    service.setFeedback(4);
+    service.captureSnapshot('a');
+    const beforePatch = service.patch();
+    const beforeSnapshots = service.snapshots();
+
+    expect(() => service.captureSnapshot('c' as unknown as SnapshotSlot)).toThrow(RangeError);
+    expect(() => service.recallSnapshot('c' as unknown as SnapshotSlot)).toThrow(RangeError);
+    expect(() => service.hasSnapshot('c' as unknown as SnapshotSlot)).toThrow(RangeError);
+    expect(service.patch()).toBe(beforePatch);
+    expect(service.snapshots()).toBe(beforeSnapshots);
+  });
+
+  // D-03 / STATE-03: capture/recall round-trips the full patch exactly.
+  it('round-trips algorithm, operator parameters, and feedback through capture/recall (D-03)', () => {
+    const { service } = setup();
+    service.setAlgorithm(5);
+    service.updateOperator(2, { outputLevel: 80 });
+    service.setFeedback(4);
+    service.captureSnapshot('a');
+
+    service.setAlgorithm(30);
+    service.updateOperator(2, { outputLevel: 10 });
+    service.setFeedback(0);
+
+    expect(service.recallSnapshot('a')).toBe(true);
+    expect(service.algorithmId()).toBe(5);
+    expect(service.operators()[2].outputLevel).toBe(80);
+    expect(service.feedback()).toBe(4);
+  });
+
+  // D-03 / STATE-03: recall restores all six operators, not just the edited one.
+  it('restores every operator id after recall, not only the edited one (D-03)', () => {
+    const { service } = setup();
+    service.updateOperator(2, { outputLevel: 80 });
+    const capturedOperators = service.operators();
+    service.captureSnapshot('a');
+
+    service.updateOperator(1, { outputLevel: 1 });
+    service.updateOperator(3, { outputLevel: 2 });
+    service.updateOperator(4, { outputLevel: 3 });
+    service.updateOperator(5, { outputLevel: 4 });
+    service.updateOperator(6, { outputLevel: 5 });
+
+    service.recallSnapshot('a');
+
+    for (const id of [1, 2, 3, 4, 5, 6] as const) {
+      expect(service.operators()[id]).toEqual(capturedOperators[id]);
+    }
+  });
+
+  // D-03: capturing into 'a' does not affect 'b'.
+  it('reports hasSnapshot true only for the captured slot (D-03)', () => {
+    const { service } = setup();
+
+    service.captureSnapshot('a');
+
+    expect(service.hasSnapshot('a')).toBe(true);
+    expect(service.hasSnapshot('b')).toBe(false);
+  });
+
+  // D-03: recalling a never-captured slot is a no-op that reports failure.
+  it('returns false and leaves state unchanged when recalling a never-captured slot (D-03)', () => {
+    const { service } = setup();
+    service.setAlgorithm(9);
+    service.updateOperator(3, { outputLevel: 42 });
+    service.setFeedback(2);
+    const algorithmIdBefore = service.algorithmId();
+    const operatorsBefore = service.operators();
+    const feedbackBefore = service.feedback();
+
+    expect(service.recallSnapshot('b')).toBe(false);
+
+    expect(service.algorithmId()).toBe(algorithmIdBefore);
+    expect(service.operators()).toBe(operatorsBefore);
+    expect(service.feedback()).toBe(feedbackBefore);
+  });
+
+  // D-03: capturing into an occupied slot overwrites it.
+  it('overwrites a slot on a second capture (D-03)', () => {
+    const { service } = setup();
+    service.setFeedback(4);
+    service.captureSnapshot('a');
+    service.setFeedback(7);
+    service.captureSnapshot('a');
+    service.setFeedback(1);
+
+    service.recallSnapshot('a');
+
+    expect(service.feedback()).toBe(7);
+  });
+
+  // D-04 / D-11: reset restores the fixed default patch, asserted against literal values.
+  it('restores the D-11 default patch literals on reset', () => {
+    const { service } = setup();
+    service.setAlgorithm(9);
+    service.updateOperator(1, { outputLevel: 3, ratio: 2, detune: -5, envelopeLevel: 10 });
+    service.setFeedback(6);
+
+    service.reset();
+
+    expect(service.algorithmId()).toBe(1);
+    expect(service.feedback()).toBe(0);
+    for (const id of [1, 2, 3, 4, 5, 6] as const) {
+      expect(service.operators()[id]).toEqual({
+        enabled: true,
+        mode: 'ratio',
+        ratio: 1,
+        fixedFrequencyHz: 440,
+        detune: 0,
+        outputLevel: 50,
+        envelopeLevel: 99,
+      });
+    }
+  });
+
+  // D-04: reset determinism — a heavily edited-then-reset service reports the same patch a
+  // freshly injected service does, without instantiating two competing TestBed environments.
+  it('produces a patch deep-equal to a fresh injection after reset (D-04)', () => {
+    const { service } = setup();
+    const freshPatch = service.patch();
+    service.setAlgorithm(20);
+    service.updateOperator(4, { outputLevel: 1 });
+    service.setFeedback(7);
+
+    service.reset();
+
+    expect(service.patch()).toEqual(freshPatch);
+  });
+
+  // D-03: SNAPSHOT_SLOTS is exactly the two-member frozen array the type promises.
+  it('freezes SNAPSHOT_SLOTS to exactly two entries, a and b', () => {
+    expect(SNAPSHOT_SLOTS).toEqual(['a', 'b']);
+    expect(() => (SNAPSHOT_SLOTS as unknown as SnapshotSlot[]).push('a')).toThrow();
+  });
+
+  // These regression tests protect the coupling between plan 01's immutable-update contract and
+  // the exactness of A/B recall (T-03-05). captureSnapshot stores the current patch signal value
+  // directly, with no clone — that is only sound because every command produces a new patch
+  // object rather than mutating the previous one. If a future change makes a command mutate a
+  // patch in place, these are the tests that must fail.
+  describe('slot isolation and immutability regressions', () => {
+    // D-03: capturing into 'b' must not disturb what 'a' already holds.
+    it('keeps slot a unaffected by a later capture into slot b (D-03)', () => {
+      const { service } = setup();
+      service.setFeedback(4);
+      service.captureSnapshot('a');
+      service.setFeedback(7);
+      service.captureSnapshot('b');
+
+      expect(service.snapshots().a?.feedback).toBe(4);
+      expect(service.snapshots().b?.feedback).toBe(7);
+    });
+
+    // D-03: recalling 'a' must not disturb what 'b' already holds.
+    it('leaves slot b untouched by a recall of slot a (D-03)', () => {
+      const { service } = setup();
+      service.setFeedback(4);
+      service.captureSnapshot('a');
+      service.setFeedback(7);
+      service.captureSnapshot('b');
+      const bBeforeRecall = service.snapshots().b;
+
+      service.recallSnapshot('a');
+
+      expect(service.snapshots().b).toEqual(bBeforeRecall);
+    });
+
+    // STATE-02 x D-03: a captured snapshot is immune to edits made after the capture.
+    it('keeps a captured snapshot unchanged by edits made after the capture (STATE-02, D-03)', () => {
+      const { service } = setup();
+      service.captureSnapshot('a');
+      const capturedPatch = service.snapshots().a;
+
+      service.updateOperator(3, { outputLevel: 90 });
+      service.setFeedback(6);
+      service.setAlgorithm(15);
+
+      expect(service.snapshots().a).toEqual(capturedPatch);
+      expect(service.snapshots().a).not.toBe(service.patch());
+    });
+
+    // Snapshot immunity after a recall: recall hands out an immutable value, not live state.
+    it('keeps a snapshot unchanged by edits made after recalling it', () => {
+      const { service } = setup();
+      service.captureSnapshot('a');
+      const capturedOutputLevel = service.snapshots().a?.operators[1].outputLevel;
+      service.recallSnapshot('a');
+
+      service.updateOperator(1, { outputLevel: 12 });
+
+      expect(service.snapshots().a?.operators[1].outputLevel).toBe(capturedOutputLevel);
+    });
+
+    // D-04: reset must not clear or overwrite either slot.
+    it('preserves both slots deep-equal across a reset (D-04)', () => {
+      const { service } = setup();
+      service.setFeedback(4);
+      service.captureSnapshot('a');
+      service.setFeedback(6);
+      service.captureSnapshot('b');
+      const aBefore = service.snapshots().a;
+      const bBefore = service.snapshots().b;
+
+      service.reset();
+
+      expect(service.snapshots().a).toEqual(aBefore);
+      expect(service.snapshots().b).toEqual(bBefore);
+      expect(service.hasSnapshot('a')).toBe(true);
+      expect(service.hasSnapshot('b')).toBe(true);
+    });
+
+    // D-04: reset does not invalidate the slots — recall after reset still works.
+    it('still recalls a captured slot correctly after a reset (D-04)', () => {
+      const { service } = setup();
+      service.setFeedback(5);
+      service.captureSnapshot('a');
+
+      service.reset();
+
+      expect(service.recallSnapshot('a')).toBe(true);
+      expect(service.feedback()).toBe(5);
+    });
+
+    // STATE-03: recalling the same slot repeatedly is deterministic.
+    it('produces the same patch on repeated recalls of the same slot (STATE-03)', () => {
+      const { service } = setup();
+      service.setFeedback(3);
+      service.captureSnapshot('a');
+
+      service.recallSnapshot('a');
+      const firstRecallPatch = service.patch();
+      service.updateOperator(2, { outputLevel: 33 });
+      service.recallSnapshot('a');
+      const secondRecallPatch = service.patch();
+
+      expect(secondRecallPatch).toEqual(firstRecallPatch);
+    });
+  });
+});

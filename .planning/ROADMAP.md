@@ -13,7 +13,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 
 - [x] **Phase 1: Angular 22 foundation** - Scaffold, shell, lazy routes, design tokens, quality gates
 - [x] **Phase 2: Algorithm domain** - Canonical validated 32-algorithm dataset, graph derivation (completed 2026-08-04; dataset review superseded 2026-08-05 — see 02-DATASET-REVIEW.md)
-- [ ] **Phase 3: Signal instrument state** - Patch/operator signal facade, A/B snapshots, reset
+- [x] **Phase 3: Signal instrument state** - Patch/operator signal facade, A/B snapshots, reset (completed 2026-08-05)
 - [ ] **Phase 4: Algorithm browser and SVG** - 32-item browser, data-driven accessible diagram
 - [ ] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine
 - [ ] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
@@ -90,7 +90,16 @@ Plans:
   2. Immutable operator updates never mutate prior snapshots
   3. A/B snapshot and reset restore exact, deterministic state
 
-**Plans**: TBD
+**Plans**: 2/2 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 03-01-PLAN.md — Tracer: operator/patch model, immutable command path, and the core read-only selector surface (STATE-01, STATE-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 03-02-PLAN.md — Two named A/B snapshot slots and reset-to-default, with isolation regression tests (STATE-03)
 
 ### Phase 4: Algorithm browser and SVG
 
@@ -243,7 +252,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 |-------|----------------|--------|-----------|
 | 1. Angular 22 foundation | 1/1 | Complete | 2026-08-04 |
 | 2. Algorithm domain | 5/5 | Complete    | 2026-08-04 (dataset review updated 2026-08-05) |
-| 3. Signal instrument state | 0/TBD | Not started | - |
+| 3. Signal instrument state | 2/2 | Complete    | 2026-08-05 |
 | 4. Algorithm browser and SVG | 0/TBD | Not started | - |
 | 5. First playable approximation | 0/TBD | Not started | - |
 | 6. Guided lessons (Alg 32 & 1) | 0/TBD | Not started | - |

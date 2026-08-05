@@ -5,10 +5,11 @@ synthesis through the Yamaha DX7's 32 operator-routing algorithms — one algori
 interactive routing diagrams, guided lessons, and live sound. No affiliation with Yamaha or the
 Dexed project. See [full disclaimer](src/app/features/about/about.html).
 
-**Status:** Phase 1 of 14 complete — Angular scaffold, app shell, lazy routes, design tokens, and
-quality gates. No synthesis engine yet beyond a typed placeholder interface
-([`SynthEngine`](src/app/core/audio/synth-engine.ts)). See [`.planning/ROADMAP.md`](.planning/ROADMAP.md)
-for what's next.
+**Status:** Phase 3 of 14 complete — Angular scaffold, the canonical 32-algorithm domain dataset,
+and the [`InstrumentState`](src/app/state/instrument-state.ts) signal facade (immutable
+patch/operator state, A/B snapshots, reset). No synthesis engine yet beyond a typed placeholder
+interface ([`SynthEngine`](src/app/core/audio/synth-engine.ts)). See
+[`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
 
 ## Setup
 
@@ -43,6 +44,8 @@ npm run lint       # ESLint + Angular template/accessibility rules
   src/app/
     core/          # DI seams to browser APIs (audio, browser) — no direct window/AudioContext access
     domain/dx7/    # framework-independent FM synthesis domain model (Angular-free)
+    state/         # signal-based application-state facades (instrument state now; lesson/progress,
+                   # audio lifecycle, and settings facades follow in later phases)
     features/      # route-level standalone components (learn, algorithms, playground, about, home)
   ```
 - **Design tokens** — CSS custom properties in [`src/styles/_tokens.scss`](src/styles/_tokens.scss)
@@ -51,6 +54,12 @@ npm run lint       # ESLint + Angular template/accessibility rules
   a typed placeholder interface only. Real implementations (an MVP `OscillatorNode`/`GainNode`
   graph, later a six-operator `AudioWorklet`) land in Phases 5–9 and must never construct an
   `AudioContext` at module-eval time or store `AudioNode`s in Angular signal state.
+- **Instrument state facade** —
+  [`InstrumentState`](src/app/state/instrument-state.ts) is the single source of truth for the
+  selected algorithm, the six operators' parameters, and the feedback level. Writable signals stay
+  private behind read-only selectors and explicit commands; updates are immutable; operator role
+  and the carrier set are derived on demand from the algorithm dataset rather than stored. A/B
+  snapshots and reset are in-memory only, with versioned persistence deferred to a later phase.
 - **Accessibility baseline** — skip link, landmark regions, visible focus rings, reduced-motion
   respected both in CSS (`prefers-reduced-motion` media query) and via a signal
   ([`MotionPreference`](src/app/core/browser/motion-preference.ts)) components can read to skip
