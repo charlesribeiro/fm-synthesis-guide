@@ -11,31 +11,40 @@ Milestone 1). Each maps to a roadmap phase.
 
 ### Foundation
 
-- [ ] **FOUND-01**: App builds and runs as an Angular 22 standalone, zoneless application with
+- [x] **FOUND-01**: App builds and runs as an Angular 22 standalone, zoneless application with
       strict TypeScript/template checking
-- [ ] **FOUND-02**: Vitest suite runs headlessly and passes
-- [ ] **FOUND-03**: User can navigate lazy-loaded Learn, Algorithms, Playground, and About routes
-- [ ] **FOUND-04**: Layout uses SCSS design tokens (CSS custom properties) and is responsive
-- [ ] **FOUND-05**: Baseline accessibility — semantic HTML, labelled controls, visible focus,
+
+- [x] **FOUND-02**: Vitest suite runs headlessly and passes
+- [x] **FOUND-03**: User can navigate lazy-loaded Learn, Algorithms, Playground, and About routes
+- [x] **FOUND-04**: Layout uses SCSS design tokens (CSS custom properties) and is responsive
+- [x] **FOUND-05**: Baseline accessibility — semantic HTML, labelled controls, visible focus,
       reduced-motion support — is present in the shell
-- [ ] **FOUND-06**: README documents setup, verification commands, architecture summary, and the
+
+- [x] **FOUND-06**: README documents setup, verification commands, architecture summary, and the
       unofficial/educational disclaimer
 
 ### Algorithm Domain
 
-- [ ] **DOMAIN-01**: All 32 DX7 algorithms are represented as one canonical, immutable, validated
+- [x] **DOMAIN-01**: All 32 DX7 algorithms are represented as one canonical, immutable, validated
       dataset (no duplicated routing knowledge)
-- [ ] **DOMAIN-02**: Dataset validation rejects missing operators, invalid edges, impossible IDs,
-      duplicate algorithm IDs, and malformed feedback declarations
-- [ ] **DOMAIN-03**: Carrier/modulator roles are derivable from graph structure, not hardcoded per
+
+- [x] **DOMAIN-02**: Dataset validation rejects invalid edges, impossible IDs, duplicate algorithm
+      IDs, malformed feedback declarations, and algorithms whose `deriveCarriers()` result is empty
+      (zero derived carriers — a zero-output routing graph). Role derivation is total over all six
+      operators by construction, so Algorithm 32's edge-free shape remains valid; the invariant
+      rejects only graphs where every operator modulates another and nothing reaches output
+
+- [x] **DOMAIN-03**: Carrier/modulator roles are derivable from graph structure, not hardcoded per
       algorithm
-- [ ] **DOMAIN-04**: Domain/graph/frequency logic has no Angular dependency and is independently
+
+- [x] **DOMAIN-04**: Domain/graph/frequency logic has no Angular dependency and is independently
       unit-tested
 
 ### Instrument State
 
 - [ ] **STATE-01**: A signal-based facade exposes read-only selectors over selected algorithm,
       operator parameters, and feedback level
+
 - [ ] **STATE-02**: Operator parameter updates are immutable and do not mutate prior snapshots
 - [ ] **STATE-03**: A/B snapshot and reset restore a known deterministic state
 
@@ -44,14 +53,17 @@ Milestone 1). Each maps to a roadmap phase.
 - [ ] **VIS-01**: User can browse all 32 algorithms and open an algorithm detail view
 - [ ] **VIS-02**: The routing diagram is SVG, data-driven from the same dataset used by the synth
       engine, and accessible (title/description, not color-only carrier/modulator distinction)
+
 - [ ] **VIS-03**: The feedback loop is visually explicit in the diagram
 
 ### Playable Audio (MVP approximation)
 
 - [ ] **AUDIO-01**: Audio never starts before an explicit user gesture; a suspended/unavailable
       state is shown
+
 - [ ] **AUDIO-02**: User can play and release a note from an on-screen/computer keyboard with a
       monophonic educational engine, with no stuck voices after note-off or algorithm switch
+
 - [ ] **AUDIO-03**: The MVP engine is clearly labeled as a teaching approximation, not a
       bit-accurate DX7 emulation
 
@@ -97,16 +109,16 @@ current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| FOUND-01 | Phase 1 | In progress |
-| FOUND-02 | Phase 1 | In progress |
-| FOUND-03 | Phase 1 | In progress |
-| FOUND-04 | Phase 1 | In progress |
-| FOUND-05 | Phase 1 | In progress |
-| FOUND-06 | Phase 1 | In progress |
-| DOMAIN-01 | Phase 2 | Pending |
-| DOMAIN-02 | Phase 2 | Pending |
-| DOMAIN-03 | Phase 2 | Pending |
-| DOMAIN-04 | Phase 2 | Pending |
+| FOUND-01 | Phase 1 | Complete |
+| FOUND-02 | Phase 1 | Complete |
+| FOUND-03 | Phase 1 | Complete |
+| FOUND-04 | Phase 1 | Complete |
+| FOUND-05 | Phase 1 | Complete |
+| FOUND-06 | Phase 1 | Complete |
+| DOMAIN-01 | Phase 2 | Complete |
+| DOMAIN-02 | Phase 2 | Complete |
+| DOMAIN-03 | Phase 2 | Complete |
+| DOMAIN-04 | Phase 2 | Complete |
 | STATE-01 | Phase 3 | Pending |
 | STATE-02 | Phase 3 | Pending |
 | STATE-03 | Phase 3 | Pending |
@@ -120,6 +132,7 @@ current roadmap.
 | LESSON-02 | Phase 6 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 20 total
 - Mapped to phases: 20
 - Unmapped: 0 ✓

@@ -12,7 +12,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 ## Phases
 
 - [x] **Phase 1: Angular 22 foundation** - Scaffold, shell, lazy routes, design tokens, quality gates
-- [ ] **Phase 2: Algorithm domain** - Canonical validated 32-algorithm dataset, graph derivation
+- [x] **Phase 2: Algorithm domain** - Canonical validated 32-algorithm dataset, graph derivation (completed 2026-08-04; dataset review superseded 2026-08-05 — see 02-DATASET-REVIEW.md)
 - [ ] **Phase 3: Signal instrument state** - Patch/operator signal facade, A/B snapshots, reset
 - [ ] **Phase 4: Algorithm browser and SVG** - 32-item browser, data-driven accessible diagram
 - [ ] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine
@@ -29,147 +29,209 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 ## Phase Details
 
 ### Phase 1: Angular 22 foundation
+
 **Goal**: A runnable, strict, zoneless Angular 22 shell with lazy feature routes, design tokens,
 an a11y baseline, and passing quality gates — no synthesis engine yet beyond a typed placeholder.
 **Depends on**: Nothing (first phase)
 **Requirements**: FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, FOUND-06
 **Success Criteria** (what must be TRUE):
-  1. `npm run build`, `npm test -- --run`, and `npm run lint` all pass
+
+  1. `npm run build`, `npm test`, and `npm run lint` all pass
   2. User can navigate to Learn, Algorithms, Playground, and About via lazy-loaded routes
   3. The shell layout is responsive and uses SCSS design tokens, not hardcoded values
   4. Keyboard navigation and visible focus work across the shell; reduced motion is respected
   5. README documents setup, verification commands, architecture summary, and the disclaimer
+
 **Plans**: 1 plan (single vertical scaffold pass)
 
 Plans:
+
 - [x] 01-01: Angular 22 scaffold, shell, lazy routes, design tokens, a11y baseline, README
 
 ### Phase 2: Algorithm domain
+
 **Goal**: One canonical, validated 32-algorithm dataset independent of Angular.
 **Depends on**: Phase 1
 **Requirements**: DOMAIN-01, DOMAIN-02, DOMAIN-03, DOMAIN-04
 **Success Criteria** (what must be TRUE):
+
   1. All 32 algorithms pass schema/invariant validation tests
   2. Carrier/modulator derivation matches graph structure for fixture algorithms
   3. Domain code has zero Angular imports
-**Plans**: TBD
+
+**Plans**: 5/5 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 02-01-PLAN.md — Tracer: Algorithms 1 and 32 end-to-end through type, dataset, validation, derivation
+- [x] 02-02-PLAN.md — DOMAIN-04 domain-purity lint gate, proven by negative control
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 02-03-PLAN.md — Complete DOMAIN-02 rejection surface and DOMAIN-03 derivation surface
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 02-04-PLAN.md — All 32 rows entered with provenance, plus the cross-check invariant suite
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 02-05-PLAN.md — Historical-fidelity review dossier and human sign-off (D-09)
 
 ### Phase 3: Signal instrument state
+
 **Goal**: Signal-based facade over patch/operator state with immutable updates.
 **Depends on**: Phase 2
 **Requirements**: STATE-01, STATE-02, STATE-03
 **Success Criteria** (what must be TRUE):
+
   1. Selecting an algorithm updates all computed selectors synchronously
   2. Immutable operator updates never mutate prior snapshots
   3. A/B snapshot and reset restore exact, deterministic state
+
 **Plans**: TBD
 
 ### Phase 4: Algorithm browser and SVG
+
 **Goal**: Users can browse all 32 algorithms and see an accessible, data-driven routing diagram.
 **Depends on**: Phase 3
 **Requirements**: VIS-01, VIS-02, VIS-03
 **Success Criteria** (what must be TRUE):
+
   1. Algorithm selector renders all 32 options and an algorithm detail route
   2. SVG graph renders expected operator/edge counts from fixture data
   3. Carrier/modulator semantics and the feedback loop are exposed accessibly, not color-only
+
 **Plans**: TBD
 
 ### Phase 5: First playable approximation
+
 **Goal**: A monophonic, injected-boundary audio engine the user can actually play.
 **Depends on**: Phase 4
 **Requirements**: AUDIO-01, AUDIO-02, AUDIO-03
 **Success Criteria** (what must be TRUE):
+
   1. Audio never starts before a user gesture; suspended/unavailable states render correctly
   2. User can play/release a note with no stuck voices after note-off or algorithm switch
   3. UI clearly labels the engine as an educational approximation
+
 **Plans**: TBD
 
 ### Phase 6: Guided lessons for Algorithm 32 and Algorithm 1
+
 **Goal**: First end-to-end guided learning vertical slice.
 **Depends on**: Phase 5
 **Requirements**: LESSON-01, LESSON-02
 **Success Criteria** (what must be TRUE):
+
   1. A learner can complete the Algorithm 32 additive-synthesis lesson
   2. A learner can complete the Algorithm 1 modulation-stack lesson
   3. Each lesson has an objective, explanation, try-this action, and completion check
+
 **Plans**: TBD
 
 ### Phase 7: AudioWorklet DSP foundation
+
 **Goal**: Pure, offline-testable six-operator phase-modulation DSP kernel running in a worklet.
 **Depends on**: Phase 6
 **Requirements**: ENGINE-01
 **Success Criteria** (what must be TRUE):
+
   1. Worklet loads and runs a single operator and an additive multi-operator case correctly
   2. DSP kernel is tested with deterministic sample blocks outside the browser
+
 **Plans**: TBD
 
 ### Phase 8: Algorithm routing and feedback
+
 **Goal**: All 32 graph topologies run in the DSP engine with stable feedback.
 **Depends on**: Phase 7
 **Requirements**: ENGINE-02
 **Success Criteria** (what must be TRUE):
+
   1. Every algorithm's topology routes correctly in the DSP engine
   2. Output stays bounded and finite under feedback at maximum
   3. Switching algorithms never leaves a stuck note
+
 **Plans**: TBD
 
 ### Phase 9: DX7-style envelopes and parameter mapping
+
 **Goal**: Four-rate/four-level envelopes and ratio/fixed frequency modes drive the DSP engine.
 **Depends on**: Phase 8
 **Requirements**: ENGINE-03
 **Success Criteria** (what must be TRUE):
+
   1. Envelope segment transitions match the modeled rate/level state machine
   2. Ratio and fixed-frequency operator modes both produce correct frequencies
   3. Note release and parameter smoothing never produce audible clicks or NaN output
+
 **Plans**: TBD
 
 ### Phase 10: Visualizers and comparison tools
+
 **Goal**: Oscilloscope, spectrum, and A/B/randomization tools in Playground mode.
 **Depends on**: Phase 9
 **Requirements**: VIZ-01, VIZ-02
 **Success Criteria** (what must be TRUE):
+
   1. Oscilloscope and labelled spectrum respond to the live sound without driving Angular change
      detection per animation frame
+
   2. A/B snapshot compare and constrained randomization work in Playground
+
 **Plans**: TBD
 
 ### Phase 11: Curriculum across all 32 algorithms
+
 **Goal**: Every algorithm has a lesson, experiment, and original preset; progress is tracked.
 **Depends on**: Phase 10
 **Requirements**: CURR-01
 **Success Criteria** (what must be TRUE):
+
   1. All 32 algorithms have a concise lesson grouped by recurring structure, not rote memorization
   2. Lesson completion/progress is tracked per algorithm
+
 **Plans**: TBD
 
 ### Phase 12: MIDI and patch persistence
+
 **Goal**: Progressive Web MIDI input and versioned, importable/exportable persistence.
 **Depends on**: Phase 11
 **Requirements**: PERSIST-01, MIDI-01
 **Success Criteria** (what must be TRUE):
+
   1. MIDI note on/off/velocity works when a device is present; app is fully usable without MIDI
   2. Settings/progress/patches persist across reload with a versioned schema
   3. Malformed persisted or imported data is recovered from without crashing
+
 **Plans**: TBD
 
 ### Phase 13: Accessibility and performance hardening
+
 **Goal**: Keyboard-only, screen-reader, reduced-motion, and mobile/tablet parity, plus profiling.
 **Depends on**: Phase 12
 **Requirements**: HARDEN-01
 **Success Criteria** (what must be TRUE):
+
   1. A full lesson can be completed keyboard-only with correct screen-reader announcements
   2. Reduced motion is honored throughout; mobile/tablet layout remains usable
   3. Profiling shows no leaked animation frames, audio nodes, or timers
+
 **Plans**: TBD
 
 ### Phase 14: Browser tests and release
+
 **Goal**: Playwright smoke coverage, CI, deployment, and documentation for release.
 **Depends on**: Phase 13
 **Requirements**: RELEASE-01
 **Success Criteria** (what must be TRUE):
+
   1. Playwright covers audio enable, note lifecycle, and algorithm switching without errors
   2. CI runs build/test/lint/Playwright on every change
   3. App is deployed to static hosting with architecture/methodology docs published
+
 **Plans**: TBD
 
 ## Progress
@@ -180,7 +242,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Angular 22 foundation | 1/1 | Complete | 2026-08-04 |
-| 2. Algorithm domain | 0/TBD | Not started | - |
+| 2. Algorithm domain | 5/5 | Complete    | 2026-08-04 (dataset review updated 2026-08-05) |
 | 3. Signal instrument state | 0/TBD | Not started | - |
 | 4. Algorithm browser and SVG | 0/TBD | Not started | - |
 | 5. First playable approximation | 0/TBD | Not started | - |
