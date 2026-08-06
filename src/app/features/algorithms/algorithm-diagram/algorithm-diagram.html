@@ -1,0 +1,75 @@
+<svg
+  [attr.viewBox]="viewModel().viewBox"
+  preserveAspectRatio="xMidYMid meet"
+  [attr.aria-labelledby]="titleId() + ' ' + descId()"
+>
+  <title [attr.id]="titleId()">{{ viewModel().title }}</title>
+  <desc [attr.id]="descId()">{{ viewModel().description }}</desc>
+
+  <defs>
+    <marker
+      [attr.id]="arrowMarkerId()"
+      viewBox="0 0 10 10"
+      refX="9"
+      refY="5"
+      markerWidth="6"
+      markerHeight="6"
+      orient="auto-start-reverse"
+    >
+      <path d="M0,0 L10,5 L0,10 z" class="arrow-head" />
+    </marker>
+  </defs>
+
+  <path class="output-bus" [attr.d]="viewModel().outputBus.d" />
+  @for (stem of viewModel().outputBus.stems; track stem.operatorId) {
+    <path class="output-bus__stem" [attr.d]="stem.d" />
+  }
+
+  @for (edge of viewModel().edges; track edge.id) {
+    <path
+      class="edge"
+      [class.edge--modulation]="edge.kind === 'modulation'"
+      [class.edge--feedback]="edge.kind === 'feedback'"
+      [class.edge--connected]="isEdgeConnected(edge)"
+      [attr.d]="edge.d"
+      [attr.data-from]="edge.from"
+      [attr.data-to]="edge.to"
+      [attr.marker-end]="'url(#' + arrowMarkerId() + ')'"
+    />
+  }
+
+  @for (node of viewModel().nodes; track node.id) {
+    <g
+      class="operator"
+      [class.operator--carrier]="node.role === 'carrier'"
+      [class.operator--modulator]="node.role === 'modulator'"
+      [class.operator--selected]="selectedOperator() === node.id"
+      [attr.data-operator-id]="node.id"
+      [attr.data-role]="node.role"
+      [attr.data-feedback]="node.hasFeedback"
+      [attr.transform]="'translate(' + node.x + ',' + node.y + ')'"
+      tabindex="0"
+      role="button"
+      [attr.aria-pressed]="selectedOperator() === node.id"
+      [attr.aria-label]="node.label"
+      (click)="selectNode(node.id)"
+      (keydown)="onNodeKeydown($event, node.id)"
+    >
+      @if (node.role === 'carrier') {
+        <circle r="18" class="operator__shape" />
+        <circle r="12" class="operator__shape-ring" />
+      } @else {
+        <rect x="-16" y="-16" width="32" height="32" class="operator__shape" />
+      }
+      <text
+        class="operator__label"
+        text-anchor="middle"
+        dominant-baseline="central"
+        aria-hidden="true"
+        >{{ node.id }}</text
+      >
+    </g>
+  }
+</svg>
+
+<p class="visually-hidden" role="status">{{ selectionAnnouncement() }}</p>

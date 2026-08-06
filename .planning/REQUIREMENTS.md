@@ -50,11 +50,11 @@ Milestone 1). Each maps to a roadmap phase.
 
 ### Algorithm Visualization
 
-- [ ] **VIS-01**: User can browse all 32 algorithms and open an algorithm detail view
-- [ ] **VIS-02**: The routing diagram is SVG, data-driven from the same dataset used by the synth
+- [x] **VIS-01**: User can browse all 32 algorithms and open an algorithm detail view
+- [x] **VIS-02**: The routing diagram is SVG, data-driven from the same dataset used by the synth
       engine, and accessible (title/description, not color-only carrier/modulator distinction)
 
-- [ ] **VIS-03**: The feedback loop is visually explicit in the diagram
+- [x] **VIS-03**: The feedback loop is visually explicit in the diagram
 
 ### Playable Audio (MVP approximation)
 
@@ -122,9 +122,9 @@ current roadmap.
 | STATE-01 | Phase 3 | Complete |
 | STATE-02 | Phase 3 | Complete |
 | STATE-03 | Phase 3 | Complete |
-| VIS-01 | Phase 4 | Pending |
-| VIS-02 | Phase 4 | Pending |
-| VIS-03 | Phase 4 | Pending |
+| VIS-01 | Phase 4 | Complete |
+| VIS-02 | Phase 4 | Complete |
+| VIS-03 | Phase 4 | Complete |
 | AUDIO-01 | Phase 5 | Pending |
 | AUDIO-02 | Phase 5 | Pending |
 | AUDIO-03 | Phase 5 | Pending |

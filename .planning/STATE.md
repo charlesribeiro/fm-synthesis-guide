@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 4
-current_phase_name: Algorithm browser and SVG
+current_phase: 5
+current_phase_name: First playable approximation
 status: planning
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-08-05T20:57:40.896Z"
-last_activity: 2026-08-05
-last_activity_desc: Phase 03 complete, transitioned to Phase 4
+stopped_at: Phase 04 complete — ready to plan Phase 5
+last_updated: "2026-08-06T16:15:00.000Z"
+last_activity: 2026-08-06
+last_activity_desc: Phase 04 complete (P01–P05); transitioned to Phase 5
 progress:
   total_phases: 14
-  completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
+  completed_phases: 4
+  total_plans: 13
+  completed_plans: 13
 ---
 
 # Project State
@@ -24,25 +24,23 @@ See: .planning/PROJECT.md (updated 2026-08-04)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 04 — algorithm-browser-and-svg
+**Current focus:** Phase 5 — First playable approximation
 
 ## Current Position
 
-Phase: 4 — Algorithm browser and SVG
+Phase: 5 — First playable approximation
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-05 — Phase 03 complete, transitioned to Phase 4
-lazy routes (Learn/Algorithms/Playground/About/Home), design tokens, a11y baseline (skip link,
-focus rings, reduced-motion signal + CSS), typed `SynthEngine` placeholder, `OperatorId`/
-`AlgorithmId` domain types, README, and hand-authored `.planning/`. All three quality gates green.
+Last activity: 2026-08-06 — Phase 04 complete (plans 04-01 through 04-05); next is Phase 5
 
-Progress: Phase 3/14 complete ([██████████] 100% of Phase 3's plans; Phase 4 not yet planned, plan count TBD)
+Progress: Phase 4/14 complete ([██████████] 100% of Phase 4's plans; 5 of 5 complete). Phase 5 not
+yet planned.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 8
+- Total plans completed: 13
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -53,6 +51,7 @@ Progress: Phase 3/14 complete ([██████████] 100% of Phase 3'
 | 1. Angular 22 foundation | 1 | - | - |
 | 02 | 5 | - | - |
 | 03 | 2 | - | - |
+| 04 | 5 | - | - |
 
 **Recent Trend:**
 
@@ -71,6 +70,11 @@ Progress: Phase 3/14 complete ([██████████] 100% of Phase 3'
 | Phase 02 P05 | 8min | 3 tasks | 2 files |
 | Phase 03 P01 | 35min | 3 tasks | 6 files |
 | Phase 03 P02 | 25min | 2 tasks | 3 files |
+| Phase 04 P01 | 25min | 3 tasks | 13 files |
+| Phase 04 P02 | 20min | 2 tasks | 2 files |
+| Phase 04 P03 | 28min | 2 tasks | 4 files |
+| Phase 04 P04 | 55min | 2 tasks | 4 files |
+| Phase 04 P05 | 15min | 2 tasks | 1 file |
 
 ## Accumulated Context
 
@@ -103,6 +107,9 @@ Full log in `.planning/PROJECT.md` → Key Decisions. Recent:
 - [Phase ?]: [Phase 03] Plan 03-01: Facade at src/app/state/instrument-state.ts (new layer, distinct from core/'s browser adapters); one private patch signal (not three) for atomic D-03 snapshot capture; selected operator NOT tracked here (Phase 4's view state); invalid command input throws RangeError; default algorithm id 1.
 - [Phase ?]: [Phase 03] Plan 03-01: Task 1's tracer over-implemented Tasks 2 and 3's production scope (validators, setFeedback, derived selectors) in the same commit; Tasks 2-3 supplied only the missing test coverage rather than re-implementing, documented as a TDD Gate Compliance note (RED did not precede GREEN, mirroring the 02-03 precedent).
 - [Phase ?]: [Phase 3] Plan 03-02: SnapshotSlot/SNAPSHOT_SLOTS mirror the OperatorId/OPERATOR_IDS restricted-union convention; captureSnapshot stores the patch signal's current reference directly (no clone), relying on plan 01's immutable-update contract for exactness; recallSnapshot returns boolean (false/no-op on an uncaptured slot), reset returns void and never touches the snapshots signal.
+- [Phase ?]: Phase 04 (04-01): shared canvas grid (ROW_Y/COLUMN_X/CARRIER_ROW_Y/DIAGRAM_VIEWBOX) fixed as the one layout coordinate system for all 32 future diagrams; Algorithm 1's two layout columns (170, 235) centred within the grid rather than leftmost
+- [Phase ?]: Phase 04 (04-01): buildDiagramViewModelForId(id) is the single validated entry point for id -> diagram (isAlgorithmId guard before any ALGORITHMS/ALGORITHM_LAYOUTS lookup, never throws); AlgorithmDetail resolves :id via injected ActivatedRoute + toSignal(route.paramMap) rather than withComponentInputBinding(), to survive both cold deep links and same-route prev/next navigation
+- [Phase ?]: Phase 04 (04-01): Task 1's tracer wrote spec+implementation together rather than strict RED-first; regression teeth verified instead via a break-implementation/confirm-test-fails/restore probe (same substitution pattern as Phase 02-03/03-01), documented in 04-01-SUMMARY.md's TDD Gate Compliance section
 
 ### Pending Todos
 
@@ -122,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-05T19:24:22.898Z
-Stopped at: Completed 03-02-PLAN.md
+Last session: 2026-08-06T16:15:00.000Z
+Stopped at: Phase 04 complete — ready to plan Phase 5
 Resume file: None

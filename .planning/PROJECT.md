@@ -29,11 +29,19 @@ a parameter, and immediately understand why the sound changed.
       complete: `InstrumentState` exposes read-only computed selectors over algorithm/operators/
       feedback, immutable per-operator updates, and A/B full-patch snapshot slots with reset.
       11/11 must-haves verified in `03-VERIFICATION.md`; 456/456 tests passing.
+- [x] Data-driven, accessible SVG algorithm diagrams — Validated in Phase 4:
+      algorithm-browser-and-svg (2026-08-06). VIS-01 through VIS-03 all complete: a grouped
+      32-item browse view derived from `teachingTags` (no hardcoded id ranges), a validated
+      `/algorithms/:id` detail route with previous/next stepping and a full rejected-address
+      matrix, and an accessible SVG routing diagram (shape-encoded carrier/modulator roles,
+      distinct dashed feedback curve, per-instance-scoped element ids) driven entirely by the
+      canonical dataset plus 32 hand-authored layout records. 10/10 must-haves verified in
+      `04-VERIFICATION.md`; 537/537 tests passing. Human verification (layout legibility across
+      all 32 diagrams, non-color/grayscale encoding, keyboard-only journey, VoiceOver spot check)
+      approved with no follow-up requested — see `04-05-SUMMARY.md`.
 
 ### Active
 
-
-- [ ] Data-driven, accessible SVG algorithm diagrams
 - [ ] Monophonic educational audio engine behind an injected browser-audio boundary
 - [ ] Guided lessons starting with Algorithm 32 (pure additive) and Algorithm 1 (stack + tower)
 - [ ] AudioWorklet six-operator phase-modulation engine (accuracy target, not MVP-blocking)
@@ -99,6 +107,7 @@ a parameter, and immediately understand why the sound changed.
 | Use Web Audio `OscillatorNode`/`GainNode` graph as an explicitly-labeled MVP approximation, defer the AudioWorklet six-operator engine | Matches CLAUDE.md's "native OscillatorNode modulation is an MVP approximation" rule | — Pending (Phase 1 has no synthesis engine yet; placeholder interface only) |
 | Phase 2: carrier sets are authoritative over stated edge lists wherever RESEARCH.md's own table disagreed with itself (14/32 rows); repair the edges, never the carriers, by the minimal edit satisfying the derivation rule | Carrier sets and feedback operators are the HIGH-confidence, triangulated facts per RESEARCH.md's own metadata; exact intermediate edges are MEDIUM-confidence reconstructions | ✓ Good — ledger now 7 `repaired`, 6 `ambiguous`, 1 `unresolved` (Alg 19); Alg 26/27 corrected 2026-08-05; see 02-04-SUMMARY.md |
 | Phase 2: a code-review blocker (shallow `Object.freeze` — nested edge objects stayed mutable despite the file's own "frozen, cannot be mutated" comment) was found and fixed after all 5 plans executed, before marking the phase complete | CLAUDE.md requires immutable readonly models and running the full gate before declaring work done; a code-review pass surfaced a real gap the plan-level tests didn't catch | ✓ Good — CR-01 + 3 warnings fixed, 364/364 tests passing, freeze now reaches nested edge objects |
+| Phase 4: a direct commit (`c2c51e4`) landed on the phase branch mid-execution, in parallel with the orchestrator's own worktree-isolated Wave 3 agent. It shipped a legitimate accessibility fix (removed `role="img"` from the SVG diagram so the interactive `role="button"` operator nodes stay in the AT tree; added instance-scoped SVG element ids) but also rolled REQUIREMENTS.md/ROADMAP.md/STATE.md back to a stale "only 04-01 done" snapshot, desyncing tracking docs after the automatic wave-merge folded it in | Two GSD-driving sessions edited the same branch concurrently without coordination; the wave-merge step performed a clean textual 3-way merge that was nevertheless semantically wrong for the tracking prose | ✓ Good — code fix kept (verified via full green gates), tracking docs manually reconciled in `b312b7d` before phase verification ran; **process gap to watch**: nothing currently detects an out-of-band commit landing on an in-flight phase branch before a wave-merge silently absorbs it |
 
 ---
-*Last updated: 2026-08-05 after Phase 3 (signal-instrument-state) completion*
+*Last updated: 2026-08-06 after Phase 4 (algorithm-browser-and-svg) completion*

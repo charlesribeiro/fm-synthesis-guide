@@ -14,7 +14,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 1: Angular 22 foundation** - Scaffold, shell, lazy routes, design tokens, quality gates
 - [x] **Phase 2: Algorithm domain** - Canonical validated 32-algorithm dataset, graph derivation (completed 2026-08-04; dataset review superseded 2026-08-05 — see 02-DATASET-REVIEW.md)
 - [x] **Phase 3: Signal instrument state** - Patch/operator signal facade, A/B snapshots, reset (completed 2026-08-05)
-- [ ] **Phase 4: Algorithm browser and SVG** - 32-item browser, data-driven accessible diagram
+- [x] **Phase 4: Algorithm browser and SVG** - 32-item browser, data-driven accessible diagram (completed 2026-08-06)
 - [ ] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine
 - [ ] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
 - [ ] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading
@@ -112,7 +112,31 @@ Plans:
   2. SVG graph renders expected operator/edge counts from fixture data
   3. Carrier/modulator semantics and the feedback loop are exposed accessibly, not color-only
 
-**Plans**: TBD
+**Plans**: 5/5 plans executed
+
+Plans:
+**Wave 1**
+
+- [x] 04-01-PLAN.md — Tracer: /algorithms/1 end-to-end through layout data, view model, accessible
+      SVG component and the validated detail route (VIS-01, VIS-02, VIS-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 04-02-PLAN.md — All 32 hand-authored layout records plus the grid, signal-flow and clearance
+      invariants (VIS-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 04-03-PLAN.md — Grouped 32-item browse view derived from teachingTags, with an in-app
+      round-trip test into the detail route (VIS-01)
+
+- [x] 04-04-PLAN.md — Previous/next stepping with correct ends, plus the full rejected-address
+      matrix and the not-found state (VIS-01)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [x] 04-05-PLAN.md — Rendered accessibility/encoding sweep across all 32, then the blocking human
+      legibility, keyboard and screen-reader verification (VIS-01, VIS-02, VIS-03)
 
 ### Phase 5: First playable approximation
 
@@ -253,7 +277,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 1. Angular 22 foundation | 1/1 | Complete | 2026-08-04 |
 | 2. Algorithm domain | 5/5 | Complete    | 2026-08-04 (dataset review updated 2026-08-05) |
 | 3. Signal instrument state | 2/2 | Complete    | 2026-08-05 |
-| 4. Algorithm browser and SVG | 0/TBD | Not started | - |
+| 4. Algorithm browser and SVG | 5/5 | Complete    | 2026-08-06 |
 | 5. First playable approximation | 0/TBD | Not started | - |
 | 6. Guided lessons (Alg 32 & 1) | 0/TBD | Not started | - |
 | 7. AudioWorklet DSP foundation | 0/TBD | Not started | - |

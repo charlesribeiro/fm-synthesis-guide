@@ -21,6 +21,14 @@ export const routes: Routes = [
     title: 'Algorithms — DX7 Algorithm Lab',
   },
   {
+    path: 'algorithms/:id',
+    loadComponent: () =>
+      import('./features/algorithms/algorithm-detail/algorithm-detail').then(
+        (m) => m.AlgorithmDetail,
+      ),
+    title: 'Algorithm detail — DX7 Algorithm Lab',
+  },
+  {
     path: 'playground',
     loadComponent: () => import('./features/playground/playground').then((m) => m.Playground),
     title: 'Playground — DX7 Algorithm Lab',
