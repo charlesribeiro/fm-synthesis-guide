@@ -4,17 +4,26 @@
   data the audio engine reads — nothing here is hand-drawn artwork.
 </p>
 
-<p class="status" role="status">
-  The interactive 32-algorithm browser and accessible SVG diagram aren't built yet — this route is a
-  placeholder from the foundation phase. Algorithms are grouped below by recurring structure.
-</p>
-
 <ul class="group-list">
-  @for (group of groups; track group.name) {
+  @for (group of groups; track group.tag) {
     <li class="group-card">
       <span class="group-card__range">{{ group.range }}</span>
-      <h2>{{ group.name }}</h2>
+      <h2 [id]="'group-' + group.tag">{{ group.name }}</h2>
       <p>{{ group.description }}</p>
+
+      <ul class="algorithm-list" [attr.aria-labelledby]="'group-' + group.tag">
+        @for (algorithm of group.algorithms; track algorithm.id) {
+          <li>
+            <a class="algorithm-card" [routerLink]="['/algorithms', algorithm.id]">
+              <span class="algorithm-card__number">Algorithm {{ algorithm.id }}</span>
+              <span class="algorithm-card__name">{{ algorithm.name }}</span>
+              @if (algorithm.isUnresolved) {
+                <span class="algorithm-card__flag">Routing under review</span>
+              }
+            </a>
+          </li>
+        }
+      </ul>
     </li>
   }
 </ul>

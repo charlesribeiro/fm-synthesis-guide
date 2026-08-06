@@ -1,0 +1,49 @@
+@if (viewModel(); as vm) {
+  <h1>Algorithm {{ vm.algorithmId }}</h1>
+  <p class="algorithm-name">{{ vm.algorithmName }}</p>
+  <app-algorithm-diagram [viewModel]="vm" />
+  @if (isUnresolved()) {
+    <p class="review-note" role="note">
+      This algorithm's routing is flagged for historical review and may not match the original
+      hardware.
+    </p>
+  }
+
+  <nav class="pager" aria-label="Step to an adjacent algorithm">
+    <span class="pager__slot">
+      @if (previousId(); as prevId) {
+        <a
+          class="pager__link pager__link--previous"
+          [routerLink]="['/algorithms', prevId]"
+          [attr.aria-label]="'Previous algorithm: ' + prevId"
+        >
+          <span aria-hidden="true">&larr;</span> Algorithm {{ prevId }}
+        </a>
+      }
+    </span>
+    <span class="pager__slot pager__slot--next">
+      @if (nextId(); as nextIdValue) {
+        <a
+          class="pager__link pager__link--next"
+          [routerLink]="['/algorithms', nextIdValue]"
+          [attr.aria-label]="'Next algorithm: ' + nextIdValue"
+        >
+          Algorithm {{ nextIdValue }} <span aria-hidden="true">&rarr;</span>
+        </a>
+      }
+    </span>
+  </nav>
+
+  <a class="back-link" routerLink="/algorithms">Back to all algorithms</a>
+} @else {
+  <div class="not-found">
+    <h1>Algorithm not found</h1>
+    <p>
+      An algorithm address must name a whole number from 1 to 32.
+      @if (rawId() !== null) {
+        The address named &quot;{{ rawId() }}&quot;, which is not a valid algorithm.
+      }
+    </p>
+    <a class="back-link" routerLink="/algorithms">Back to all algorithms</a>
+  </div>
+}
