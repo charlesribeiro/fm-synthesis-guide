@@ -1,0 +1,1 @@
+{"content":"KeyboardEvent.repeat is true on OS auto-repeat keydown events; guard noteOn handlers with 'if (event.repeat) return;' to prevent retrigger on held keys (MDN KeyboardEvent.repeat).","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-08-06T19:15:01.894Z","ttl":86400000,"kind":"web"}

@@ -15,7 +15,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 2: Algorithm domain** - Canonical validated 32-algorithm dataset, graph derivation (completed 2026-08-04; dataset review superseded 2026-08-05 — see 02-DATASET-REVIEW.md)
 - [x] **Phase 3: Signal instrument state** - Patch/operator signal facade, A/B snapshots, reset (completed 2026-08-05)
 - [x] **Phase 4: Algorithm browser and SVG** - 32-item browser, data-driven accessible diagram (completed 2026-08-06)
-- [ ] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine
+- [x] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine (all 4 plans executed, UAT passed, security review clean) (completed 2026-08-07)
 - [ ] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
 - [ ] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading
 - [ ] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output
@@ -149,7 +149,31 @@ Plans:
   2. User can play/release a note with no stuck voices after note-off or algorithm switch
   3. UI clearly labels the engine as an educational approximation
 
-**Plans**: TBD
+**Plans**: 4/4 plans executed — phase gate closed (05-UAT.md Test 1 passed; 05-VERIFICATION.md
+`passed`, 9/9 must-haves; security review clean)
+
+Plans:
+
+**Wave 1**
+
+- [x] 05-01-PLAN.md — Tracer: gesture-gated AudioContext behind a DI seam, persistent
+      six-oscillator graph, and one playable key end-to-end in Playground, plus the engine
+      lifecycle and monophonic note-lifecycle invariants (AUDIO-01, AUDIO-02, AUDIO-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 05-02-PLAN.md — Generic 32-algorithm patcher from canonical edge data, feedback through a
+      DelayNode, full DX7-scale conversions, and D-02 live re-patch of a held note (AUDIO-02)
+
+- [x] 05-03-PLAN.md — Full one-octave play surface: 12 on-screen keys, computer-keyboard mapping,
+      every note-ending path, and the UI-contract styling and accessibility (AUDIO-01, AUDIO-02,
+      AUDIO-03)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 05-04-PLAN.md — Blocking listening checkpoint for loudness safety, click-free ramps and the
+      narrow-viewport backstop, then applied tuning and the phase gate (AUDIO-01, AUDIO-02,
+      AUDIO-03)
 
 ### Phase 6: Guided lessons for Algorithm 32 and Algorithm 1
 
@@ -278,7 +302,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 2. Algorithm domain | 5/5 | Complete    | 2026-08-04 (dataset review updated 2026-08-05) |
 | 3. Signal instrument state | 2/2 | Complete    | 2026-08-05 |
 | 4. Algorithm browser and SVG | 5/5 | Complete    | 2026-08-06 |
-| 5. First playable approximation | 0/TBD | Not started | - |
+| 5. First playable approximation | 4/4 | Complete    | 2026-08-07 |
 | 6. Guided lessons (Alg 32 & 1) | 0/TBD | Not started | - |
 | 7. AudioWorklet DSP foundation | 0/TBD | Not started | - |
 | 8. Algorithm routing and feedback | 0/TBD | Not started | - |

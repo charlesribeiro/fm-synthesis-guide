@@ -58,13 +58,13 @@ Milestone 1). Each maps to a roadmap phase.
 
 ### Playable Audio (MVP approximation)
 
-- [ ] **AUDIO-01**: Audio never starts before an explicit user gesture; a suspended/unavailable
+- [x] **AUDIO-01**: Audio never starts before an explicit user gesture; a suspended/unavailable
       state is shown
 
-- [ ] **AUDIO-02**: User can play and release a note from an on-screen/computer keyboard with a
+- [x] **AUDIO-02**: User can play and release a note from an on-screen/computer keyboard with a
       monophonic educational engine, with no stuck voices after note-off or algorithm switch
 
-- [ ] **AUDIO-03**: The MVP engine is clearly labeled as a teaching approximation, not a
+- [x] **AUDIO-03**: The MVP engine is clearly labeled as a teaching approximation, not a
       bit-accurate DX7 emulation
 
 ### Guided Learning
@@ -125,9 +125,9 @@ current roadmap.
 | VIS-01 | Phase 4 | Complete |
 | VIS-02 | Phase 4 | Complete |
 | VIS-03 | Phase 4 | Complete |
-| AUDIO-01 | Phase 5 | Pending |
-| AUDIO-02 | Phase 5 | Pending |
-| AUDIO-03 | Phase 5 | Pending |
+| AUDIO-01 | Phase 5 | Complete |
+| AUDIO-02 | Phase 5 | Complete |
+| AUDIO-03 | Phase 5 | Complete |
 | LESSON-01 | Phase 6 | Pending |
 | LESSON-02 | Phase 6 | Pending |
 
@@ -139,4 +139,4 @@ current roadmap.
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-05 after Phase 3 (signal-instrument-state) completion — STATE-01, STATE-02, STATE-03 all marked Complete*
+*Last updated: 2026-08-07 after Phase 5 (first-playable-approximation) completion — AUDIO-01, AUDIO-02, AUDIO-03 all marked Complete*
