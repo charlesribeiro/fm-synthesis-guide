@@ -39,10 +39,19 @@ a parameter, and immediately understand why the sound changed.
       `04-VERIFICATION.md`; 537/537 tests passing. Human verification (layout legibility across
       all 32 diagrams, non-color/grayscale encoding, keyboard-only journey, VoiceOver spot check)
       approved with no follow-up requested — see `04-05-SUMMARY.md`.
+- [x] Monophonic educational audio engine behind an injected browser-audio boundary — Validated
+      in Phase 5: first-playable-approximation (2026-08-07). AUDIO-01 through AUDIO-03 all
+      complete: audio only starts after an explicit user gesture, a generic edge-traversal patcher
+      (`planConnections`) drives all 32 algorithms' routing including a bounded feedback self-loop,
+      a 12-key on-screen/computer keyboard plays and releases notes through a stale-release-safe
+      path, and the engine is clearly labeled a teaching approximation. 8/9 verification items
+      passed automatically; the one human-judgment item (shipped `MASTER_GAIN` = 1/6 still
+      comfortably audible after the WR-01 safety-clamp fix) confirmed in real-browser listening —
+      see `05-VERIFICATION.md` and `05-UAT.md`. Security review: 8 threats registered, all closed
+      (`05-SECURITY.md`).
 
 ### Active
 
-- [ ] Monophonic educational audio engine behind an injected browser-audio boundary
 - [ ] Guided lessons starting with Algorithm 32 (pure additive) and Algorithm 1 (stack + tower)
 - [ ] AudioWorklet six-operator phase-modulation engine (accuracy target, not MVP-blocking)
 - [ ] Full 32-algorithm curriculum, envelopes, feedback, visualizers, A/B snapshots
@@ -108,6 +117,7 @@ a parameter, and immediately understand why the sound changed.
 | Phase 2: carrier sets are authoritative over stated edge lists wherever RESEARCH.md's own table disagreed with itself (14/32 rows); repair the edges, never the carriers, by the minimal edit satisfying the derivation rule | Carrier sets and feedback operators are the HIGH-confidence, triangulated facts per RESEARCH.md's own metadata; exact intermediate edges are MEDIUM-confidence reconstructions | ✓ Good — ledger now 7 `repaired`, 6 `ambiguous`, 1 `unresolved` (Alg 19); Alg 26/27 corrected 2026-08-05; see 02-04-SUMMARY.md |
 | Phase 2: a code-review blocker (shallow `Object.freeze` — nested edge objects stayed mutable despite the file's own "frozen, cannot be mutated" comment) was found and fixed after all 5 plans executed, before marking the phase complete | CLAUDE.md requires immutable readonly models and running the full gate before declaring work done; a code-review pass surfaced a real gap the plan-level tests didn't catch | ✓ Good — CR-01 + 3 warnings fixed, 364/364 tests passing, freeze now reaches nested edge objects |
 | Phase 4: a direct commit (`c2c51e4`) landed on the phase branch mid-execution, in parallel with the orchestrator's own worktree-isolated Wave 3 agent. It shipped a legitimate accessibility fix (removed `role="img"` from the SVG diagram so the interactive `role="button"` operator nodes stay in the AT tree; added instance-scoped SVG element ids) but also rolled REQUIREMENTS.md/ROADMAP.md/STATE.md back to a stale "only 04-01 done" snapshot, desyncing tracking docs after the automatic wave-merge folded it in | Two GSD-driving sessions edited the same branch concurrently without coordination; the wave-merge step performed a clean textual 3-way merge that was nevertheless semantically wrong for the tracking prose | ✓ Good — code fix kept (verified via full green gates), tracking docs manually reconciled in `b312b7d` before phase verification ran; **process gap to watch**: nothing currently detects an out-of-band commit landing on an in-flight phase branch before a wave-merge silently absorbs it |
+| Phase 5: a post-checkpoint code-review fix (WR-01, commit `fd1b018`) lowered `MASTER_GAIN` from the 05-04-listening-approved 0.18 to 1/6 (≈0.63 dB quieter) to close a mathematically-provable safety-clamp gap (0.18 × 6 carriers could exceed full scale) | The change can only make the engine quieter/safer, never louder/riskier, but the exact shipped value was never itself heard in a real browser, and 05-04-PLAN.md's own must-have requires that it be | ✓ Good — re-confirmed via 05-UAT.md Test 1 (real-browser listening, single note + Algorithm 32 six-carrier worst case), both comfortably audible; verification status canonicalized to `passed` |
 
 ---
-*Last updated: 2026-08-06 after Phase 4 (algorithm-browser-and-svg) completion*
+*Last updated: 2026-08-07 after Phase 5 (first-playable-approximation) completion*

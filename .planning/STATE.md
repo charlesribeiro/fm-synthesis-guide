@@ -2,45 +2,46 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 5
-current_phase_name: First playable approximation
+current_phase: 6
+current_phase_name: Guided lessons for Algorithm 32 and Algorithm 1
 status: planning
-stopped_at: Phase 04 complete — ready to plan Phase 5
-last_updated: "2026-08-06T16:15:00.000Z"
-last_activity: 2026-08-06
-last_activity_desc: Phase 04 complete (P01–P05); transitioned to Phase 5
+stopped_at: Phase 5 complete (UAT passed, security review clean), ready to plan Phase 6
+last_updated: "2026-08-07T20:15:00.000Z"
+last_activity: 2026-08-07
+last_activity_desc: Phase 05 complete (UAT + security passed), transitioned to Phase 6
 progress:
   total_phases: 14
-  completed_phases: 4
-  total_plans: 13
-  completed_plans: 13
+  completed_phases: 5
+  total_plans: 17
+  completed_plans: 17
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-08-04)
+See: .planning/PROJECT.md (updated 2026-08-07)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 5 — First playable approximation
+**Current focus:** Phase 6 — guided-lessons-for-algorithm-32-and-algorithm-1
 
 ## Current Position
 
-Phase: 5 — First playable approximation
+Phase: 6 — Guided lessons for Algorithm 32 and Algorithm 1
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-06 — Phase 04 complete (plans 04-01 through 04-05); next is Phase 5
+Last activity: 2026-08-07 — Phase 05 complete (UAT passed, security review clean), transitioned to
+Phase 6
 
-Progress: Phase 4/14 complete ([██████████] 100% of Phase 4's plans; 5 of 5 complete). Phase 5 not
-yet planned.
+Progress: [████████████████████] 17/17 plans (100%) — 5 completed phases (1-5). Phase 6 (guided
+lessons) not yet planned.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 13
+- Total plans completed: 17
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -52,6 +53,7 @@ yet planned.
 | 02 | 5 | - | - |
 | 03 | 2 | - | - |
 | 04 | 5 | - | - |
+| 05 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -75,6 +77,7 @@ yet planned.
 | Phase 04 P03 | 28min | 2 tasks | 4 files |
 | Phase 04 P04 | 55min | 2 tasks | 4 files |
 | Phase 04 P05 | 15min | 2 tasks | 1 file |
+| Phase 05 P04 | 12min | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -110,6 +113,9 @@ Full log in `.planning/PROJECT.md` → Key Decisions. Recent:
 - [Phase ?]: Phase 04 (04-01): shared canvas grid (ROW_Y/COLUMN_X/CARRIER_ROW_Y/DIAGRAM_VIEWBOX) fixed as the one layout coordinate system for all 32 future diagrams; Algorithm 1's two layout columns (170, 235) centred within the grid rather than leftmost
 - [Phase ?]: Phase 04 (04-01): buildDiagramViewModelForId(id) is the single validated entry point for id -> diagram (isAlgorithmId guard before any ALGORITHMS/ALGORITHM_LAYOUTS lookup, never throws); AlgorithmDetail resolves :id via injected ActivatedRoute + toSignal(route.paramMap) rather than withComponentInputBinding(), to survive both cold deep links and same-route prev/next navigation
 - [Phase ?]: Phase 04 (04-01): Task 1's tracer wrote spec+implementation together rather than strict RED-first; regression teeth verified instead via a break-implementation/confirm-test-fails/restore probe (same substitution pattern as Phase 02-03/03-01), documented in 04-01-SUMMARY.md's TDD Gate Compliance section
+- [Phase 05]: The 05-04 real-browser listening checkpoint confirmed MASTER_GAIN=0.18, ATTACK_SECONDS=0.015s, RELEASE_TIME_CONSTANT=0.015s, RETRIGGER_CUT_SECONDS=0.015s correct as-is — no perceptual constant changed by that checkpoint. **Superseded same day**: a later code-review fix (WR-01, commit `fd1b018`) lowered MASTER_GAIN to `1/6` for a proven mathematical safety-clamp reason (0.18 × 6 carriers could exceed full scale).
+- [Phase 05]: 7 of the 8 manual-QA checklist items (gesture gate, click-free ramps/retrigger, held-note algorithm switch, stuck-voice hunt, narrow-viewport keyboard, keyboard access/reduced motion, approximation-copy honesty) were approved as-is against the code as it stood at the 05-04 checkpoint. The 8th (loudness safety worst case) was initially approved against MASTER_GAIN=0.18 and later re-confirmed for the shipped `1/6` value via 05-UAT.md Test 1.
+- [Phase 05]: 05-UAT.md Test 1 passed (2026-08-07) — the shipped MASTER_GAIN=1/6 confirmed comfortably audible for both a single note and Algorithm 32's six-carrier worst case. 05-VERIFICATION.md is `passed` with 9/9 must-haves (`behavior_unverified: 0`); 05-VALIDATION.md is `nyquist_compliant: true`. Security review (05-SECURITY.md) registered 8 threats, all closed (threats_open: 0). Phase 5 marked complete; transitioned to Phase 6.
 
 ### Pending Todos
 
@@ -117,9 +123,8 @@ None yet.
 
 ### Blockers/Concerns
 
-- GSD Core's 71 `/gsd-*` commands are installed (`.claude/`) but were not exercised end-to-end in
-  this session — verify they work as expected the next time a native Claude Code terminal session
-  (not this SDK runtime) drives Phase 2 planning.
+None currently open. (GSD Core's `/gsd-*` commands have since been exercised end-to-end —
+`/gsd-verify-work` and `/gsd-secure-phase` both ran natively to close out Phase 5.)
 
 ## Deferred Items
 
@@ -129,6 +134,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-06T16:15:00.000Z
-Stopped at: Phase 04 complete — ready to plan Phase 5
+Last session: 2026-08-07
+Stopped at: Phase 5 complete (UAT passed, security review clean), ready to plan Phase 6
 Resume file: None
