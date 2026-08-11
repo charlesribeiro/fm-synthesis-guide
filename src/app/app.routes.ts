@@ -16,6 +16,12 @@ export const routes: Routes = [
     title: 'Learn — DX7 Algorithm Lab',
   },
   {
+    path: 'learn/:lessonId',
+    loadComponent: () =>
+      import('./features/learn/lesson-detail/lesson-detail').then((m) => m.LessonDetail),
+    title: 'Lesson — DX7 Algorithm Lab',
+  },
+  {
     path: 'algorithms',
     loadComponent: () => import('./features/algorithms/algorithms').then((m) => m.Algorithms),
     title: 'Algorithms — DX7 Algorithm Lab',

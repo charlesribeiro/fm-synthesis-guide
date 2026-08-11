@@ -16,7 +16,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 3: Signal instrument state** - Patch/operator signal facade, A/B snapshots, reset (completed 2026-08-05)
 - [x] **Phase 4: Algorithm browser and SVG** - 32-item browser, data-driven accessible diagram (completed 2026-08-06)
 - [x] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine (all 4 plans executed, UAT passed, security review clean) (completed 2026-08-07)
-- [ ] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
+- [x] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
 - [ ] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading
 - [ ] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output
 - [ ] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes
@@ -186,7 +186,29 @@ Plans:
   2. A learner can complete the Algorithm 1 modulation-stack lesson
   3. Each lesson has an objective, explanation, try-this action, and completion check
 
-**Plans**: TBD
+**Plans**: 4/4 plans executed
+
+Plans:
+
+**Wave 1**
+
+- [x] 06-01-PLAN.md — Tracer: `/learn/algorithm-32` end-to-end through the lesson domain model,
+      the extracted shared play surface, the `LessonProgress` facade and the validated
+      `/learn/:lessonId` route (LESSON-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 06-02-PLAN.md — The Algorithm 1 lesson as one data row, plus the `LESSONS` dataset
+      invariants and the rejected-address matrix (LESSON-02)
+
+- [x] 06-03-PLAN.md — `/learn` rebuilt as a data-driven lesson index with per-card completion
+      state and the index-to-detail round trip (LESSON-01, LESSON-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 06-04-PLAN.md — Blocking human verification for extraction parity by ear, completion-check
+      timing, keyboard-only completion and colour independence, then applied tuning and the phase
+      validation record (LESSON-01, LESSON-02)
 
 ### Phase 7: AudioWorklet DSP foundation
 
@@ -303,7 +325,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 3. Signal instrument state | 2/2 | Complete    | 2026-08-05 |
 | 4. Algorithm browser and SVG | 5/5 | Complete    | 2026-08-06 |
 | 5. First playable approximation | 4/4 | Complete    | 2026-08-07 |
-| 6. Guided lessons (Alg 32 & 1) | 0/TBD | Not started | - |
+| 6. Guided lessons (Alg 32 & 1) | 4/4 | Complete    | 2026-08-10 |
 | 7. AudioWorklet DSP foundation | 0/TBD | Not started | - |
 | 8. Algorithm routing and feedback | 0/TBD | Not started | - |
 | 9. Envelopes and parameter mapping | 0/TBD | Not started | - |

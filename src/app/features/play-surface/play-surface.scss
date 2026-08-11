@@ -1,0 +1,168 @@
+// Embedded region, not a route — no `layout.page` mixin here (that stays on
+// the route component that hosts this surface, e.g. Playground or a lesson).
+
+.gate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-block: var(--space-4);
+}
+
+.status {
+  display: inline-block;
+  max-width: 60ch;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+// Mirrors algorithm-detail.scss's .review-note — a warning border, not a
+// destructive/error color, for "attention-worthy" status boxes (05-UI-SPEC.md).
+.status--warning {
+  border-color: var(--color-warning);
+  color: var(--color-text);
+}
+
+// Replicates home.scss's .button / .button--primary rule bodies — these
+// classes are component-scoped, there is no global button style to inherit.
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-raised);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+}
+
+.button--primary {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+  font-weight: 600;
+
+  &:hover:not(:disabled) {
+    background: var(--color-accent-strong);
+  }
+}
+
+// Piano-style keyboards read as one contiguous instrument, not a list of
+// discrete buttons (05-UI-SPEC.md) — a tighter-than-default gap plus a
+// horizontal scroll fallback (never shrinking a key below the 44px touch
+// floor, never wrapping to a second row) on viewports too narrow for all 12.
+.keyboard {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-1);
+  margin-block: var(--space-4);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+}
+
+.key {
+  display: inline-flex;
+  flex-shrink: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  min-width: 44px;
+  min-height: 44px;
+  padding: var(--space-2);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  // Non-color-only inert state (CLAUDE.md): reduced opacity + not-allowed
+  // cursor + aria-disabled together, never color/opacity alone.
+  &[aria-disabled='true'] {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.key__name {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+}
+
+.key__hint {
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-tight);
+  color: var(--color-text-muted);
+}
+
+// A darker surface for sharps than the naturals' --color-surface-raised —
+// black/white keyboard geometry read through existing surface tokens only,
+// no new color introduced this phase.
+.key--sharp {
+  background: var(--color-bg);
+}
+
+// Non-color-only pressed state: accent color + inset shadow + a static
+// (non-animated) depression offset, plus aria-pressed in the template.
+.key--pressed {
+  background: var(--color-accent);
+  border-color: var(--color-accent-strong);
+  color: var(--color-bg);
+  box-shadow: inset 0 2px 4px rgb(0 0 0 / 0.4);
+  transform: translateY(1px);
+
+  .key__hint {
+    color: var(--color-bg);
+  }
+}
+
+// The pressed-key depression is already a static transform with no
+// transition to begin with, so the global duration-zeroing rule in
+// _tokens.scss has nothing to override — this block asserts that fact
+// explicitly rather than leaving it implicit.
+@media (prefers-reduced-motion: reduce) {
+  .key--pressed {
+    transition: none;
+  }
+}
+
+.approximation-badge {
+  display: inline-block;
+  margin-block: var(--space-4);
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  line-height: var(--line-height-tight);
+  color: var(--color-text-muted);
+}

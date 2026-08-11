@@ -5,17 +5,25 @@
   gradually — you never have to memorize all 32 algorithms up front.
 </p>
 
-<p class="status" role="status">
-  The guided lesson player isn't built yet — this route is a placeholder from the foundation phase.
-  The first two lessons below are next on the roadmap.
-</p>
-
 <ul class="lesson-list">
-  @for (lesson of upcomingLessons; track lesson.algorithm) {
-    <li class="lesson-card">
-      <span class="lesson-card__algorithm">Algorithm {{ lesson.algorithm }}</span>
-      <h2>{{ lesson.title }}</h2>
-      <p>{{ lesson.teaches }}</p>
+  @for (lesson of lessons; track lesson.id) {
+    <li>
+      <a class="lesson-card" [routerLink]="['/learn', lesson.id]">
+        <span class="lesson-card__algorithm">Algorithm {{ lesson.algorithmId }}</span>
+        <h2>{{ lesson.title }}</h2>
+        <p>{{ lesson.objective }}</p>
+        <span
+          class="lesson-card__completion"
+          [class.lesson-card__completion--done]="lessonProgress.isComplete(lesson.id)"
+          [attr.data-state]="lessonProgress.isComplete(lesson.id) ? 'complete' : 'not-started'"
+        >
+          @if (lessonProgress.isComplete(lesson.id)) {
+            <span aria-hidden="true">&check;</span> Completed
+          } @else {
+            Not started
+          }
+        </span>
+      </a>
     </li>
   }
 </ul>
