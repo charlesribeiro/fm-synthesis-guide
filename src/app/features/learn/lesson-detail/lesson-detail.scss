@@ -1,0 +1,108 @@
+@use '../../../../styles/layout';
+
+:host {
+  @include layout.page;
+
+  padding-block: var(--space-8);
+}
+
+h2 {
+  margin-top: var(--space-6);
+  font-size: var(--font-size-lg);
+}
+
+.objective p,
+.explanation__text p {
+  max-width: 60ch;
+  color: var(--color-text-muted);
+}
+
+.carrier-line {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.try-this {
+  margin-block-start: var(--space-6);
+
+  label {
+    display: block;
+    margin-block-end: var(--space-2);
+    font-weight: 600;
+  }
+
+  input[type='range'] {
+    width: 100%;
+    max-width: 40ch;
+  }
+
+  #try-this-value {
+    display: block;
+    margin-block: var(--space-2) var(--space-4);
+    color: var(--color-text-muted);
+  }
+}
+
+.completion {
+  margin-block: var(--space-6);
+}
+
+// Non-color-only done/not-done states (CLAUDE.md): the done state adds a
+// glyph (marked aria-hidden, its meaning already carried by the adjacent
+// text) and a heavier border weight; never a color-only distinction.
+.completion__state {
+  display: inline-block;
+  max-width: 60ch;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+}
+
+.completion__state--done {
+  border-width: 2px;
+  border-color: var(--color-accent-strong);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-start: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-accent-strong);
+  text-decoration: none;
+  transition: border-color var(--duration-fast) var(--easing-standard);
+
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+.not-found {
+  max-width: 60ch;
+  margin-block-start: var(--space-4);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+
+  h1 {
+    margin-block-start: 0;
+  }
+
+  .back-link {
+    margin-block-start: var(--space-4);
+  }
+}

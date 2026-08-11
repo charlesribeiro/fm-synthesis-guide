@@ -10,17 +10,6 @@
   color: var(--color-text-muted);
 }
 
-.status {
-  display: inline-block;
-  margin-block: var(--space-4);
-  padding: var(--space-2) var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
-}
-
 .lesson-list {
   list-style: none;
   margin: var(--space-4) 0 0;
@@ -31,10 +20,22 @@
 }
 
 .lesson-card {
+  display: block;
   padding: var(--space-4);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    border-color: var(--color-border-strong);
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
 
   h2 {
     margin: var(--space-1) 0 var(--space-2);
@@ -54,4 +55,27 @@
   color: var(--color-accent-strong);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+}
+
+// Complete and not-started differ by border weight and glyph, never by
+// color alone (CLAUDE.md non-color-only rule) — the text "Completed" /
+// "Not started" is the primary carrier; this is presentation only. No
+// transition: the state appears instantly, the safer default under
+// prefers-reduced-motion (the global override in _tokens.scss already zeroes
+// any transition duration that were added here, so omitting one entirely
+// keeps this rule trivially reduced-motion-safe).
+.lesson-card__completion {
+  display: inline-block;
+  margin-top: var(--space-3);
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+
+  &--done {
+    border-width: 2px;
+    border-color: var(--color-accent-strong);
+    color: var(--color-text);
+  }
 }

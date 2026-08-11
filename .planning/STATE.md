@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 6
-current_phase_name: Guided lessons for Algorithm 32 and Algorithm 1
-status: planning
-stopped_at: Phase 5 complete (UAT passed, security review clean), ready to plan Phase 6
-last_updated: "2026-08-07T20:15:00.000Z"
-last_activity: 2026-08-07
-last_activity_desc: Phase 05 complete (UAT + security passed), transitioned to Phase 6
+current_phase: 06
+current_phase_name: guided-lessons-for-algorithm-32-and-algorithm-1
+status: complete
+stopped_at: Phase 6 complete — guided lessons for Algorithm 32 and Algorithm 1 validated
+last_updated: "2026-08-11T04:00:00.000Z"
+last_activity: 2026-08-10
+last_activity_desc: Phase 06 completed — 06-04 validation closed, review reconciled
 progress:
   total_phases: 14
-  completed_phases: 5
-  total_plans: 17
-  completed_plans: 17
+  completed_phases: 6
+  total_plans: 21
+  completed_plans: 21
 ---
 
 # Project State
@@ -24,24 +24,23 @@ See: .planning/PROJECT.md (updated 2026-08-07)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 6 — guided-lessons-for-algorithm-32-and-algorithm-1
+**Current focus:** Phase 06 — guided-lessons-for-algorithm-32-and-algorithm-1
 
 ## Current Position
 
-Phase: 6 — Guided lessons for Algorithm 32 and Algorithm 1
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-08-07 — Phase 05 complete (UAT passed, security review clean), transitioned to
+Phase: 06 (guided-lessons-for-algorithm-32-and-algorithm-1) — Complete
+Plan: 4 of 4
+Status: Phase complete — validated and Nyquist-compliant
+Last activity: 2026-08-10 — Phase 06 closed (06-04 approved; review reconciled)
 Phase 6
 
-Progress: [████████████████████] 17/17 plans (100%) — 5 completed phases (1-5). Phase 6 (guided
-lessons) not yet planned.
+Progress: [████████████████████] 21/21 plans ([██████████] 100%) — 6 completed phases (1-6).
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 17
+- Total plans completed: 21
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -54,6 +53,7 @@ lessons) not yet planned.
 | 03 | 2 | - | - |
 | 04 | 5 | - | - |
 | 05 | 4 | - | - |
+| 06 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -78,6 +78,10 @@ lessons) not yet planned.
 | Phase 04 P04 | 55min | 2 tasks | 4 files |
 | Phase 04 P05 | 15min | 2 tasks | 1 file |
 | Phase 05 P04 | 12min | 2 tasks | 0 files |
+| Phase 06 P01 | 9min | 2 tasks | 20 files |
+| Phase 06 P02 | 21min | 2 tasks | 3 files |
+| Phase 06 P03 | 20min | 2 tasks | 4 files |
+| Phase 06 P04 | 18min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -116,6 +120,14 @@ Full log in `.planning/PROJECT.md` → Key Decisions. Recent:
 - [Phase 05]: The 05-04 real-browser listening checkpoint confirmed MASTER_GAIN=0.18, ATTACK_SECONDS=0.015s, RELEASE_TIME_CONSTANT=0.015s, RETRIGGER_CUT_SECONDS=0.015s correct as-is — no perceptual constant changed by that checkpoint. **Superseded same day**: a later code-review fix (WR-01, commit `fd1b018`) lowered MASTER_GAIN to `1/6` for a proven mathematical safety-clamp reason (0.18 × 6 carriers could exceed full scale).
 - [Phase 05]: 7 of the 8 manual-QA checklist items (gesture gate, click-free ramps/retrigger, held-note algorithm switch, stuck-voice hunt, narrow-viewport keyboard, keyboard access/reduced motion, approximation-copy honesty) were approved as-is against the code as it stood at the 05-04 checkpoint. The 8th (loudness safety worst case) was initially approved against MASTER_GAIN=0.18 and later re-confirmed for the shipped `1/6` value via 05-UAT.md Test 1.
 - [Phase 05]: 05-UAT.md Test 1 passed (2026-08-07) — the shipped MASTER_GAIN=1/6 confirmed comfortably audible for both a single note and Algorithm 32's six-carrier worst case. 05-VERIFICATION.md is `passed` with 9/9 must-haves (`behavior_unverified: 0`); 05-VALIDATION.md is `nyquist_compliant: true`. Security review (05-SECURITY.md) registered 8 threats, all closed (threats_open: 0). Phase 5 marked complete; transitioned to Phase 6.
+- [Phase ?]: Phase 06 (06-01): LessonId already lists both 'algorithm-32' and 'algorithm-1' this plan, but LESSONS only has one row — getLesson('algorithm-1') throws until plan 06-02 lands; unreachable from the UI this plan since learn.ts is untouched until 06-03.
+- [Phase ?]: Phase 06 (06-01): PlaySurface extracted from Playground with a new output<number>() notePlayed, emitted only when pressKey() actually starts a note; Playground reduced to a thin host, playground.spec.ts passes byte-identical and unmodified (T-06-02 parity gate).
+- [Phase ?]: Phase 06 (06-01): D-06's completion check is a pure computed() ('moved in direction' vs. the lesson's own compile-time startingPatch) plus an imperative read from the PlaySurface (notePlayed) DOM-originated output's handler — no effect() anywhere in the flow.
+- [Phase ?]: Phase 06 (06-02): Algorithm 1 lesson's try-this target is operator 5 (middle of the 6→5→4 modulator sub-chain feeding carrier 3) rather than operator 4, which equally satisfies 'receives and passes on modulation' — Claude's Discretion, documented in 06-02-SUMMARY.md.
+- [Phase ?]: Phase 06 (06-02): lessons.spec.ts iterates LESSON_IDS/LESSONS (describe.each) rather than hardcoding a row count, so Phase 11's future lesson rows automatically inherit the dataset invariant suite (algorithmId resolution, validateOperatorParameters/validateFeedbackLevel, frozen-at-every-level, try-this reachability) with zero spec changes.
+- [Phase ?]: Phase 06 (06-03): /learn rebuilt as a data-driven card index over LESSONS — each card a single routerLink anchor to /learn/:lessonId with a worded, live-updating completion state read from LessonProgress; completion class/data-attribute are presentation-only, text is the state carrier. Round-trip test extracts the rendered anchor's own href and navigates to it, mirroring algorithms.spec.ts's precedent rather than calling Router.navigate() directly.
+- [Phase ?]: Phase 06 (06-04): Blocking human-verify checkpoint approved with all five checks passing and zero findings (extraction parity, completion timing, lesson accuracy, keyboard-only, colour/motion independence) — Task 2 made no source change, only completed 06-VALIDATION.md per the plan's explicit no-op-on-approval instruction.
+- [Phase ?]: Phase 06 (06-04): 06-VALIDATION.md's Per-Task Verification Map ids were traced from git log --follow on each spec file (not guessed from the draft), and two new rows were added for the try-this legal-value ladder and lessons.ts's reachability invariant; status: validated, nyquist_compliant: true.
 
 ### Pending Todos
 
@@ -134,6 +146,6 @@ None currently open. (GSD Core's `/gsd-*` commands have since been exercised end
 
 ## Session Continuity
 
-Last session: 2026-08-07
-Stopped at: Phase 5 complete (UAT passed, security review clean), ready to plan Phase 6
+Last session: 2026-08-11T02:41:35.967Z
+Stopped at: Completed 06-04-PLAN.md — Phase 6 validated
 Resume file: None

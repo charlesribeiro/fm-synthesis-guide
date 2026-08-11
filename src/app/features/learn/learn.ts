@@ -1,33 +1,28 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
-interface UpcomingLesson {
-  readonly algorithm: number;
-  readonly title: string;
-  readonly teaches: string;
-}
+import { LESSONS } from '../../domain/dx7/lessons/lessons';
+import { LessonProgress } from '../../state/lesson-progress';
 
+/**
+ * `/learn` index (D-09): one card per `LESSONS` row, in curriculum order,
+ * each linking to its own `/learn/:lessonId` address and reading its
+ * completion state live from `LessonProgress` — no second, hardcoded lesson
+ * list (D-01). Mirrors `Algorithms`' data-driven browse-index shape.
+ */
 @Component({
   selector: 'app-learn',
-  imports: [],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [RouterLink],
   templateUrl: './learn.html',
   styleUrl: './learn.scss',
 })
 export class Learn {
-  /**
-   * Static placeholder curriculum. Phase 6 replaces this with a real lesson
-   * framework driven by the Phase 2 algorithm dataset and Phase 3 instrument
-   * state (`docs/ROADMAP_SEED.md`).
-   */
-  protected readonly upcomingLessons: readonly UpcomingLesson[] = [
-    {
-      algorithm: 32,
-      title: 'Pure additive synthesis',
-      teaches: 'Six independent carriers, zero modulation — the simplest algorithm to start from.',
-    },
-    {
-      algorithm: 1,
-      title: 'A stack and a tower',
-      teaches: 'Two carriers: one simple pair, one four-operator modulation chain with feedback.',
-    },
-  ];
+  /** The canonical lesson dataset (D-01) — the only source of lesson cards.
+   * Adding a Phase 11 row here adds a card with no change to this file. */
+  protected readonly lessons = LESSONS;
+
+  /** Read through the facade per card so a completion marked elsewhere in
+   * the app updates this index live, with no local mirror of the state. */
+  protected readonly lessonProgress = inject(LessonProgress);
 }

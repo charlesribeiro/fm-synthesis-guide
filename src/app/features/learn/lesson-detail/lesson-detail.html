@@ -1,0 +1,79 @@
+@if (lesson(); as currentLesson) {
+  <h1>{{ currentLesson.title }}</h1>
+
+  <section class="objective" aria-labelledby="objective-heading">
+    <h2 id="objective-heading">Objective</h2>
+    <p>{{ currentLesson.objective }}</p>
+  </section>
+
+  <section class="explanation">
+    <h2>Explanation</h2>
+    <div class="explanation__text">
+      @for (paragraph of currentLesson.explanation; track paragraph) {
+        <p>{{ paragraph }}</p>
+      }
+      <p class="carrier-line">
+        Under Algorithm {{ currentLesson.algorithmId }}, the carrier operators are:
+        {{ carriers().join(', ') }}.
+      </p>
+    </div>
+    @if (diagram(); as diagramVm) {
+      <app-algorithm-diagram [viewModel]="diagramVm" />
+    }
+  </section>
+
+  <section class="try-this">
+    <h2>Try this</h2>
+    <p>{{ currentLesson.tryThis.instruction }}</p>
+    <p id="try-this-expected-effect">{{ currentLesson.tryThis.expectedEffect }}</p>
+
+    <label for="try-this-range">
+      Operator {{ currentLesson.tryThis.targetOperator }}:
+      {{ tryThisParamLabels[currentLesson.tryThis.targetParam] }}
+    </label>
+    <input
+      id="try-this-range"
+      type="range"
+      min="0"
+      [max]="tryThisValues().length - 1"
+      step="1"
+      [value]="tryThisIndex()"
+      [attr.aria-valuetext]="'' + tryThisValue()"
+      (input)="onTryThisInput($event)"
+      aria-describedby="try-this-expected-effect try-this-value"
+    />
+    <span id="try-this-value">Current value: {{ tryThisValue() }}</span>
+
+    <app-play-surface (notePlayed)="onNotePlayed()" />
+  </section>
+
+  <section class="completion" role="status">
+    @if (isComplete()) {
+      <p class="completion__state completion__state--done">
+        <span aria-hidden="true">&check;</span> Lesson complete — you moved
+        {{ tryThisParamLabels[currentLesson.tryThis.targetParam] }} on operator
+        {{ currentLesson.tryThis.targetOperator }} and heard the difference.
+      </p>
+    } @else {
+      <p class="completion__state">
+        Not yet complete. Move {{ tryThisParamLabels[currentLesson.tryThis.targetParam] }} on
+        operator {{ currentLesson.tryThis.targetOperator }}
+        {{ currentLesson.tryThis.direction === 'decrease' ? 'down' : 'up' }}, then play a note to
+        hear the change.
+      </p>
+    }
+  </section>
+
+  <a class="back-link" routerLink="/learn">Back to all lessons</a>
+} @else {
+  <div class="not-found">
+    <h1>Lesson not found</h1>
+    <p>
+      A lesson address must name a known lesson.
+      @if (rawLessonId() !== null) {
+        The address named &quot;{{ rawLessonId() }}&quot;, which is not a valid lesson.
+      }
+    </p>
+    <a class="back-link" routerLink="/learn">Back to all lessons</a>
+  </div>
+}

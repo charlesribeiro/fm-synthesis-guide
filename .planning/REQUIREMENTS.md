@@ -69,8 +69,8 @@ Milestone 1). Each maps to a roadmap phase.
 
 ### Guided Learning
 
-- [ ] **LESSON-01**: A guided lesson teaches Algorithm 32 as pure additive synthesis
-- [ ] **LESSON-02**: A guided lesson teaches Algorithm 1 as a modulation stack plus tower, ending
+- [x] **LESSON-01**: A guided lesson teaches Algorithm 32 as pure additive synthesis
+- [x] **LESSON-02**: A guided lesson teaches Algorithm 1 as a modulation stack plus tower, ending
       in the first end-to-end vertical slice (browse → hear → adjust → understand)
 
 ## v2 Requirements
@@ -128,8 +128,8 @@ current roadmap.
 | AUDIO-01 | Phase 5 | Complete |
 | AUDIO-02 | Phase 5 | Complete |
 | AUDIO-03 | Phase 5 | Complete |
-| LESSON-01 | Phase 6 | Pending |
-| LESSON-02 | Phase 6 | Pending |
+| LESSON-01 | Phase 6 | Complete |
+| LESSON-02 | Phase 6 | Complete |
 
 **Coverage:**
 
