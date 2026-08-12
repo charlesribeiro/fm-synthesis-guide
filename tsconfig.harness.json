@@ -1,0 +1,19 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/*
+ * Harness-only TypeScript program (Phase 7, plan 07-03). Sibling of
+ * `tsconfig.worklet.json` at the repository root, for the same reason that
+ * file gives: the harness needs DOM globals (`AudioContext`,
+ * `AudioWorkletNode`) and must never see the worklet-only globals
+ * (`registerProcessor`, `AudioWorkletProcessor`, `sampleRate`) declared by
+ * `@types/audioworklet`, and the worklet program must never see this DOM
+ * program. Separating the two removes any chance of a duplicate-global
+ * collision between the two ambient type packages.
+ */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [],
+    "noEmit": true
+  },
+  "include": ["worklets/harness/**/*.ts"]
+}

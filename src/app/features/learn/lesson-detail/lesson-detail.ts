@@ -148,20 +148,17 @@ export class LessonDetail {
    * `InstrumentState` (an external system), not derived UI state.
    */
   constructor() {
-    effect(
-      () => {
-        const lesson = this.lesson();
-        if (lesson === null) {
-          return;
-        }
-        if (this.lastAppliedLessonId === lesson.id) {
-          return;
-        }
-        this.lastAppliedLessonId = lesson.id;
-        this.applyStartingPatch(lesson);
-      },
-      { allowSignalWrites: true },
-    );
+    effect(() => {
+      const lesson = this.lesson();
+      if (lesson === null) {
+        return;
+      }
+      if (this.lastAppliedLessonId === lesson.id) {
+        return;
+      }
+      this.lastAppliedLessonId = lesson.id;
+      this.applyStartingPatch(lesson);
+    });
   }
 
   private applyStartingPatch(lesson: LessonDefinition): void {

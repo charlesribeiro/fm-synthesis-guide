@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>DX7 AudioWorklet dev harness</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 40rem;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        color: #111;
+        background: #fff;
+      }
+      .dev-banner {
+        background: #fff3cd;
+        border: 2px solid #997404;
+        color: #664d03;
+        padding: 0.75rem 1rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+      }
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin: 1rem 0;
+      }
+      button {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border: 1px solid #555;
+        background: #f2f2f2;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 3px solid #0b5fff;
+        outline-offset: 2px;
+      }
+      #status {
+        margin-top: 1rem;
+        padding: 0.75rem;
+        border: 1px solid #999;
+        font-family: monospace;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <p class="dev-banner" role="note">
+      Development test page &mdash; not part of the shipped DX7 Algorithm Lab application. This
+      page exists only so a human can listen to the raw phase-modulation AudioWorklet kernel in a
+      real browser. It is a development test tone, not a DX7 emulation or reproduction.
+    </p>
+    <h1>DX7 phase-modulation worklet &mdash; dev listening harness</h1>
+    <p>
+      Use headphones at a low starting volume, then raise to a comfortable level. Audio only
+      starts after you click &ldquo;Enable audio&rdquo; below &mdash; nothing plays automatically
+      on load.
+    </p>
+    <div class="controls">
+      <button id="enable-button" type="button">Enable audio</button>
+      <button id="play-single-button" type="button">Play single operator</button>
+      <button id="play-additive-button" type="button">Play additive six-carrier</button>
+      <button id="stop-button" type="button">Stop</button>
+    </div>
+    <div id="status" role="status" aria-live="polite">
+      context: no context | module: not loaded | last message: none
+    </div>
+    <script src="./worklet-harness.js"></script>
+  </body>
+</html>

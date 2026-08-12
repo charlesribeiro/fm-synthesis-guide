@@ -49,11 +49,21 @@ a parameter, and immediately understand why the sound changed.
       comfortably audible after the WR-01 safety-clamp fix) confirmed in real-browser listening —
       see `05-VERIFICATION.md` and `05-UAT.md`. Security review: 8 threats registered, all closed
       (`05-SECURITY.md`).
+- [x] AudioWorklet six-operator phase-modulation DSP kernel (accuracy-target engine) — Validated
+      in Phase 7: audioworklet-dsp-foundation (2026-08-12). ENGINE-01 complete: a pure,
+      allocation-free `PhaseModulatedOperator` kernel proven against the analytical
+      `sin(2*pi*f*t)` reference, an `AudioWorkletProcessor` adapter and `WorkletSynthEngine`
+      (conforms to the existing `SynthEngine` interface) built and tested entirely outside the
+      browser, plus a dev-only listening harness approved in a real-browser checkpoint and
+      structurally isolated from every production build path (wave 4 gap closure — the harness
+      output was relocated outside the production asset root and a regression gate now proves it
+      stays that way). 16/16 must-haves verified in `07-VERIFICATION.md`; 870/870 tests passing.
+      `SYNTH_ENGINE` still resolves to Phase 5's `WebAudioSynthEngine` (D-01) — this is the
+      foundation a later phase cuts the live voice over to, not yet the shipped engine.
 
 ### Active
 
 - [ ] Guided lessons starting with Algorithm 32 (pure additive) and Algorithm 1 (stack + tower)
-- [ ] AudioWorklet six-operator phase-modulation engine (accuracy target, not MVP-blocking)
 - [ ] Full 32-algorithm curriculum, envelopes, feedback, visualizers, A/B snapshots
 - [ ] Web MIDI progressive enhancement, versioned persistence, import/export
 - [ ] Accessibility and performance hardening, Playwright smoke tests, deployment
@@ -120,4 +130,4 @@ a parameter, and immediately understand why the sound changed.
 | Phase 5: a post-checkpoint code-review fix (WR-01, commit `fd1b018`) lowered `MASTER_GAIN` from the 05-04-listening-approved 0.18 to 1/6 (≈0.63 dB quieter) to close a mathematically-provable safety-clamp gap (0.18 × 6 carriers could exceed full scale) | The change can only make the engine quieter/safer, never louder/riskier, but the exact shipped value was never itself heard in a real browser, and 05-04-PLAN.md's own must-have requires that it be | ✓ Good — re-confirmed via 05-UAT.md Test 1 (real-browser listening, single note + Algorithm 32 six-carrier worst case), both comfortably audible; verification status canonicalized to `passed` |
 
 ---
-*Last updated: 2026-08-07 after Phase 5 (first-playable-approximation) completion*
+*Last updated: 2026-08-12 after Phase 7 (audioworklet-dsp-foundation) completion*

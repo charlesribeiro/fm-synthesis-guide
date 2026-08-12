@@ -1,0 +1,24 @@
+/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
+/*
+ * Worklet-only TypeScript program (Phase 7, Pitfall 3). Typechecks
+ * `worklets/dx7-worklet-processor.ts` against `@types/audioworklet`
+ * (registerProcessor/AudioWorkletProcessor/sampleRate — none of which
+ * exist in this project's `lib.dom.d.ts`), entirely independent of
+ * `tsconfig.app.json`'s own typecheck pass, which never sees these
+ * worklet-only globals.
+ *
+ * Deviation from `07-PATTERNS.md`'s sketch (which placed this file inside
+ * `worklets/`): kept at the repository root instead, matching this
+ * project's existing flat `tsconfig.app.json` / `tsconfig.spec.json`
+ * convention and keeping `extends`/`include` paths simple. Recorded in
+ * `07-01-SUMMARY.md`.
+ */
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["audioworklet"],
+    "lib": ["ES2022", "DOM"],
+    "noEmit": true
+  },
+  "include": ["worklets/dx7-worklet-processor.ts"]
+}
