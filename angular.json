@@ -58,6 +58,22 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "harness": {
+              "optimization": false,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "assets": [
+                {
+                  "glob": "**/*",
+                  "input": "public"
+                },
+                {
+                  "glob": "**/*",
+                  "input": "dev-dist",
+                  "output": "dev"
+                }
+              ]
             }
           },
           "defaultConfiguration": "production"
@@ -70,6 +86,9 @@
             },
             "development": {
               "buildTarget": "dx7-algorithm-lab:build:development"
+            },
+            "harness": {
+              "buildTarget": "dx7-algorithm-lab:build:harness"
             }
           },
           "defaultConfiguration": "development"

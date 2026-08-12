@@ -17,7 +17,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 4: Algorithm browser and SVG** - 32-item browser, data-driven accessible diagram (completed 2026-08-06)
 - [x] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine (all 4 plans executed, UAT passed, security review clean) (completed 2026-08-07)
 - [x] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
-- [ ] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading
+- [x] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading (all 4 plans executed, including 07-04 gap closure; completed 2026-08-12)
 - [ ] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output
 - [ ] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes
 - [ ] **Phase 10: Visualizers and comparison tools** - Oscilloscope, spectrum, A/B, randomization
@@ -220,7 +220,35 @@ Plans:
   1. Worklet loads and runs a single operator and an additive multi-operator case correctly
   2. DSP kernel is tested with deterministic sample blocks outside the browser
 
-**Plans**: TBD
+**Plans**: 4/4 plans executed
+
+Plans:
+
+**Wave 1**
+
+- [x] 07-01-PLAN.md — Tracer: the pure phase-modulation kernel, the `AudioWorkletProcessor`
+      adapter, the esbuild bundle step and a validated worklet message contract, proven end to
+      end in Node against the analytical `sin(2*pi*f*t)` reference and the built bundle itself
+      (ENGINE-01)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 07-02-PLAN.md — The DI-wrapped `AudioWorkletNode` boundary with hand-rolled fakes, and
+      `WorkletSynthEngine` implementing the existing `SynthEngine` interface while `SYNTH_ENGINE`
+      stays pointed at the Phase 5 engine (ENGINE-01)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 07-03-PLAN.md — The opt-in, non-shipping dev listening harness and the blocking human
+      verification that the worklet loads and both proof cases sound correct in a real browser
+      (ENGINE-01)
+
+**Wave 4** *(gap closure — from 07-VERIFICATION.md, 15/16 must-haves verified)*
+
+- [x] 07-04-PLAN.md — Close the one failing must-have: move the dev harness build output out of the
+      production asset root, give it a named dev-only serve configuration so it keeps its URL, and
+      add an automated gate that runs the realistic harness-then-build sequence the verifier
+      reproduced as a production leak (ENGINE-01)
 
 ### Phase 8: Algorithm routing and feedback
 
@@ -326,7 +354,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 4. Algorithm browser and SVG | 5/5 | Complete    | 2026-08-06 |
 | 5. First playable approximation | 4/4 | Complete    | 2026-08-07 |
 | 6. Guided lessons (Alg 32 & 1) | 4/4 | Complete    | 2026-08-10 |
-| 7. AudioWorklet DSP foundation | 0/TBD | Not started | - |
+| 7. AudioWorklet DSP foundation | 4/4 | Complete    | 2026-08-12 |
 | 8. Algorithm routing and feedback | 0/TBD | Not started | - |
 | 9. Envelopes and parameter mapping | 0/TBD | Not started | - |
 | 10. Visualizers and comparison tools | 0/TBD | Not started | - |

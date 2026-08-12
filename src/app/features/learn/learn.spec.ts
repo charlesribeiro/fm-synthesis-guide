@@ -19,6 +19,7 @@ describe('Learn', () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(Learn);
+    fixture.detectChanges();
     await fixture.whenStable();
   });
 

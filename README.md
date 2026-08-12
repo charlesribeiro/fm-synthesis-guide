@@ -33,6 +33,55 @@ npm run lint       # ESLint + Angular template/accessibility rules
 > (`Unknown argument: run`). Plain `npm test` already runs once and exits outside a TTY (CI-safe);
 > use `npm test -- --watch` for local watch mode. See `.planning/PROJECT.md` → Key Decisions.
 
+## Worklet build and dev harness
+
+The six-operator phase-modulation kernel that Phase 7's accuracy-target engine runs on is bundled
+by [`scripts/build-worklet.mjs`](scripts/build-worklet.mjs) into a self-contained, import-free
+`public/worklets/dx7-worklet-processor.js`, served by Angular's existing `public/` asset glob at
+`/worklets/dx7-worklet-processor.js`. `prebuild`, `prestart`, and `pretest` all run
+`npm run build:worklet` automatically at the start of `ng build`/`ng serve`/`ng test`, so the
+bundle regenerates whenever those commands begin. If you edit worklet sources while a long-lived
+watch/serve session is already running, rerun `npm run build:worklet` (or restart the command) so
+the in-memory/`public/` bundle picks up the change.
+
+A separate, opt-in **dev harness** — a standalone page with no Angular import of any kind — lets a
+human hear the real built worklet run in a real browser, which no Vitest/jsdom test can reach:
+jsdom implements no Web Audio API and no `AudioWorkletGlobalScope` at all. To run it:
+
+```bash
+npm run start:harness    # rebuilds the harness, then serves it
+# open http://localhost:4200/dev/worklet-harness.html
+```
+
+`npm run start:harness` rebuilds the harness bundle first (`prestart:harness`) and then serves it
+via a dedicated `harness` build/serve configuration. **A plain `npm start` does not serve the
+harness** — opening `/dev/worklet-harness.html` there 404s by design (use `start:harness`
+instead). Production-build isolation is a separate guarantee: the harness writes to `dev-dist/`
+outside the production asset root, as described below. To rebuild the harness bundle on its own,
+without serving it, run `npm run harness`, which writes `dev-dist/worklet-harness.{js,html}`.
+
+If you edit the kernel (`src/app/domain/dx7/dsp/**`) or the worklet adapter
+(`worklets/dx7-worklet-processor.ts`) and the harness does not sound different, **rebuild
+(`npm run harness`) and reload the page** before assuming the change did nothing. A plain browser
+reload is enough to pick up the freshly rebuilt artifact — confirmed during the Phase 7 listening
+checkpoint, where `ng serve`'s live-reload served the rebuilt bundle without a dev-server restart.
+No dev-server restart is required.
+
+The harness is a development tool only, and the guarantee that it never reaches a production build
+rests on where its output is written, not on remembering not to build it a certain way. `npm run
+harness` writes to `dev-dist/`, a directory entirely outside `public/` — the only directory the
+production asset configuration reads — so no default `ng build` path can ever copy it into `dist/`,
+regardless of what was built before it or in what order. The harness keeps its original
+`/dev/worklet-harness.html` URL only through the dedicated `harness` build/serve configuration in
+`angular.json`, which maps `dev-dist` to that URL and which nothing else references. A flagless
+`npm run build:worklet` (used by `prebuild`/`prestart`/`pretest`) additionally removes any stale
+`public/dev/` left by a pre-07-04 harness run, migration repair for machines that predate this
+layout. Every `npm run build` self-asserts its own output tree via a `postbuild` hook
+(`scripts/assert-no-harness-in-dist.mjs`) — a leak becomes a failed build, not a silent shipped
+file. Run `npm run verify:harness-isolation` to reproduce the exact harness-then-build sequence
+that once leaked and confirm it stays clean; it runs three non-watch builds and is not part of any
+lifecycle hook, so run it on demand rather than on every commit.
+
 ## Architecture summary
 
 - **Angular 22, standalone, zoneless** — no `NgModule`s, no `zone.js`; change detection is

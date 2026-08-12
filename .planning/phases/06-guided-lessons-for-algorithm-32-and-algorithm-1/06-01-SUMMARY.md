@@ -131,7 +131,7 @@ status: complete
 - **Started:** 2026-08-10T05:50:08Z
 - **Completed:** 2026-08-10T05:59:14Z
 - **Tasks:** 2
-- **Files modified:** 21 (10 created, 4 modified, 2 renamed pairs — keyboard-note-map.{ts,spec.ts} — plus the 5 new spec files added in Task 2)
+- **Files modified:** 20 (10 created, 4 modified, 2 renamed pairs — keyboard-note-map.{ts,spec.ts} — plus the 4 new spec files added in Task 2)
 
 ## Accomplishments
 
@@ -160,7 +160,7 @@ status: complete
 - `src/app/features/learn/lesson-detail/lesson-detail.ts`/`.html`/`.scss` - the `/learn/:lessonId` route component
 - `src/app/app.routes.ts` - added the `learn/:lessonId` lazy route entry
 - `src/app/features/play-surface/keyboard-note-map.ts`/`.spec.ts` - moved from `playground/` (extraction follow-on)
-- Five new spec files (Task 2): `lesson-definition.spec.ts`, `lessons.spec.ts`, `try-this.spec.ts`, `lesson-progress.spec.ts`, `play-surface.spec.ts`
+- Four new spec files (Task 2): `lesson-definition.spec.ts`, `try-this.spec.ts`, `lesson-progress.spec.ts`, `play-surface.spec.ts`
 
 ## Decisions Made
 
@@ -218,7 +218,7 @@ All four files were restored to their Task-1 committed content immediately after
 
 ## Self-Check: PASSED
 
-All 21 files listed under Files Created/Modified were verified present on disk, and all 3 task
+All 20 files listed under Files Created/Modified were verified present on disk, and all 3 task
 commit hashes (`df991da`, `6b88368`, `29a14aa`) were verified present in git history.
 
 ---

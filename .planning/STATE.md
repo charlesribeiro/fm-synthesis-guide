@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 06
-current_phase_name: guided-lessons-for-algorithm-32-and-algorithm-1
-status: complete
-stopped_at: Phase 6 complete — guided lessons for Algorithm 32 and Algorithm 1 validated
-last_updated: "2026-08-11T04:00:00.000Z"
-last_activity: 2026-08-10
-last_activity_desc: Phase 06 completed — 06-04 validation closed, review reconciled
+current_phase: 8
+current_phase_name: Algorithm routing and feedback
+status: planning
+stopped_at: Completed 07-04-PLAN.md — Phase 7 complete (ENGINE-01 gap closed)
+last_updated: "2026-08-12T17:14:35.225Z"
+last_activity: 2026-08-12
+last_activity_desc: Phase 07 complete, transitioned to Phase 8
 progress:
-  total_phases: 14
+  total_phases: 6
   completed_phases: 6
-  total_plans: 21
-  completed_plans: 21
+  total_plans: 24
+  completed_plans: 24
 ---
 
 # Project State
@@ -24,23 +24,22 @@ See: .planning/PROJECT.md (updated 2026-08-07)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 06 — guided-lessons-for-algorithm-32-and-algorithm-1
+**Current focus:** Phase 07 — audioworklet-dsp-foundation
 
 ## Current Position
 
-Phase: 06 (guided-lessons-for-algorithm-32-and-algorithm-1) — Complete
-Plan: 4 of 4
-Status: Phase complete — validated and Nyquist-compliant
-Last activity: 2026-08-10 — Phase 06 closed (06-04 approved; review reconciled)
-Phase 6
+Phase: 8 — Algorithm routing and feedback
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-08-12 — Phase 07 complete, transitioned to Phase 8
 
-Progress: [████████████████████] 21/21 plans ([██████████] 100%) — 6 completed phases (1-6).
+Progress: [██████████] 100% — 24/24 plans, 7 completed phases (1-7).
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 21
+- Total plans completed: 25
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -54,6 +53,7 @@ Progress: [████████████████████] 21/21 p
 | 04 | 5 | - | - |
 | 05 | 4 | - | - |
 | 06 | 4 | - | - |
+| 07 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -82,6 +82,10 @@ Progress: [████████████████████] 21/21 p
 | Phase 06 P02 | 21min | 2 tasks | 3 files |
 | Phase 06 P03 | 20min | 2 tasks | 4 files |
 | Phase 06 P04 | 18min | 2 tasks | 2 files |
+| Phase 07 P01 | 45min | 3 tasks | 13 files |
+| Phase 07 P02 | ~10min | 2 tasks | 4 files |
+| Phase 07 P03 | ~15min + checkpoint | 2 tasks | 7 files |
+| Phase 07 P04 | ~20min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -128,6 +132,9 @@ Full log in `.planning/PROJECT.md` → Key Decisions. Recent:
 - [Phase ?]: Phase 06 (06-03): /learn rebuilt as a data-driven card index over LESSONS — each card a single routerLink anchor to /learn/:lessonId with a worded, live-updating completion state read from LessonProgress; completion class/data-attribute are presentation-only, text is the state carrier. Round-trip test extracts the rendered anchor's own href and navigates to it, mirroring algorithms.spec.ts's precedent rather than calling Router.navigate() directly.
 - [Phase ?]: Phase 06 (06-04): Blocking human-verify checkpoint approved with all five checks passing and zero findings (extraction parity, completion timing, lesson accuracy, keyboard-only, colour/motion independence) — Task 2 made no source change, only completed 06-VALIDATION.md per the plan's explicit no-op-on-approval instruction.
 - [Phase ?]: Phase 06 (06-04): 06-VALIDATION.md's Per-Task Verification Map ids were traced from git log --follow on each spec file (not guessed from the draft), and two new rows were added for the try-this legal-value ladder and lessons.ts's reachability invariant; status: validated, nyquist_compliant: true.
+- [Phase ?]: [Phase 07]: Plan 07-02: WorkletSynthEngine implements SynthEngine over an AudioWorkletNode boundary (audio-worklet-node.token.ts + fake-audio-worklet-node.ts, mirroring audio-context.token.ts/fake-audio-context.ts exactly); setAlgorithm/setFeedback/updateOperatorLevel are validated no-ops naming Phase 8/9 as the phase that makes each real; SYNTH_ENGINE still resolves to WebAudioSynthEngine (D-01, asserted by test) — no Phase 5 file touched. ENGINE-01 stays open until 07-03's real-browser listening checkpoint.
+- [Phase ?]: Phase 07 (07-03): Task 2's blocking real-browser listening checkpoint approved with zero findings — all nine checks passed, human confirmed the worklet loads cleanly and both single-operator and additive six-carrier cases sound correct, click-free, and safe. Check 8 (RESEARCH Assumption A5) resolved: a plain browser reload picks up a freshly rebuilt harness bundle, no dev-server restart needed; README corrected accordingly. ENGINE-01 marked complete; Phase 7 complete.
+- [Phase ?]: [Phase 07]: Plan 07-04 (gap closure): relocated the dev harness build output from public/dev/ to dev-dist/, entirely outside the directory the production asset configuration reads, closing the harness-then-build production leak 07-VERIFICATION.md reproduced twice; added a fail-closed postbuild assertion and an on-demand 3-stage npm run verify:harness-isolation gate (harness-then-build reproduction, development-configuration coverage, harness-configuration positive control). Found and overwrote a pre-existing, differently-shaped partial fix already on disk (an ignore: ["dev/**"] asset override on angular.json's production configuration plus a simpler 2-command isolation script) that predated 07-VERIFICATION.md's gap report and conflicted with this plan's chosen remedy. ENGINE-01 is now fully complete.
 
 ### Pending Todos
 
@@ -135,8 +142,16 @@ None yet.
 
 ### Blockers/Concerns
 
-None currently open. (GSD Core's `/gsd-*` commands have since been exercised end-to-end —
-`/gsd-verify-work` and `/gsd-secure-phase` both ran natively to close out Phase 5.)
+None currently open. Phase 07 plan 03 Task 2's blocking human-verify real-browser listening
+checkpoint was approved with zero findings on 2026-08-11. 07-VERIFICATION.md (2026-08-12) then
+found one failing must-have — the dev harness could reach a production `dist/` under the realistic
+harness-then-build sequence — scored 15/16. Plan 07-04 closed that gap on 2026-08-12 by relocating
+the harness build output outside `public/` and adding an automated regression gate; ENGINE-01 is
+now fully complete and Phase 7 is closed out. The dev server that was running for the 07-03
+checkpoint has been stopped.
+
+(GSD Core's `/gsd-*` commands have since been exercised end-to-end — `/gsd-verify-work` and
+`/gsd-secure-phase` both ran natively to close out Phase 5.)
 
 ## Deferred Items
 
@@ -146,6 +161,6 @@ None currently open. (GSD Core's `/gsd-*` commands have since been exercised end
 
 ## Session Continuity
 
-Last session: 2026-08-11T02:41:35.967Z
-Stopped at: Completed 06-04-PLAN.md — Phase 6 validated
+Last session: 2026-08-12T16:59:02.321Z
+Stopped at: Completed 07-04-PLAN.md — Phase 7 complete (ENGINE-01 gap closed)
 Resume file: None
