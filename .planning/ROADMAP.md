@@ -18,7 +18,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 5: First playable approximation** - Injected audio boundary, monophonic MVP engine (all 4 plans executed, UAT passed, security review clean) (completed 2026-08-07)
 - [x] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
 - [x] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading (all 4 plans executed, including 07-04 gap closure; completed 2026-08-12)
-- [ ] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output
+- [x] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output (all 4 plans executed, blocking listening checkpoint approved with zero findings; completed 2026-08-13)
 - [ ] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes
 - [ ] **Phase 10: Visualizers and comparison tools** - Oscilloscope, spectrum, A/B, randomization
 - [ ] **Phase 11: Curriculum across all 32 algorithms** - Lesson/experiment/preset per algorithm
@@ -261,7 +261,33 @@ Plans:
   2. Output stays bounded and finite under feedback at maximum
   3. Switching algorithms never leaves a stuck note
 
-**Plans**: TBD
+**Plans**: 4/4 plans executed
+
+Plans:
+
+**Wave 1**
+
+- [x] 08-01-PLAN.md — Tracer: Algorithm 1 routed end to end through the feedback-capable kernel,
+      the new `GraphRouter`, three worklet messages, the routed processor and the
+      `InstrumentState`-reactive engine, plus the D-01 `SYNTH_ENGINE` cutover; then the two kernel
+      invariants the correctness proof rests on (Algorithm 15's combined feedback-and-modulation
+      operator, and feedback-history hygiene across a routing change) (ENGINE-02)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 08-02-PLAN.md — The independently-authored recursive reference evaluator and the 32-row
+      cross-check (D-10) plus the bounded-and-finite sweep at maximum feedback for every row
+      (D-11) (ENGINE-02)
+
+- [x] 08-03-PLAN.md — Hostile-payload matrix for the three new message kinds, built-bundle parity
+      against the kernel, and the held-note live re-patch plus real pitch/level propagation over
+      the fake node boundary (D-13, D-15, D-16) (ENGINE-02)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 08-04-PLAN.md — Dev-harness algorithm-select and feedback-depth controls, then the blocking
+      human listening checkpoint across all four taxonomy groups plus maximum feedback and the
+      Lesson 6 regression (D-02, D-03, D-12), and the phase validation record (ENGINE-02)
 
 ### Phase 9: DX7-style envelopes and parameter mapping
 
@@ -355,7 +381,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 5. First playable approximation | 4/4 | Complete    | 2026-08-07 |
 | 6. Guided lessons (Alg 32 & 1) | 4/4 | Complete    | 2026-08-10 |
 | 7. AudioWorklet DSP foundation | 4/4 | Complete    | 2026-08-12 |
-| 8. Algorithm routing and feedback | 0/TBD | Not started | - |
+| 8. Algorithm routing and feedback | 4/4 | Complete    | 2026-08-13 |
 | 9. Envelopes and parameter mapping | 0/TBD | Not started | - |
 | 10. Visualizers and comparison tools | 0/TBD | Not started | - |
 | 11. Curriculum (all 32 algorithms) | 0/TBD | Not started | - |

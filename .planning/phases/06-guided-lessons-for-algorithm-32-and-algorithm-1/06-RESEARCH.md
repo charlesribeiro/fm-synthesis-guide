@@ -140,7 +140,10 @@ component **output signal** on the extracted play-surface component (an ordinary
 output, not a new `SynthEngine` method — the engine interface boundary Phase 7 must also implement stays
 untouched), and implement the "moved in `direction`" half as a pure **computed** signal comparing current
 `InstrumentState.operators()` against the lesson's own known starting patch (D-04) — no snapshot capture,
-no effect, because the starting value is already a compile-time constant on `LessonDefinition`.
+no effect for the completion check, because the starting value is already a compile-time constant on
+`LessonDefinition`. (Approved carve-out, separate from completion: `LessonDetail` may use `effect()` for
+route-reuse-safe `startingPatch` sync into `InstrumentState` when the same component instance is reused
+across `:lessonId` changes — imperative external-state sync, not derived UI state.)
 
 **Primary recommendation:** Build `LessonDefinition` + `LESSONS` in `src/app/domain/dx7/lessons/` (pure,
 ESLint-domain-scoped, mirroring `algorithm-definition.ts`/`algorithms.ts`); extract `Playground`'s
@@ -444,7 +447,10 @@ side-effect needed, since nothing needs to *happen* when it becomes true, it jus
 The "and afterward a note was triggered" half is answered by an actual DOM-originated event
 (`PlaySurface`'s `notePlayed` output) — read `paramMoved()` from inside that event's handler, imperatively.
 Neither half needs `effect()`; CLAUDE.md's rule is satisfied because no effect exists at all in this flow.
-**Warning signs:** Any lesson-related file importing `effect` from `@angular/core` — flag for review in
+(Approved carve-out elsewhere in the lesson feature: `LessonDetail` may use `effect()` for
+route-reuse-safe `startingPatch` sync into `InstrumentState` — not for this completion check.)
+**Warning signs:** Any lesson-related file importing `effect` from `@angular/core` outside the
+approved `LessonDetail` startingPatch carve-out — flag for review in
 code review per CLAUDE.md's audio-rules precedent for `WebAudioSynthEngine`'s "the one sanctioned effect()
 in this phase" comment style (`src/app/core/audio/web-audio-synth-engine.ts:156-157`, read this session).
 

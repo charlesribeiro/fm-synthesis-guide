@@ -1,14 +1,23 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AUDIO_CONTEXT_CTOR } from '../../core/audio/audio-context.token';
+import { AUDIO_WORKLET_NODE_CTOR } from '../../core/audio/audio-worklet-node.token';
 import { FakeAudioContext } from '../../core/audio/testing/fake-audio-context';
+import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../core/audio/testing/fake-audio-worklet-node';
 import { PlaySurface } from './play-surface';
 
+// D-01 (Phase 8): SYNTH_ENGINE now resolves WorkletSynthEngine, which needs
+// both an AudioContext-like constructor AND an AudioWorkletNode-like
+// constructor to leave 'unavailable' — mirrors `playground.spec.ts`'s fakes.
 async function setup(): Promise<ComponentFixture<PlaySurface>> {
   FakeAudioContext.instances.length = 0;
+  FakeAudioWorkletNode.instances.length = 0;
   await TestBed.configureTestingModule({
     imports: [PlaySurface],
-    providers: [{ provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioContext }],
+    providers: [
+      { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+      { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+    ],
   }).compileComponents();
 
   const fixture = TestBed.createComponent(PlaySurface);

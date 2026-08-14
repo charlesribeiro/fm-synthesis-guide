@@ -46,6 +46,28 @@
         font-family: monospace;
         white-space: pre-wrap;
       }
+      .routed-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 1rem 0;
+      }
+      .routed-controls label {
+        font-weight: 600;
+      }
+      select,
+      input[type='range'] {
+        font-size: 1rem;
+      }
+      select:focus-visible,
+      input:focus-visible {
+        outline: 3px solid #0b5fff;
+        outline-offset: 2px;
+      }
+      #algorithm-select {
+        min-width: 22rem;
+      }
     </style>
   </head>
   <body>
@@ -65,6 +87,30 @@
       <button id="play-single-button" type="button">Play single operator</button>
       <button id="play-additive-button" type="button">Play additive six-carrier</button>
       <button id="stop-button" type="button">Stop</button>
+    </div>
+    <h2>Routed algorithm playback (Phase 8)</h2>
+    <p>
+      Plays the selected algorithm through the same <code>setAlgorithm</code>,
+      <code>setOperatorParameters</code>, and <code>setFeedback</code> messages
+      <code>WorkletSynthEngine</code> posts against the live app &mdash; not only the Phase 7
+      single-operator and additive proof cases above. Changing the algorithm or the feedback depth
+      while a note is sounding re-patches it live, without stopping the note.
+    </p>
+    <div class="routed-controls">
+      <label for="algorithm-select">Algorithm</label>
+      <select id="algorithm-select"></select>
+    </div>
+    <div class="routed-controls">
+      <label for="feedback-slider">Feedback depth (0&ndash;7)</label>
+      <input id="feedback-slider" type="range" min="0" max="7" step="1" value="0" />
+      <output id="feedback-readout" for="feedback-slider">0</output>
+    </div>
+    <div class="routed-controls">
+      <input id="max-level-checkbox" type="checkbox" />
+      <label for="max-level-checkbox">Maximum operator level (worst-case loudness)</label>
+    </div>
+    <div class="controls">
+      <button id="play-routed-button" type="button">Play routed</button>
     </div>
     <div id="status" role="status" aria-live="polite">
       context: no context | module: not loaded | last message: none

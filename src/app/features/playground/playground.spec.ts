@@ -1,7 +1,9 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AUDIO_CONTEXT_CTOR } from '../../core/audio/audio-context.token';
+import { AUDIO_WORKLET_NODE_CTOR } from '../../core/audio/audio-worklet-node.token';
 import { FakeAudioContext, FakeGainNode } from '../../core/audio/testing/fake-audio-context';
+import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../core/audio/testing/fake-audio-worklet-node';
 import { SYNTH_ENGINE } from '../../core/audio/synth-engine.token';
 import type { SynthEngine } from '../../core/audio/synth-engine';
 import { Playground } from './playground';
@@ -30,11 +32,23 @@ const APPROXIMATION_LABEL = 'Educational approximation — not a bit-accurate DX
 describe('Playground', () => {
   let fixture: ComponentFixture<Playground>;
 
-  async function setup(ctor: typeof FakeAudioContext | null = FakeAudioContext): Promise<ComponentFixture<Playground>> {
+  // D-01 (Phase 8): SYNTH_ENGINE now resolves WorkletSynthEngine, which needs
+  // both an AudioContext-like constructor AND an AudioWorkletNode-like
+  // constructor to leave 'unavailable' — FakeAudioWorkletContext (extends
+  // FakeAudioContext, so `findMasterGain`/`findVoiceGain`'s `createdGains`
+  // lookups keep working unchanged) plus FakeAudioWorkletNode mirror
+  // `worklet-synth-engine.spec.ts`'s own doubles.
+  async function setup(
+    ctor: typeof FakeAudioWorkletContext | null = FakeAudioWorkletContext,
+  ): Promise<ComponentFixture<Playground>> {
     FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
     await TestBed.configureTestingModule({
       imports: [Playground],
-      providers: [{ provide: AUDIO_CONTEXT_CTOR, useValue: ctor }],
+      providers: [
+        { provide: AUDIO_CONTEXT_CTOR, useValue: ctor },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: ctor === null ? null : FakeAudioWorkletNode },
+      ],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Playground);

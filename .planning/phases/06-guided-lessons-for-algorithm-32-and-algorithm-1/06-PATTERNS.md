@@ -423,8 +423,11 @@ private readonly paramMap = toSignal(this.route.paramMap, {
 ### No `effect()` for cross-signal derivation
 **Source:** CLAUDE.md Angular rules + RESEARCH.md Pitfall 1
 **Apply to:** the D-06 completion check — split into a pure `computed()` ("moved in direction") plus an
-imperative read from the `(notePlayed)` DOM-originated output event handler; no file in this phase
-should import `effect` from `@angular/core`.
+imperative read from the `(notePlayed)` DOM-originated output event handler.
+**Approved carve-out:** `LessonDetail` may use `effect()` solely for route-reuse-safe `startingPatch`
+sync into `InstrumentState` (imperative sync with an external facade on the same component instance
+when `:lessonId` changes). That is not cross-signal derivation and is the one narrow exception to
+"no `effect` import in this phase."
 
 ### Cleanup-on-destroy for anything touching the audio engine
 **Source:** `src/app/features/playground/playground.ts:91-93`

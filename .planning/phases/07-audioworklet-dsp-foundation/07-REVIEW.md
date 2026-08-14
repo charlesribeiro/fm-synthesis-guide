@@ -30,9 +30,9 @@ files_reviewed_list:
   - worklets/harness/index.html
 findings:
   critical: 0
-  warning: 6
-  info: 8
-  total: 14
+  warning: 5
+  info: 7
+  total: 12
 status: issues_found
 ---
 

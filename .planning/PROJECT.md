@@ -59,11 +59,29 @@ a parameter, and immediately understand why the sound changed.
       output was relocated outside the production asset root and a regression gate now proves it
       stays that way). 16/16 must-haves verified in `07-VERIFICATION.md`; 870/870 tests passing.
       `SYNTH_ENGINE` still resolves to Phase 5's `WebAudioSynthEngine` (D-01) — this is the
-      foundation a later phase cuts the live voice over to, not yet the shipped engine.
+      foundation Phase 8 cuts the live voice over to.
+- [x] All 32 canonical algorithm topologies routed through the worklet kernel with correct
+      feedback, and the live engine cut over to it — Validated in Phase 8:
+      algorithm-routing-and-feedback (2026-08-14). ENGINE-02 complete: `GraphRouter` renders every
+      algorithm's fixed descending topology with a true one-sample feedback delay, cross-checked
+      sample-for-sample against an independently-authored recursive reference evaluator
+      (`reference-evaluator.ts`) across all 32 rows plus a finite/bounded-output sweep at maximum
+      feedback (D-10, D-11); the worklet message boundary is hardened against a hostile-payload
+      matrix; `SYNTH_ENGINE` now resolves to `WorkletSynthEngine` everywhere (Playground, lessons)
+      with live held-note re-patching on algorithm/feedback changes (D-01, D-13). Automated
+      must-haves 14/15 verified in `08-VERIFICATION.md` (1039+/1050 tests); D-12 listening truth is
+      open until the checkpoint is re-run with an auditable resume payload naming Additive /
+      Tree-Branch / Rooting / Parallel / max-feedback sample algorithm ids (`08-04-PLAN.md`
+      resume-signal; historical bare `approved` not retained — see `08-VALIDATION.md` draft).
+      Code review flagged 1 critical (non-production-reachable gain-staging gap
+      in an unused `additive`/`single` render-mode path) and 2 warnings (routing-config validator
+      doesn't enforce the ordering/self-loop invariants `GraphRouter` assumes; a stale README
+      status line) — see `08-REVIEW.md`. Disposition: resolved — mode-aware `MASTER_GAIN` in
+      `WorkletSynthEngine.setRenderMode`/`buildAndStart`, structural routing validation in
+      `parseWorkletMessage`, README status refreshed; owner Phase 8 review reconciliation.
 
 ### Active
 
-- [ ] Guided lessons starting with Algorithm 32 (pure additive) and Algorithm 1 (stack + tower)
 - [ ] Full 32-algorithm curriculum, envelopes, feedback, visualizers, A/B snapshots
 - [ ] Web MIDI progressive enhancement, versioned persistence, import/export
 - [ ] Accessibility and performance hardening, Playwright smoke tests, deployment
@@ -130,4 +148,4 @@ a parameter, and immediately understand why the sound changed.
 | Phase 5: a post-checkpoint code-review fix (WR-01, commit `fd1b018`) lowered `MASTER_GAIN` from the 05-04-listening-approved 0.18 to 1/6 (≈0.63 dB quieter) to close a mathematically-provable safety-clamp gap (0.18 × 6 carriers could exceed full scale) | The change can only make the engine quieter/safer, never louder/riskier, but the exact shipped value was never itself heard in a real browser, and 05-04-PLAN.md's own must-have requires that it be | ✓ Good — re-confirmed via 05-UAT.md Test 1 (real-browser listening, single note + Algorithm 32 six-carrier worst case), both comfortably audible; verification status canonicalized to `passed` |
 
 ---
-*Last updated: 2026-08-12 after Phase 7 (audioworklet-dsp-foundation) completion*
+*Last updated: 2026-08-14 after Phase 8 (algorithm-routing-and-feedback) completion*

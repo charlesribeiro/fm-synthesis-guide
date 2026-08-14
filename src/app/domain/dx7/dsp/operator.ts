@@ -54,6 +54,13 @@ export class PhaseModulatedOperator {
    * analytical match drift instead of staying flat). */
   private phase = 0;
 
+  /** The sample {@link renderWithFeedback} wrote at the previous sample
+   * index within its own render history — the one true one-sample delay
+   * Phase 8's feedback path is built on (D-06). `0` before any feedback
+   * render has ever run. Untouched by {@link render}, which has no
+   * feedback term. */
+  private previousSample = 0;
+
   constructor(sampleRate: number, frequencyHz: number) {
     validateSampleRate(sampleRate);
     validateFrequencyHz(frequencyHz);
@@ -68,9 +75,14 @@ export class PhaseModulatedOperator {
   }
 
   /** Returns the phase accumulator to 0 so a subsequent `render` call
-   * reproduces the operator's very first rendered block exactly. */
+   * reproduces the operator's very first rendered block exactly. Also
+   * clears the {@link renderWithFeedback} one-sample history — without
+   * this, a routing change that relocates the feedback operator (or simply
+   * a fresh note) could read a stale previous sample left over from a
+   * different topology or an earlier note (Pitfall 4, T-08-04). */
   resetPhase(): void {
     this.phase = 0;
+    this.previousSample = 0;
   }
 
   /**
@@ -89,6 +101,44 @@ export class PhaseModulatedOperator {
       const rawModulation = modulationInput ? modulationInput[i] : 0;
       const modulation = Number.isFinite(rawModulation) ? rawModulation : 0;
       output[i] = Math.sin(TWO_PI * this.phase + modulation);
+      this.phase = (this.phase + increment) % 1;
+    }
+  }
+
+  /**
+   * Feedback-capable sibling of {@link render} (D-06, Phase 8/ENGINE-02) —
+   * identical per-sample phase-accumulator math (same `increment`, same
+   * `Math.sin(TWO_PI * this.phase + modulation)`, same `% 1` phase wrap),
+   * but the modulation term additionally includes
+   * `safeFeedbackIndex * this.previousSample`, where `previousSample` is
+   * the value this method itself wrote at the previous sample index (`0`
+   * at `i = 0`) — a true one-sample delay, not a smoothed, averaged, or
+   * transfer-curve-shaped approximation (D-07/D-08: feedback is not tamed
+   * anywhere in this kernel). A `feedbackIndex` of `0` reproduces
+   * `render(output, externalModulation)` exactly, since the feedback term
+   * vanishes.
+   *
+   * `feedbackIndex` is guarded once, before the loop, with the same
+   * treat-as-zero `Number.isFinite` convention `render` already applies to
+   * `modulationInput` (T-08-03); each `externalModulation[i]` sample gets
+   * the same per-sample guard `render` applies. Never allocates.
+   *
+   * `render`'s own signature and body are untouched by this addition —
+   * `additive-fixture.ts` and this file's pre-existing spec cases depend on
+   * `render` byte-for-byte.
+   *
+   * This is an original implementation, never an exact DX7 emulation.
+   */
+  renderWithFeedback(output: Float32Array, feedbackIndex: number, externalModulation?: Float32Array): void {
+    const increment = this.frequencyHz / this.sampleRate;
+    const safeFeedbackIndex = Number.isFinite(feedbackIndex) ? feedbackIndex : 0;
+    for (let i = 0; i < output.length; i++) {
+      const rawExternal = externalModulation ? externalModulation[i] : 0;
+      const external = Number.isFinite(rawExternal) ? rawExternal : 0;
+      const modulation = external + safeFeedbackIndex * this.previousSample;
+      const sample = Math.sin(TWO_PI * this.phase + modulation);
+      output[i] = sample;
+      this.previousSample = sample;
       this.phase = (this.phase + increment) % 1;
     }
   }

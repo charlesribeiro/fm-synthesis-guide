@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 8
-current_phase_name: Algorithm routing and feedback
+current_phase: 9
+current_phase_name: DX7-style envelopes and parameter mapping
 status: planning
-stopped_at: Completed 07-04-PLAN.md — Phase 7 complete (ENGINE-01 gap closed)
-last_updated: "2026-08-12T17:14:35.225Z"
-last_activity: 2026-08-12
-last_activity_desc: Phase 07 complete, transitioned to Phase 8
+stopped_at: Completed 08-04-PLAN.md — Phase 08 (algorithm-routing-and-feedback) fully executed and validated
+last_updated: "2026-08-14T01:59:27.626Z"
+last_activity: 2026-08-13
+last_activity_desc: Phase 08 complete, transitioned to Phase 9
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 24
-  completed_plans: 24
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 28
+  completed_plans: 28
 ---
 
 # Project State
@@ -24,22 +24,22 @@ See: .planning/PROJECT.md (updated 2026-08-07)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 07 — audioworklet-dsp-foundation
+**Current focus:** Phase 08 — algorithm-routing-and-feedback
 
 ## Current Position
 
-Phase: 8 — Algorithm routing and feedback
+Phase: 9 — DX7-style envelopes and parameter mapping
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-12 — Phase 07 complete, transitioned to Phase 8
+Last activity: 2026-08-13 — Phase 08 complete, transitioned to Phase 9
 
-Progress: [██████████] 100% — 24/24 plans, 7 completed phases (1-7).
+Progress: [██████████] 100% — 28/28 plans, 8 completed phases (1-8).
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 25
+- Total plans completed: 29
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -54,6 +54,7 @@ Progress: [██████████] 100% — 24/24 plans, 7 completed pha
 | 05 | 4 | - | - |
 | 06 | 4 | - | - |
 | 07 | 4 | - | - |
+| 08 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -86,6 +87,10 @@ Progress: [██████████] 100% — 24/24 plans, 7 completed pha
 | Phase 07 P02 | ~10min | 2 tasks | 4 files |
 | Phase 07 P03 | ~15min + checkpoint | 2 tasks | 7 files |
 | Phase 07 P04 | ~20min | 3 tasks | 8 files |
+| Phase 08 P01 | 35min | 2 tasks | 9 files |
+| Phase 08 P02 | ~10min | 2 tasks | 3 files |
+| Phase 08 P03 | ~25min | 3 tasks | 5 files |
+| Phase 08 P04 | ~5h07m | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -135,6 +140,14 @@ Full log in `.planning/PROJECT.md` → Key Decisions. Recent:
 - [Phase ?]: [Phase 07]: Plan 07-02: WorkletSynthEngine implements SynthEngine over an AudioWorkletNode boundary (audio-worklet-node.token.ts + fake-audio-worklet-node.ts, mirroring audio-context.token.ts/fake-audio-context.ts exactly); setAlgorithm/setFeedback/updateOperatorLevel are validated no-ops naming Phase 8/9 as the phase that makes each real; SYNTH_ENGINE still resolves to WebAudioSynthEngine (D-01, asserted by test) — no Phase 5 file touched. ENGINE-01 stays open until 07-03's real-browser listening checkpoint.
 - [Phase ?]: Phase 07 (07-03): Task 2's blocking real-browser listening checkpoint approved with zero findings — all nine checks passed, human confirmed the worklet loads cleanly and both single-operator and additive six-carrier cases sound correct, click-free, and safe. Check 8 (RESEARCH Assumption A5) resolved: a plain browser reload picks up a freshly rebuilt harness bundle, no dev-server restart needed; README corrected accordingly. ENGINE-01 marked complete; Phase 7 complete.
 - [Phase ?]: [Phase 07]: Plan 07-04 (gap closure): relocated the dev harness build output from public/dev/ to dev-dist/, entirely outside the directory the production asset configuration reads, closing the harness-then-build production leak 07-VERIFICATION.md reproduced twice; added a fail-closed postbuild assertion and an on-demand 3-stage npm run verify:harness-isolation gate (harness-then-build reproduction, development-configuration coverage, harness-configuration positive control). Found and overwrote a pre-existing, differently-shaped partial fix already on disk (an ignore: ["dev/**"] asset override on angular.json's production configuration plus a simpler 2-command isolation script) that predated 07-VERIFICATION.md's gap report and conflicted with this plan's chosen remedy. ENGINE-01 is now fully complete.
+- [Phase ?]: SYNTH_ENGINE cutover to WorkletSynthEngine (D-01); WebAudioSynthEngine kept untouched as unused reference fallback (D-04)
+- [Phase ?]: Task 2's kernel invariants (Algorithm 15 combined path, feedback-history hygiene across routing change) were already satisfied by Task 1's implementation — added regression tests, no production fix needed
+- [Phase ?]: Phase 08 (08-02): CROSS_CHECK_DECIMAL_PLACES stayed at 6 across all 32 rows on first run; the corruption probe required a direction-reversal edge edit (not a same-direction target change) to exercise a GraphRouter translation bug, since GraphRouter and evaluateAlgorithmReference both read algorithm.edges directly and a same-direction edit is consistent-but-wrong on both sides of the cross-check.
+- [Phase ?]: Phase 08 (08-03): isOperatorParameterSetLike now requires an exact six-key operators object — closes the one real validation gap the hostile-payload matrix exposed (a seventh, out-of-range operator id alongside all six valid entries previously passed silently).
+- [Phase ?]: Phase 08 (08-03): Task 2's bundle-parity and routing-replacement cases required no production change — worklets/dx7-worklet-processor.ts and graph-router.ts already satisfied every case from plan 08-01's implementation (same fix-attempt-finds-nothing-to-fix precedent as 02-03/03-01/08-01 Task 2).
+- [Phase ?]: Phase 08 (08-03): WorkletSynthEngine.applyInstrumentStateToWorklet redesigned to diff algorithm/operators/feedback independently and post only the message(s) for what changed (Pitfall 5), fixing D-13 held-note re-patch and making per-operator ratio/detune/mode real, separately-posted parameters (D-15/D-16) reachable only via the reactive InstrumentState path.
+- [Phase ?]: D-12 four-algorithm interpretation confirmed at checkpoint: one per taxonomy group, one replayed at maximum feedback, not a fifth distinct algorithm — every ALGORITHMS row already declares a feedback self-loop
+- [Phase ?]: Phase 08 blocking listening checkpoint (D-02/D-12) approved with zero findings across all nine checks; 08-VALIDATION.md completed with no source changes required
 
 ### Pending Todos
 
@@ -161,6 +174,6 @@ checkpoint has been stopped.
 
 ## Session Continuity
 
-Last session: 2026-08-12T16:59:02.321Z
-Stopped at: Completed 07-04-PLAN.md — Phase 7 complete (ENGINE-01 gap closed)
+Last session: 2026-08-14T01:01:02.279Z
+Stopped at: Completed 08-04-PLAN.md — Phase 08 (algorithm-routing-and-feedback) fully executed and validated
 Resume file: None
