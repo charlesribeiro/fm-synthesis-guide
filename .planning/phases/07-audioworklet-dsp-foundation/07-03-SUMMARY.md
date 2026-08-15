@@ -105,7 +105,7 @@ status: complete
 
 # Phase 7 Plan 3: AudioWorklet DSP Foundation Summary
 
-**Framework-free dev listening harness (opt-in `npm run harness` build) that drives the real built worklet bundle through the same message contract and safety clamp 07-02's engine uses — a human has now confirmed in a real browser that the worklet loads and both proof cases sound correct, closing D-06/D-07 and ENGINE-01.**
+**Framework-free dev listening harness (opt-in `npm run harness` build) that drives the real built worklet bundle through the same message contract and safety clamp 07-02's engine uses — a human has now confirmed in a real browser that the worklet loads and both proof cases sound correct, closing D-06/D-07. ENGINE-01 remains open until 07-04 isolation closes.**
 
 ## Performance
 
@@ -201,9 +201,10 @@ status: complete
   harness avoids that import) after discovering it tripped the plan's own `grep -c '@angular'`
   acceptance check — see frontmatter `key-decisions` for the full account. No runtime behavior
   changed.
-- `ENGINE-01` is now marked complete in `requirements-completed` — Task 2's human-listening
-  checkpoint approved with zero findings, discharging D-06/D-07 and ROADMAP success criterion 1.
-  See frontmatter `key-decisions`.
+- Listening approved; ENGINE-01 remains open until 07-04 isolation closes — Task 2's human-listening
+  checkpoint approved with zero findings, discharging D-06/D-07 and ROADMAP success criterion 1's
+  listening half, but `requirements-completed` stays `[]` until 07-04 closes production-asset
+  harness isolation. See frontmatter `key-decisions`.
 - README's rebuild-loop guidance (Check 8 / RESEARCH Assumption A5) corrected from "restart the
   dev server, treat as the safe default" to the confirmed "reload is enough — no restart needed,"
   per the human's explicit answer during the checkpoint.
@@ -258,8 +259,8 @@ status: complete
 **Total deviations:** 2 auto-fixed (1 bug in harness source caught pre-commit, 1 bug in GSD
 tooling's STATE.md progress derivation caught post-hoc and manually corrected)
 **Impact on plan:** No functional scope change to the harness; no runtime behavior changed. The
-STATE.md correction restored tracking-doc accuracy at the time. Phase 7 is now complete: Task 2
-approved with zero findings.
+STATE.md correction restored tracking-doc accuracy at the time. Listening is approved; ENGINE-01
+remains open until 07-04 closes isolation.
 
 ## Issues Encountered
 
@@ -277,17 +278,15 @@ background for Task 2's listening pass has been stopped as part of closing out t
   (`<how-to-verify>`) passed with zero findings, including Check 8's rebuild-loop answer
   ("Reload was enough — no restart needed") and Check 9's keyboard-only pass. See "Accomplishments"
   above for the full per-check account.
-- `ENGINE-01` is now complete in `REQUIREMENTS.md`, `07-VALIDATION.md`'s manual-only row is marked
-  verified (`status: validated`, `nyquist_compliant: true`, `wave_0_complete: true`), and Phase 7 is
-  complete — Phase 8 (routing) and Phase 9 (envelopes) can now build on this kernel per D-07, since
-  a human has actually heard it work correctly.
+- Listening approved; ENGINE-01 remains open until 07-04 isolation closes — matching this SUMMARY's
+  empty `requirements-completed: []`. `07-VALIDATION.md`'s manual listening row is verified; the
+  production-asset harness leak is still a verification gap until 07-04.
 - `SYNTH_ENGINE` still resolves to `WebAudioSynthEngine` (D-01) — nothing in Playground or `/learn`
   calls anything built in this phase. No regression risk to the shipped MVP engine. The Angular
   cutover to `WorkletSynthEngine` remains future work for whichever phase performs it.
-- This SUMMARY's frontmatter (`status: complete`, `requirements-completed: [ENGINE-01]`, the D4
-  coverage entry's `verification`) has been updated to reflect the approval, along with
-  `STATE.md`'s plan-position advance, `ROADMAP.md`'s phase-completion update, and
-  `REQUIREMENTS.md`'s traceability table.
+- This SUMMARY's frontmatter (`status: complete`, `requirements-completed: []`, the D4
+  coverage entry's `verification`) records listening approval without closing ENGINE-01, along with
+  `STATE.md`'s plan-position advance.
 
 ## Self-Check: PASSED
 

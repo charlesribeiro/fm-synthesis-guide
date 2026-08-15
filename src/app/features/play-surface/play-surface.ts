@@ -99,8 +99,13 @@ export class PlaySurface {
   readonly notePlayed = output<number>();
 
   constructor() {
-    inject(DestroyRef).onDestroy(() => this.engine.allNotesOff());
+    inject(DestroyRef).onDestroy(() => {
+      this.destroyed = true;
+      this.engine.allNotesOff();
+    });
   }
+
+  private destroyed = false;
 
   async enableAudio(): Promise<void> {
     this.enabling.set(true);
@@ -111,6 +116,10 @@ export class PlaySurface {
       // click handler must not surface an unhandled promise rejection.
     } finally {
       this.enabling.set(false);
+    }
+
+    if (this.destroyed) {
+      return;
     }
 
     if (this.isReady()) {

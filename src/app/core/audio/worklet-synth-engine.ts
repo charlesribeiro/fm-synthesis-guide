@@ -1,8 +1,8 @@
-import { DestroyRef, Injectable, Signal, inject, signal } from '@angular/core';
-import { isAlgorithmId, MAX_ALGORITHM_ID, MIN_ALGORITHM_ID, type AlgorithmId } from '../../domain/dx7/models/algorithm';
-import { isOperatorId, type OperatorId } from '../../domain/dx7/models/operator';
-import { validateOperatorParameters } from '../../domain/dx7/models/operator-parameters';
-import { validateFeedbackLevel } from '../../domain/dx7/models/patch';
+import { DestroyRef, Injectable, Signal, effect, inject, signal } from '@angular/core';
+import type { AlgorithmId } from '../../domain/dx7/models/algorithm';
+import type { AlgorithmDefinition } from '../../domain/dx7/models/algorithm-definition';
+import type { OperatorId } from '../../domain/dx7/models/operator';
+import type { OperatorParameterSet } from '../../domain/dx7/models/patch';
 import {
   MASTER_GAIN,
   MAX_MIDI_NOTE,
@@ -12,12 +12,17 @@ import {
   midiNoteToFrequency,
   velocityToAmplitude,
 } from '../../domain/dx7/audio/value-conversion';
+import { buildRoutingConfig } from '../../domain/dx7/dsp/graph-router';
 import {
   DX7_OPERATOR_PROCESSOR_NAME,
+  setAlgorithmMessage,
+  setFeedbackMessage,
   setFrequencyMessage,
   setModeMessage,
+  setOperatorParametersMessage,
   type WorkletRenderMode,
 } from '../../domain/dx7/dsp/worklet-messages';
+import { InstrumentState } from '../../state/instrument-state';
 import {
   AUDIO_CONTEXT_CTOR,
   type AudioContextConstructorLike,
@@ -79,41 +84,27 @@ function validateVelocity(velocity: number): void {
   }
 }
 
-function validateAlgorithmId(algorithmId: AlgorithmId): void {
-  if (!isAlgorithmId(algorithmId)) {
-    throw new RangeError(
-      `algorithmId must be an integer in ${MIN_ALGORITHM_ID}..${MAX_ALGORITHM_ID}, received ${algorithmId}`,
-    );
-  }
-}
-
-function validateOperatorId(operatorId: OperatorId): void {
-  if (!isOperatorId(operatorId)) {
-    throw new RangeError(`operatorId must be one of 1..6, received ${operatorId}`);
-  }
-}
-
 /**
  * `SynthEngine` implemented over an `AudioWorkletNode` (Phase 7, ENGINE-01,
- * D-02) — the accuracy-target six-operator phase-modulation engine that
- * `synth-engine.token.ts`'s own doc comment promises can swap in without
- * touching UI code. Proven only against hand-rolled fakes this phase (see
- * `07-02-PLAN.md`'s flagged assumption); the shared message contract it
- * posts against (`worklet-messages.ts`) is the same one 07-01's real built
- * worklet bundle exercises.
+ * D-02; routed live by Phase 8, ENGINE-02, D-01) — the accuracy-target
+ * six-operator phase-modulation engine that `synth-engine.token.ts`'s own
+ * doc comment promises can swap in without touching UI code. The shared
+ * message contract it posts against (`worklet-messages.ts`) is the same
+ * one the real built worklet bundle exercises.
  *
- * This class currently drives a single operator or a synthetic six-carrier
- * additive fixture (07-01's `AdditiveOperatorBank`) — it is NOT an exact
- * DX7 emulation and must never be documented as one (CLAUDE.md). Routing
- * across the canonical 32-algorithm dataset is Phase 8 (ENGINE-02);
- * per-operator level shaping is Phase 9 (ENGINE-03) — `setAlgorithm`,
- * `updateOperatorLevel` and `setFeedback` are validating no-ops until then,
- * a deliberate honest contract rather than an unexplained throw.
+ * Routing across the canonical 32-algorithm dataset, and per-operator pitch
+ * and level, are real as of this phase — `setAlgorithm`, `setFeedback` and
+ * `updateOperatorLevel` all forward into `InstrumentState` and reapply the
+ * resulting snapshot to the worklet's persistent `GraphRouter`. Envelope-
+ * segment shaping (attack/decay/sustain/release curves beyond the current
+ * single `envelopeLevel` stand-in) remains Phase 9's job (ENGINE-03). This
+ * is NOT an exact DX7 emulation and must never be documented as one
+ * (CLAUDE.md).
  *
- * D-01: `SYNTH_ENGINE` (`synth-engine.token.ts`) is untouched by this class
- * and still resolves to `WebAudioSynthEngine` — this engine exists
- * standalone, not yet wired to the token, so Playground and the `/learn`
- * lessons keep their Phase 5 sound.
+ * D-01: `SYNTH_ENGINE` (`synth-engine.token.ts`) now resolves to this
+ * class — Playground and the `/learn` lessons hear this routed worklet
+ * engine. `WebAudioSynthEngine` is retained as an unused reference
+ * fallback (D-04), neither deleted nor auto-selected.
  */
 @Injectable({ providedIn: 'root' })
 export class WorkletSynthEngine implements SynthEngine {
@@ -121,6 +112,7 @@ export class WorkletSynthEngine implements SynthEngine {
   private readonly nodeCtor = inject(AUDIO_WORKLET_NODE_CTOR);
   private readonly moduleUrl = inject(AUDIO_WORKLET_MODULE_URL);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly instrumentState = inject(InstrumentState);
 
   private readonly _status = signal<AudioEngineStatus>(
     this.contextCtor === null || this.nodeCtor === null ? 'unavailable' : 'suspended',
@@ -148,12 +140,34 @@ export class WorkletSynthEngine implements SynthEngine {
    * assigned after the build resolves. */
   private pendingInitialize: Promise<void> | null = null;
 
+  /** Identity of the `InstrumentState` snapshot last pushed into the
+   * worklet — mirrors `WebAudioSynthEngine`'s identical fields exactly.
+   * Reference equality is enough: `algorithm()`/`operators()` return stable
+   * objects until the next validated write. Used so a synchronous apply
+   * from `setAlgorithm`/`updateOperatorLevel`/`setFeedback` is not
+   * immediately repeated when the constructor `effect()` flushes the same
+   * write, while still letting the effect apply direct `InstrumentState`
+   * mutations made elsewhere. */
+  private lastAppliedAlgorithm: AlgorithmDefinition | undefined;
+  private lastAppliedOperators: OperatorParameterSet | undefined;
+  private lastAppliedFeedback: number | undefined;
+
   constructor() {
     this.destroyRef.onDestroy(() => this.destroy());
-    // No effect() here: unlike WebAudioSynthEngine, this engine has no
-    // InstrumentState subscription this phase, and an effect deriving
-    // nothing would violate CLAUDE.md's "effects exist only for imperative
-    // synchronisation" rule.
+
+    // The one sanctioned effect() in this class (CLAUDE.md: imperative sync
+    // with an external system, never a computed() deriving graph shape) —
+    // mirrors WebAudioSynthEngine's constructor effect() exactly.
+    // `applyInstrumentStateToWorklet` itself reads all three signals BEFORE
+    // its own early return, which is load-bearing here too: an effect that
+    // returns before reading a signal never registers it as a dependency and
+    // would not re-run when that signal changes. Delegating to the shared
+    // method (rather than duplicating the reads here) is what lets a direct
+    // write to `InstrumentState` — made from anywhere, not just through this
+    // engine's own methods — reach the worklet through this same path.
+    effect(() => {
+      this.applyInstrumentStateToWorklet();
+    });
   }
 
   /**
@@ -194,6 +208,17 @@ export class WorkletSynthEngine implements SynthEngine {
         this.masterGain = built.masterGain;
         this.voiceGain = built.voiceGain;
         this._status.set('ready');
+        // The constructor effect() already ran and returned early while
+        // `this.node` was still null, so nothing else delivers the initial
+        // routing/parameters/feedback snapshot — push it once now, and put
+        // the node into routed mode so it actually renders through the
+        // router rather than the single-operator fallback. Routed mode
+        // applies MASTER_GAIN inside GraphRouter, so the Web Audio
+        // masterGain must stay at unity for that path.
+        if (this.node !== null) {
+          this.setRenderMode('routed');
+        }
+        this.applyInstrumentStateToWorklet();
       } catch {
         if (generation !== this.initializationGeneration) {
           return;
@@ -255,6 +280,11 @@ export class WorkletSynthEngine implements SynthEngine {
       const masterGain = context.createGain();
       const voiceGain = context.createGain();
       const now = context.currentTime;
+      // Default processor mode is `'single'` until initialize posts
+      // `'routed'`. Single/additive paths do not apply MASTER_GAIN in the
+      // kernel (AdditiveOperatorBank says attenuation is the engine's job),
+      // so start at MASTER_GAIN; setRenderMode('routed') later switches to
+      // unity because GraphRouter.render() already scales and clamps.
       masterGain.gain.setValueAtTime(MASTER_GAIN, now);
       voiceGain.gain.setValueAtTime(0, now);
 
@@ -282,26 +312,25 @@ export class WorkletSynthEngine implements SynthEngine {
     void built.context.close();
   }
 
+  /** Forwards into `InstrumentState` (single source of truth — its own
+   * `resolveAlgorithm` already throws the documented `RangeError` for an
+   * unknown id, so no redundant local guard is kept here, matching
+   * `WebAudioSynthEngine`'s shape exactly) then synchronously re-applies
+   * that snapshot to the live worklet so the routing change is audible
+   * immediately rather than waiting on `effect()` scheduling. */
   setAlgorithm(algorithmId: AlgorithmId): void {
-    validateAlgorithmId(algorithmId);
-    // Phase 8 (ENGINE-02): routing across the canonical dataset is not yet
-    // implemented on this engine — validated no-op, not a silent lie or an
-    // unexplained throw. Hardcoding any algorithm-id-to-fixture mapping
-    // here would duplicate routing knowledge the canonical dataset already
-    // owns (D-04, CLAUDE.md domain rules).
+    this.instrumentState.setAlgorithm(algorithmId);
+    this.applyInstrumentStateToWorklet();
   }
 
   setFeedback(level: number): void {
-    validateFeedbackLevel(level);
-    // Phase 8 (ENGINE-02): feedback depth is not yet wired to the kernel —
-    // validated no-op.
+    this.instrumentState.setFeedback(level);
+    this.applyInstrumentStateToWorklet();
   }
 
   updateOperatorLevel(operatorId: OperatorId, level: number): void {
-    validateOperatorId(operatorId);
-    validateOperatorParameters({ outputLevel: level });
-    // Phase 9 (ENGINE-03): per-operator level shaping is not yet
-    // implemented on this engine — validated no-op.
+    this.instrumentState.updateOperator(operatorId, { outputLevel: level });
+    this.applyInstrumentStateToWorklet();
   }
 
   /**
@@ -310,10 +339,61 @@ export class WorkletSynthEngine implements SynthEngine {
    * proof cases without widening the shared interface.
    */
   setRenderMode(mode: WorkletRenderMode): void {
-    if (this.node === null) {
+    if (this.node === null || this.context === null || this.masterGain === null) {
       return;
     }
     this.node.port.postMessage(setModeMessage(mode));
+    // GraphRouter.render() (routed) already applies MASTER_GAIN + clamp;
+    // single/additive fixture paths do not, so this gain supplies it.
+    const now = this.context.currentTime;
+    this.masterGain.gain.setValueAtTime(mode === 'routed' ? 1 : MASTER_GAIN, now);
+  }
+
+  /**
+   * Reads the current `InstrumentState` snapshot and posts exactly the
+   * messages needed to bring the worklet's cached routing/parameters/
+   * feedback up to date with it — never all three unconditionally
+   * (Pitfall 5). Comparing each of the three fields independently against
+   * `lastAppliedX` (rather than an all-or-nothing gate) is what keeps a
+   * level/pitch edit from posting a routing-config message, and an
+   * algorithm switch from re-posting an unchanged operator-parameters or
+   * feedback snapshot: a level edit changes only `operators()`'s reference,
+   * an algorithm switch changes only `algorithm()`'s reference, and a
+   * feedback edit changes only `feedback()`'s value —
+   * `instrument-state.ts`'s per-field spread-on-write contract guarantees
+   * the other two stay reference/value-identical.
+   *
+   * Reading all three signals BEFORE the early `node === null` return is
+   * load-bearing when this runs inside the constructor's `effect()`: an
+   * effect that returns before reading a signal never registers it as a
+   * dependency and would not re-run when that signal later changes — which
+   * matters here because this method is called before the worklet node
+   * exists (during the effect's first run) as well as after.
+   */
+  private applyInstrumentStateToWorklet(): void {
+    const algorithm = this.instrumentState.algorithm();
+    const operators = this.instrumentState.operators();
+    const feedback = this.instrumentState.feedback();
+
+    if (this.node === null) {
+      return;
+    }
+
+    if (algorithm !== this.lastAppliedAlgorithm) {
+      const routingConfig = buildRoutingConfig(algorithm);
+      this.node.port.postMessage(setAlgorithmMessage(routingConfig.connections, routingConfig.carriers));
+      this.lastAppliedAlgorithm = algorithm;
+    }
+
+    if (operators !== this.lastAppliedOperators) {
+      this.node.port.postMessage(setOperatorParametersMessage(operators));
+      this.lastAppliedOperators = operators;
+    }
+
+    if (feedback !== this.lastAppliedFeedback) {
+      this.node.port.postMessage(setFeedbackMessage(feedback));
+      this.lastAppliedFeedback = feedback;
+    }
   }
 
   /** Validates first — before touching the port or any `AudioParam` — then
@@ -408,5 +488,8 @@ export class WorkletSynthEngine implements SynthEngine {
     this.node = null;
     this.voiceGain = null;
     this.masterGain = null;
+    this.lastAppliedAlgorithm = undefined;
+    this.lastAppliedOperators = undefined;
+    this.lastAppliedFeedback = undefined;
   }
 }

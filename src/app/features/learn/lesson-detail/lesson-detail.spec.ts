@@ -5,7 +5,9 @@ import { vi } from 'vitest';
 
 import { routes } from '../../../app.routes';
 import { AUDIO_CONTEXT_CTOR } from '../../../core/audio/audio-context.token';
+import { AUDIO_WORKLET_NODE_CTOR } from '../../../core/audio/audio-worklet-node.token';
 import { FakeAudioContext } from '../../../core/audio/testing/fake-audio-context';
+import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../../core/audio/testing/fake-audio-worklet-node';
 import { getLesson } from '../../../domain/dx7/lessons/lessons';
 import { tryThisParamValues } from '../../../domain/dx7/lessons/try-this';
 import { ALGORITHMS } from '../../../domain/dx7/models/algorithms';
@@ -31,8 +33,13 @@ async function enableAudio(root: HTMLElement, harness: RouterTestingHarness): Pr
 describe('LessonDetail route', () => {
   beforeEach(() => {
     FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes), { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioContext }],
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
     });
   });
 
@@ -176,8 +183,13 @@ describe('LessonDetail route', () => {
 describe('LessonDetail route — Algorithm 1 lesson (LESSON-02)', () => {
   beforeEach(() => {
     FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes), { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioContext }],
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
     });
   });
 
@@ -326,7 +338,11 @@ describe('LessonDetail route — Algorithm 1 lesson (LESSON-02)', () => {
 describe('LessonDetail not-found matrix (T-06-01)', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [provideRouter(routes), { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioContext }],
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
     });
   });
 

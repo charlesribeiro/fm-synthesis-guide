@@ -24,6 +24,7 @@ Use GSD Core as the project harness. `.planning/` is the durable project memory.
 - Strict TypeScript and templates.
 - Prefer signal inputs, signal outputs, `signal`, `computed`, and read-only facades.
 - Use `effect` only for imperative synchronization with an external system. Do not use effects to derive state.
+- Narrow exception: `LessonDetail` may use `effect()` for route-reuse-safe `startingPatch` sync into `InstrumentState` (imperative external-state sync on param reuse, not derived UI state).
 - Use `@if`, `@for`, `@switch`, and `@defer` where appropriate.
 - Prefer `OnPush` semantics and immutable inputs even in a zoneless app.
 - Route-level features should be lazy loaded.
@@ -88,7 +89,7 @@ Run at minimum:
 
 ```bash
 npm run build
-npm test -- --run
+npm test
 npm run lint
 ```
 

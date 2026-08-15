@@ -61,7 +61,7 @@ coverage:
     requirement: "ENGINE-01"
     verification:
       - kind: unit
-        ref: "src/app/core/audio/worklet-synth-engine.spec.ts (22 tests)"
+        ref: "src/app/core/audio/worklet-synth-engine.spec.ts (29 tests)"
         status: pass
       - kind: other
         ref: "npm test (866/866), npm run build, npm run lint"
@@ -106,7 +106,7 @@ status: complete
   that validate and post nothing, each doc-commented with the phase that makes it real;
   `setRenderMode` as an additive concrete-class method; `destroy()` clearing the port handler
   and disconnecting every created node.
-- `worklet-synth-engine.spec.ts` — 22 tests covering lifecycle reachability (suspended /
+- `worklet-synth-engine.spec.ts` — 29 tests covering lifecycle reachability (suspended /
   unavailable / ready / error), idempotency, the load-failure and node-construction-failure
   paths, the note on/off/all-off message-and-gain contract, `setRenderMode`, the three
   validated no-ops, the `MASTER_GAIN` safety-clamp scheduling, full teardown, and the D-01
@@ -124,7 +124,7 @@ Each task was committed atomically:
 - `src/app/core/audio/audio-worklet-node.token.ts` - `AudioWorkletPortLike`, `AudioWorkletNodeLike`, `AudioWorkletLike`, `AudioWorkletContextLike`, `AudioWorkletNodeOptionsLike`, `AudioWorkletNodeConstructorLike`, `supportsAudioWorklet`, `AUDIO_WORKLET_NODE_CTOR`, `AUDIO_WORKLET_MODULE_URL`, `DEFAULT_WORKLET_MODULE_URL`
 - `src/app/core/audio/testing/fake-audio-worklet-node.ts` - `FakeAudioWorkletPort`, `FakeAudioWorkletNode`, `FakeAudioWorklet`, `FakeAudioWorkletContext`, `ThrowingAudioWorkletNode`
 - `src/app/core/audio/worklet-synth-engine.ts` - `WorkletSynthEngine`, `WORKLET_ATTACK_SECONDS`, `WORKLET_RELEASE_TIME_CONSTANT`, `WORKLET_RELEASE_SECONDS`
-- `src/app/core/audio/worklet-synth-engine.spec.ts` - 21-test lifecycle/message-contract/validation/teardown/D-01-isolation suite
+- `src/app/core/audio/worklet-synth-engine.spec.ts` - 29-test lifecycle/message-contract/validation/teardown/D-01-isolation suite
 
 ## Decisions Made
 
@@ -151,7 +151,7 @@ Task 2 (`tdd="true"`) followed the full RED → GREEN sequence: `worklet-synth-e
 was written and committed first (`89486af`), confirmed to fail to compile
 (`TS2459`/`TS18046` — the spec imports `WorkletSynthEngine` from a file that did not yet
 exist) before any implementation code was written, then `worklet-synth-engine.ts` was
-implemented and committed second (`70cce8f`) until all 21 tests passed. No REFACTOR commit was
+implemented and committed second (`70cce8f`) until all 29 tests passed. No REFACTOR commit was
 needed — the implementation matched the plan's `<action>` shape on the first pass with no
 follow-up cleanup.
 

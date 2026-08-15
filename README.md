@@ -5,10 +5,10 @@ synthesis through the Yamaha DX7's 32 operator-routing algorithms — one algori
 interactive routing diagrams, guided lessons, and live sound. No affiliation with Yamaha or the
 Dexed project. See [full disclaimer](src/app/features/about/about.html).
 
-**Status:** Phase 3 of 14 complete — Angular scaffold, the canonical 32-algorithm domain dataset,
-and the [`InstrumentState`](src/app/state/instrument-state.ts) signal facade (immutable
-patch/operator state, A/B snapshots, reset). No synthesis engine yet beyond a typed placeholder
-interface ([`SynthEngine`](src/app/core/audio/synth-engine.ts)). See
+**Status:** Phase 8 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
+state, algorithm browser/SVG, first playable approximation, guided lessons (Alg 32 & 1),
+AudioWorklet DSP foundation, and full algorithm routing/feedback with live cutover to
+[`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts). See
 [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
 
 ## Setup
@@ -46,7 +46,14 @@ the in-memory/`public/` bundle picks up the change.
 
 A separate, opt-in **dev harness** — a standalone page with no Angular import of any kind — lets a
 human hear the real built worklet run in a real browser, which no Vitest/jsdom test can reach:
-jsdom implements no Web Audio API and no `AudioWorkletGlobalScope` at all. To run it:
+jsdom implements no Web Audio API and no `AudioWorkletGlobalScope` at all. As of Phase 8, the
+harness exercises the routed 32-algorithm path, not only the Phase 7 single-operator and additive
+proof cases: an algorithm `<select>` (labelled with each option's id, name, and teaching-taxonomy
+group), a feedback-depth slider (0–7), a "maximum operator level" checkbox for the worst-case
+loudness case, and a "Play routed" button post the exact same `setAlgorithm`/
+`setOperatorParameters`/`setFeedback` messages `WorkletSynthEngine` posts against the live app.
+Changing the algorithm or the feedback depth while a routed note is sounding re-patches it live,
+without stopping the note. To run it:
 
 ```bash
 npm run start:harness    # rebuilds the harness, then serves it
@@ -99,9 +106,9 @@ lifecycle hook, so run it on demand rather than on every commit.
   ```
 - **Design tokens** — CSS custom properties in [`src/styles/_tokens.scss`](src/styles/_tokens.scss)
   (color, type, spacing, motion); components read tokens, never hardcode values.
-- **Audio boundary, not yet implemented** — [`SynthEngine`](src/app/core/audio/synth-engine.ts) is
-  a typed placeholder interface only. Real implementations (an MVP `OscillatorNode`/`GainNode`
-  graph, later a six-operator `AudioWorklet`) land in Phases 5–9 and must never construct an
+- **Audio boundary** — [`SynthEngine`](src/app/core/audio/synth-engine.ts) is the DI seam;
+  production resolves to [`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts) (Phase 8
+  routed six-operator AudioWorklet engine). Implementations must never construct an
   `AudioContext` at module-eval time or store `AudioNode`s in Angular signal state.
 - **Instrument state facade** —
   [`InstrumentState`](src/app/state/instrument-state.ts) is the single source of truth for the

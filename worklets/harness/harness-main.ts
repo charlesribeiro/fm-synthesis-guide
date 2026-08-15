@@ -5,13 +5,22 @@
  * in a real browser, which no Vitest/jsdom test can reach: jsdom implements
  * no Web Audio API and no `AudioWorkletGlobalScope` at all.
  *
+ * Extended in Phase 8 (D-12) with algorithm selection and feedback-depth
+ * controls over the same `'routed'` render mode the live app uses, so the
+ * blocking checkpoint can sample one algorithm per teaching-taxonomy group
+ * plus maximum feedback depth.
+ *
  * Deliberately NOT an Angular file — no Angular-framework import of any
  * kind, and no import of `WorkletSynthEngine` (an injectable Angular
  * service, which would drag the framework runtime into this standalone
  * bundle and breach D-01's isolation). Every payload this harness posts is
  * built through the same shared message contract (`worklet-messages.ts`)
- * 07-02's engine posts against, so a human's ears cannot drift from what
- * the engine would send.
+ * 07-02's engine posts against, and the routed-mode payloads are built
+ * through the same `buildRoutingConfig` translation `graph-router.ts`
+ * exposes, so a human's ears cannot drift from what the live engine would
+ * send. `algorithms.ts`, `graph-router.ts`, `operator-parameters.ts`, and
+ * `patch.ts` are all pure domain modules under the DOMAIN-04 gate — none of
+ * them imports Angular, directly or transitively.
  *
  * The module URL below is a deliberate literal duplicate of
  * `src/app/core/audio/audio-worklet-node.token.ts`'s
@@ -21,10 +30,20 @@
  * check in `07-03-PLAN.md`'s acceptance criteria). If the served path ever
  * moves, both constants must be updated together.
  */
+import { ALGORITHMS } from '../../src/app/domain/dx7/models/algorithms';
+import type { AlgorithmDefinition } from '../../src/app/domain/dx7/models/algorithm-definition';
+import type { TeachingTag } from '../../src/app/domain/dx7/models/algorithm-definition';
+import { MAX_OUTPUT_LEVEL } from '../../src/app/domain/dx7/models/operator-parameters';
+import { OPERATOR_IDS } from '../../src/app/domain/dx7/models/operator';
+import { DEFAULT_PATCH, type OperatorParameterSet } from '../../src/app/domain/dx7/models/patch';
+import { buildRoutingConfig } from '../../src/app/domain/dx7/dsp/graph-router';
 import {
   DX7_OPERATOR_PROCESSOR_NAME,
+  setAlgorithmMessage,
+  setFeedbackMessage,
   setFrequencyMessage,
   setModeMessage,
+  setOperatorParametersMessage,
   type WorkletRenderMode,
 } from '../../src/app/domain/dx7/dsp/worklet-messages';
 import {
@@ -41,6 +60,10 @@ const SINGLE_CASE_MIDI_NOTE = 69;
 /** A3 (MIDI 57) — keeps the additive fixture's six-harmonic stack
  * (220Hz base x 1..6) sitting in a comfortable range. */
 const ADDITIVE_CASE_MIDI_NOTE = 57;
+/** Same comfortable single-note pitch as the Phase 7 single-operator proof
+ * case — routed playback has no keyboard either, so one fixed note stands
+ * in for every algorithm the checkpoint samples. */
+const ROUTED_CASE_MIDI_NOTE = SINGLE_CASE_MIDI_NOTE;
 /** A fixed, representative mid velocity — this harness has no keyboard, so
  * one value stands in for `value-conversion.ts`'s velocity curve. */
 const FIXED_VELOCITY = 100;
@@ -53,11 +76,47 @@ const RELEASE_TIME_CONSTANT = 0.015;
 const RELEASE_TIME_CONSTANT_COUNT = 5;
 const RELEASE_SECONDS = RELEASE_TIME_CONSTANT * RELEASE_TIME_CONSTANT_COUNT;
 
+/** Human-readable labels for D-10's four-group teaching taxonomy — shown in
+ * each `<option>`'s text so the checkpoint's four taxonomy-group checks are
+ * directly selectable rather than requiring the human to remember id
+ * ranges. */
+const TAXONOMY_GROUP_LABELS: Readonly<Record<TeachingTag, string>> = {
+  'additive-stacks': 'Additive Stacks',
+  'tree-branch': 'Tree/Branch',
+  rooting: 'Rooting',
+  parallel: 'Parallel',
+};
+
+function taxonomyGroupLabel(algorithm: AlgorithmDefinition): string {
+  const tag = algorithm.teachingTags[0];
+  return tag === undefined ? 'unlabelled' : TAXONOMY_GROUP_LABELS[tag];
+}
+
+/** Builds a full six-operator parameter set with every operator raised to
+ * `MAX_OUTPUT_LEVEL` — the checkpoint's worst-case loudness step (check 5).
+ * Derived from `DEFAULT_PATCH.operators` (only `outputLevel` overridden) so
+ * every other field — ratio, detune, mode, envelope level — still matches
+ * the app's own defaults. */
+function buildMaxLevelOperatorParameters(): OperatorParameterSet {
+  const entries = OPERATOR_IDS.map((id) => {
+    const base = DEFAULT_PATCH.operators[id];
+    return [id, { ...base, outputLevel: MAX_OUTPUT_LEVEL }] as const;
+  });
+  return Object.freeze(Object.fromEntries(entries)) as OperatorParameterSet;
+}
+
+const MAX_LEVEL_OPERATOR_PARAMETERS = buildMaxLevelOperatorParameters();
+
 interface HarnessElements {
   readonly enableButton: HTMLButtonElement;
   readonly playSingleButton: HTMLButtonElement;
   readonly playAdditiveButton: HTMLButtonElement;
+  readonly playRoutedButton: HTMLButtonElement;
   readonly stopButton: HTMLButtonElement;
+  readonly algorithmSelect: HTMLSelectElement;
+  readonly feedbackSlider: HTMLInputElement;
+  readonly feedbackReadout: HTMLOutputElement;
+  readonly maxLevelCheckbox: HTMLInputElement;
   readonly status: HTMLElement;
 }
 
@@ -74,9 +133,27 @@ function getElements(): HarnessElements {
     enableButton: requireElement<HTMLButtonElement>('enable-button'),
     playSingleButton: requireElement<HTMLButtonElement>('play-single-button'),
     playAdditiveButton: requireElement<HTMLButtonElement>('play-additive-button'),
+    playRoutedButton: requireElement<HTMLButtonElement>('play-routed-button'),
     stopButton: requireElement<HTMLButtonElement>('stop-button'),
+    algorithmSelect: requireElement<HTMLSelectElement>('algorithm-select'),
+    feedbackSlider: requireElement<HTMLInputElement>('feedback-slider'),
+    feedbackReadout: requireElement<HTMLOutputElement>('feedback-readout'),
+    maxLevelCheckbox: requireElement<HTMLInputElement>('max-level-checkbox'),
     status: requireElement<HTMLElement>('status'),
   };
+}
+
+/** Populates the algorithm `<select>` from `ALGORITHMS` (never a hardcoded
+ * list) so the dataset stays the single source of truth (CLAUDE.md's
+ * one-canonical-dataset rule) — each option's text carries the id, name,
+ * and taxonomy group label the checkpoint's four group checks need. */
+function populateAlgorithmSelect(select: HTMLSelectElement): void {
+  for (const algorithm of ALGORITHMS) {
+    const option = document.createElement('option');
+    option.value = String(algorithm.id);
+    option.textContent = `${algorithm.id} — ${algorithm.name} (${taxonomyGroupLabel(algorithm)})`;
+    select.appendChild(option);
+  }
 }
 
 /**
@@ -91,6 +168,11 @@ class Harness {
   private voiceGain: GainNode | null = null;
   private lastMessage = 'none';
   private enabling = false;
+  /** True only while a routed-mode note is currently sounding — gates the
+   * live re-patch handlers (D-13's harness-side equivalent) so an
+   * algorithm/feedback change posts a message only when there is an actual
+   * held note to re-patch. */
+  private routedNoteActive = false;
 
   constructor(private readonly elements: HarnessElements) {}
 
@@ -187,6 +269,7 @@ class Harness {
       return;
     }
 
+    this.routedNoteActive = false;
     this.node.port.postMessage(setModeMessage(mode));
 
     const frequencyMessage = setFrequencyMessage(midiNoteToFrequency(midiNote));
@@ -211,6 +294,85 @@ class Harness {
     this.play('additive', ADDITIVE_CASE_MIDI_NOTE);
   }
 
+  private selectedAlgorithm(): AlgorithmDefinition {
+    const id = Number(this.elements.algorithmSelect.value);
+    const algorithm = ALGORITHMS.find((candidate) => candidate.id === id);
+    if (algorithm === undefined) {
+      throw new Error(`dev harness algorithm select carries an unknown id: ${id}`);
+    }
+    return algorithm;
+  }
+
+  private selectedFeedbackLevel(): number {
+    return Number(this.elements.feedbackSlider.value);
+  }
+
+  private selectedOperatorParameters(): OperatorParameterSet {
+    return this.elements.maxLevelCheckbox.checked ? MAX_LEVEL_OPERATOR_PARAMETERS : DEFAULT_PATCH.operators;
+  }
+
+  /**
+   * Plays the currently selected algorithm through the exact same message
+   * sequence — routed mode, routing config, operator parameters, feedback,
+   * note frequency — `WorkletSynthEngine` posts, so what the human hears
+   * cannot drift from what the live app sends (D-12).
+   */
+  playRouted(): void {
+    if (this.context === null || this.node === null || this.voiceGain === null) {
+      this.report('play ignored: click "Enable audio" first');
+      return;
+    }
+
+    const algorithm = this.selectedAlgorithm();
+    const routingConfig = buildRoutingConfig(algorithm);
+    const operators = this.selectedOperatorParameters();
+    const feedbackLevel = this.selectedFeedbackLevel();
+
+    this.node.port.postMessage(setModeMessage('routed'));
+    this.node.port.postMessage(setAlgorithmMessage(routingConfig.connections, routingConfig.carriers));
+    this.node.port.postMessage(setOperatorParametersMessage(operators));
+    this.node.port.postMessage(setFeedbackMessage(feedbackLevel));
+
+    const frequencyMessage = setFrequencyMessage(midiNoteToFrequency(ROUTED_CASE_MIDI_NOTE));
+    this.node.port.postMessage(frequencyMessage);
+    this.lastMessage = JSON.stringify(frequencyMessage);
+
+    const now = this.context.currentTime;
+    const targetLevel = velocityToAmplitude(FIXED_VELOCITY);
+    this.voiceGain.gain.cancelAndHoldAtTime(now);
+    this.voiceGain.gain.linearRampToValueAtTime(targetLevel, now + ATTACK_SECONDS);
+
+    this.routedNoteActive = true;
+    this.report(`playing routed algorithm ${algorithm.id}`);
+  }
+
+  /** Re-patches a currently-sounding routed note onto the newly selected
+   * algorithm without stopping it — the harness-side equivalent of D-13's
+   * live re-patch, and the only way the checkpoint's held-note switch check
+   * can be exercised from this page. A no-op when no routed note is
+   * currently sounding. */
+  onAlgorithmChanged(): void {
+    if (!this.routedNoteActive || this.node === null) {
+      return;
+    }
+    const algorithm = this.selectedAlgorithm();
+    const routingConfig = buildRoutingConfig(algorithm);
+    this.node.port.postMessage(setAlgorithmMessage(routingConfig.connections, routingConfig.carriers));
+    this.report(`re-patched to algorithm ${algorithm.id}`);
+  }
+
+  /** Re-posts only the feedback message when the slider changes during a
+   * held routed note — a no-op when nothing is currently sounding. */
+  onFeedbackChanged(): void {
+    this.elements.feedbackReadout.textContent = this.elements.feedbackSlider.value;
+    if (!this.routedNoteActive || this.node === null) {
+      return;
+    }
+    const feedbackLevel = this.selectedFeedbackLevel();
+    this.node.port.postMessage(setFeedbackMessage(feedbackLevel));
+    this.report(`feedback set to ${feedbackLevel}`);
+  }
+
   stop(): void {
     if (this.context === null || this.voiceGain === null) {
       this.report('stop ignored: click "Enable audio" first');
@@ -220,12 +382,14 @@ class Harness {
     this.voiceGain.gain.cancelAndHoldAtTime(now);
     this.voiceGain.gain.setTargetAtTime(0, now, RELEASE_TIME_CONSTANT);
     this.voiceGain.gain.setValueAtTime(0, now + RELEASE_SECONDS);
+    this.routedNoteActive = false;
     this.report('stopped');
   }
 }
 
 function main(): void {
   const elements = getElements();
+  populateAlgorithmSelect(elements.algorithmSelect);
   const harness = new Harness(elements);
 
   elements.enableButton.addEventListener('click', () => {
@@ -233,7 +397,10 @@ function main(): void {
   });
   elements.playSingleButton.addEventListener('click', () => harness.playSingle());
   elements.playAdditiveButton.addEventListener('click', () => harness.playAdditive());
+  elements.playRoutedButton.addEventListener('click', () => harness.playRouted());
   elements.stopButton.addEventListener('click', () => harness.stop());
+  elements.algorithmSelect.addEventListener('change', () => harness.onAlgorithmChanged());
+  elements.feedbackSlider.addEventListener('input', () => harness.onFeedbackChanged());
 }
 
 main();

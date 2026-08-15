@@ -81,7 +81,7 @@ current roadmap.
 ### Accurate Synthesis Engine
 
 - [x] **ENGINE-01**: Six-operator AudioWorklet phase-modulation DSP kernel, testable offline
-- **ENGINE-02**: All 32 graph topologies routed in the DSP engine, with feedback state
+- [x] **ENGINE-02**: All 32 graph topologies routed in the DSP engine, with feedback state
 - **ENGINE-03**: DX7-style four-rate/four-level envelopes and ratio/fixed frequency modes
 
 ### Visualizers and Comparison
@@ -131,17 +131,20 @@ current roadmap.
 | LESSON-01 | Phase 6 | Complete |
 | LESSON-02 | Phase 6 | Complete |
 | ENGINE-01 | Phase 7 | Complete |
+| ENGINE-02 | Phase 8 | Complete |
 
 **Coverage:**
 
 - v1 requirements: 21 total
 - Mapped to phases: 21
 - Unmapped: 0 ✓
-- v2 requirements mapped so far: 1 (ENGINE-01 → Phase 7)
+- v2 requirements mapped so far: 2 (ENGINE-01 → Phase 7, ENGINE-02 → Phase 8)
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-12 — Phase 7 plans 07-01..07-04 all executed; 07-04 closed the
+*Last updated: 2026-08-14 — Phase 7 plans 07-01..07-04 all executed; 07-04 closed the
 production-asset harness leak 07-VERIFICATION.md found (relocated the harness build output
 outside public/, added a fail-closed postbuild assertion and an on-demand realistic-sequence
-regression gate). ENGINE-01 is now Complete and Phase 7 is fully closed.*
+regression gate). ENGINE-01 is now Complete and Phase 7 is fully closed. Phase 8 /
+ENGINE-02 is fully closed (all four plans executed; live cutover to WorkletSynthEngine;
+15/15 must-haves verified).*
