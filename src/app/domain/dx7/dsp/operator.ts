@@ -90,7 +90,8 @@ export class PhaseModulatedOperator {
    * (CLAUDE.md's audio rule: "DSP code must not allocate excessively
    * inside the audio render loop"; Pitfall 5). `modulationInput`, when
    * supplied, is added to the phase argument sample-for-sample (D-03) —
-   * omitting it is equivalent to passing an all-zero buffer. A non-finite
+   * omitting it is equivalent to passing an all-zero buffer. A buffer shorter
+   * than `output` contributes 0 for the missing samples. A non-finite
    * modulation sample is treated as 0 rather than propagating `NaN`/
    * `Infinity` into the kernel (T-07-02 defence-in-depth, behind
    * `worklet-messages.ts`'s `parseWorkletMessage` choke point).
@@ -98,7 +99,8 @@ export class PhaseModulatedOperator {
   render(output: Float32Array, modulationInput?: Float32Array): void {
     const increment = this.frequencyHz / this.sampleRate;
     for (let i = 0; i < output.length; i++) {
-      const rawModulation = modulationInput ? modulationInput[i] : 0;
+      const rawModulation =
+        modulationInput !== undefined && i < modulationInput.length ? modulationInput[i]! : 0;
       const modulation = Number.isFinite(rawModulation) ? rawModulation : 0;
       output[i] = Math.sin(TWO_PI * this.phase + modulation);
       this.phase = (this.phase + increment) % 1;
@@ -133,7 +135,8 @@ export class PhaseModulatedOperator {
     const increment = this.frequencyHz / this.sampleRate;
     const safeFeedbackIndex = Number.isFinite(feedbackIndex) ? feedbackIndex : 0;
     for (let i = 0; i < output.length; i++) {
-      const rawExternal = externalModulation ? externalModulation[i] : 0;
+      const rawExternal =
+        externalModulation !== undefined && i < externalModulation.length ? externalModulation[i]! : 0;
       const external = Number.isFinite(rawExternal) ? rawExternal : 0;
       const modulation = external + safeFeedbackIndex * this.previousSample;
       const sample = Math.sin(TWO_PI * this.phase + modulation);

@@ -1,4 +1,12 @@
-import { MAX_OUTPUT_LEVEL, MIN_OUTPUT_LEVEL, type OperatorParameters } from '../models/operator-parameters';
+import {
+  MAX_ENVELOPE_LEVEL,
+  MAX_ENVELOPE_RATE,
+  MAX_OUTPUT_LEVEL,
+  MIN_ENVELOPE_LEVEL,
+  MIN_ENVELOPE_RATE,
+  MIN_OUTPUT_LEVEL,
+  type OperatorParameters,
+} from '../models/operator-parameters';
 import { MAX_FEEDBACK_LEVEL, MIN_FEEDBACK_LEVEL } from '../models/patch';
 
 /**
@@ -76,7 +84,7 @@ export function outputLevelToAmplitude(outputLevel: number): number {
   return Math.pow(normalized, OUTPUT_LEVEL_CURVE_EXPONENT);
 }
 
-const CENTS_PER_OCTAVE = 1200;
+export const CENTS_PER_OCTAVE = 1200;
 
 /**
  * Fine-tuning step size for the DX7 `detune` scale (-7..+7, `05-02-PLAN.md`
@@ -151,4 +159,72 @@ export function feedbackLevelToDepthHz(feedbackLevel: number, operatorFrequencyH
   const normalized = (feedbackLevel - MIN_FEEDBACK_LEVEL) / FEEDBACK_LEVEL_RANGE;
   const feedbackIndex = MAX_FEEDBACK_INDEX * Math.pow(normalized, OUTPUT_LEVEL_CURVE_EXPONENT);
   return feedbackIndex * operatorFrequencyHz;
+}
+
+/**
+ * The DX7 envelope rate curve's endpoints (Phase 9, Claude's Discretion
+ * informed by research — `09-CONTEXT.md`): the full-scale (traversing the
+ * whole 0..99 level range) segment duration in seconds at the slowest
+ * (rate {@link MIN_ENVELOPE_RATE}) and fastest (rate {@link MAX_ENVELOPE_RATE})
+ * ends of the DX7 rate scale.
+ *
+ * A constant per-sample increment (recomputed whenever a segment's target
+ * changes) was chosen over reproducing the DX7's real asymptotic-exponential
+ * and quadratic hardware curves: an asymptotic model never reaches its
+ * target in finite time and needs an arrival epsilon that makes
+ * segment-transition timing non-deterministic and untestable, whereas a
+ * constant-step model gives an exact closed-form sample count for any
+ * rate-and-distance pair while still sounding audibly non-linear, because
+ * the level it produces is converted to amplitude through the existing
+ * squared curve ({@link outputLevelToAmplitude}) on every sample. This is an
+ * approximation, not a reproduction of the DX7's log-domain rate tables —
+ * revisited only if a future phase needs closer fidelity, never silently
+ * tightened here.
+ *
+ * Calibration anchor: the geometric interpolation below puts rate 50 at
+ * roughly 109ms full scale, which is where the cited hardware measurement of
+ * a rate-50 decay time constant lands when carried out to five time constants
+ * (this codebase treats five time constants as fully decayed).
+ */
+export const ENVELOPE_MIN_FULL_SCALE_SECONDS = 0.002;
+export const ENVELOPE_MAX_FULL_SCALE_SECONDS = 6.4;
+
+const ENVELOPE_LEVEL_RANGE = MAX_ENVELOPE_LEVEL - MIN_ENVELOPE_LEVEL;
+const ENVELOPE_RATE_RANGE = MAX_ENVELOPE_RATE - MIN_ENVELOPE_RATE;
+
+/**
+ * DX7 envelope `rate` (0..99) → the per-sample amount an `EnvelopeGenerator`
+ * segment's level moves toward its target, at `sampleRate`. Normalises the
+ * rate across {@link MIN_ENVELOPE_RATE}..{@link MAX_ENVELOPE_RATE}, interpolates
+ * the full-scale segment duration geometrically between
+ * {@link ENVELOPE_MAX_FULL_SCALE_SECONDS} (at the normalised rate's complement)
+ * and {@link ENVELOPE_MIN_FULL_SCALE_SECONDS} (at the normalised rate itself),
+ * then returns the full level range divided by that duration expressed in
+ * samples (`durationSeconds * sampleRate`).
+ *
+ * Monotonically non-decreasing across the whole 0..99 range (higher rate is
+ * never slower). A non-finite or out-of-range rate is clamped into the rate
+ * bounds before use — treating a non-finite value as the minimum rate — and
+ * a non-finite or non-positive `sampleRate` falls back to
+ * {@link ENVELOPE_FALLBACK_SAMPLE_RATE_HZ} — so this function can never emit
+ * `NaN`, zero, or a negative speed onto the render thread (T-09-02). Every
+ * caller in this codebase (`EnvelopeGenerator`'s constructor) already
+ * validates `sampleRate` and throws before it can reach here; this guard is
+ * defense-in-depth for this function's own exported, directly-callable
+ * contract, which this docstring's "never emit ..." promise covers
+ * unconditionally, not just for callers that happen to validate first.
+ */
+const ENVELOPE_FALLBACK_SAMPLE_RATE_HZ = 44100;
+
+export function envelopeRateToLevelUnitsPerSample(rate: number, sampleRate: number): number {
+  const safeRate = Number.isFinite(rate)
+    ? Math.min(MAX_ENVELOPE_RATE, Math.max(MIN_ENVELOPE_RATE, rate))
+    : MIN_ENVELOPE_RATE;
+  const safeSampleRate =
+    Number.isFinite(sampleRate) && sampleRate > 0 ? sampleRate : ENVELOPE_FALLBACK_SAMPLE_RATE_HZ;
+  const normalized = (safeRate - MIN_ENVELOPE_RATE) / ENVELOPE_RATE_RANGE;
+  const durationSeconds =
+    ENVELOPE_MAX_FULL_SCALE_SECONDS *
+    Math.pow(ENVELOPE_MIN_FULL_SCALE_SECONDS / ENVELOPE_MAX_FULL_SCALE_SECONDS, normalized);
+  return ENVELOPE_LEVEL_RANGE / (durationSeconds * safeSampleRate);
 }

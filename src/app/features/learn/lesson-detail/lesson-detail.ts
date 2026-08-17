@@ -22,6 +22,26 @@ import { PlaySurface } from '../../play-surface/play-surface';
 import { InstrumentState } from '../../../state/instrument-state';
 import { LessonProgress } from '../../../state/lesson-progress';
 
+function nearestLadderIndex(values: readonly number[], value: number): number {
+  if (values.length === 0) {
+    return 0;
+  }
+  const exact = values.indexOf(value);
+  if (exact !== -1) {
+    return exact;
+  }
+  let bestIndex = 0;
+  let bestDistance = Math.abs(values[0]! - value);
+  for (let index = 1; index < values.length; index++) {
+    const distance = Math.abs(values[index]! - value);
+    if (distance < bestDistance) {
+      bestIndex = index;
+      bestDistance = distance;
+    }
+  }
+  return bestIndex;
+}
+
 /**
  * `/learn/:lessonId` route component (D-08: one scrolling page — objective,
  * explanation + embedded diagram (D-05), try-this + embedded play surface
@@ -105,6 +125,17 @@ export class LessonDetail {
     return operatorParameters[lesson.tryThis.targetParam];
   });
 
+  /** Accessible range readout: parameter label plus the resolved value.
+   * Empty when the lesson or live value is unavailable. */
+  protected readonly tryThisValueText = computed(() => {
+    const lesson = this.lesson();
+    const value = this.tryThisValue();
+    if (lesson === null || value === null) {
+      return '';
+    }
+    return `${TRY_THIS_PARAM_LABELS[lesson.tryThis.targetParam]} ${value}`;
+  });
+
   /** The live value's position in `tryThisValues` — what the range input's
    * `value` binds to. */
   protected readonly tryThisIndex = computed<number>(() => {
@@ -112,8 +143,8 @@ export class LessonDetail {
     if (value === null) {
       return 0;
     }
-    const index = this.tryThisValues().indexOf(value);
-    return index === -1 ? 0 : index;
+    const index = nearestLadderIndex(this.tryThisValues(), value);
+    return index;
   });
 
   /** D-06's "moved in direction" half: a pure computed comparing the live

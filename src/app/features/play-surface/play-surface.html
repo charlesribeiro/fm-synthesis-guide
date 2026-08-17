@@ -1,32 +1,21 @@
-@if (status() !== 'ready') {
+<p
+  class="status"
+  [class.status--warning]="status() === 'unavailable' || status() === 'error'"
+  role="status"
+>
+  {{ statusMessage() }}
+</p>
+@if (status() !== 'ready' && status() !== 'unavailable') {
   <div class="gate">
-    @if (status() === 'unavailable') {
-      <p class="status status--warning" role="status">
-        Your browser doesn't support Web Audio, so you can't hear sound here. Everything else on
-        this page still works.
-      </p>
-    } @else {
-      @if (status() === 'error') {
-        <p class="status status--warning" role="status">
-          Audio failed to start. Enable audio to try again.
-        </p>
-      } @else {
-        <p class="status" role="status">
-          Audio is off. Enable audio to play notes on the keyboard below.
-        </p>
-      }
-      <button
-        type="button"
-        class="button button--primary"
-        [disabled]="enabling()"
-        (click)="enableAudio()"
-      >
-        {{ enabling() ? 'Enabling…' : 'Enable audio' }}
-      </button>
-    }
+    <button
+      type="button"
+      class="button button--primary"
+      [disabled]="enabling()"
+      (click)="enableAudio()"
+    >
+      {{ enabling() ? 'Enabling…' : 'Enable audio' }}
+    </button>
   </div>
-} @else {
-  <p class="status" role="status">Audio is ready. Play notes on the keyboard below.</p>
 }
 
 <div
@@ -40,12 +29,11 @@
       type="button"
       class="key"
       [class.key--sharp]="key.isSharp"
-      [class.key--pressed]="heldNote() === key.note"
+      [class.key--pressed]="heldNotes().has(key.note)"
       [attr.data-note]="key.note"
-      [attr.aria-pressed]="heldNote() === key.note"
+      [attr.aria-pressed]="heldNotes().has(key.note)"
       [attr.aria-disabled]="!isReady() ? 'true' : null"
       [attr.tabindex]="!isReady() ? -1 : 0"
-      [disabled]="!isReady()"
       (pointerdown)="onKeyPointerDown($event, key.note)"
       (pointerup)="onKeyPointerUp(key.note)"
       (pointerleave)="onKeyPointerUp(key.note)"

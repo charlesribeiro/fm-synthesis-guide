@@ -35,7 +35,7 @@ describe('LESSON_IDS', () => {
 });
 
 describe('TRY_THIS_PARAM_LABELS', () => {
-  const expectedParams: readonly TryThisParam[] = ['ratio', 'detune', 'outputLevel', 'envelopeLevel'];
+  const expectedParams: readonly TryThisParam[] = ['ratio', 'detune', 'outputLevel'];
 
   it('has an entry for every member of TryThisParam and no extra keys', () => {
     const actualKeys = Object.keys(TRY_THIS_PARAM_LABELS).sort();

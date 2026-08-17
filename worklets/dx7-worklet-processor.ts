@@ -64,7 +64,7 @@ class Dx7WorkletProcessor extends AudioWorkletProcessor {
    * Validates every inbound payload via `parseWorkletMessage` before
    * mutating any kernel field (T-07-01's single choke point) — an invalid
    * message is a silent no-op, never a throw. Explicit per-kind branches
-   * (rather than a trailing fallthrough) so each of the five message kinds
+   * (rather than a trailing fallthrough) so each of the six message kinds
    * mutates exactly the state it owns and nothing else.
    */
   private handleMessage(data: unknown): void {
@@ -97,7 +97,12 @@ class Dx7WorkletProcessor extends AudioWorkletProcessor {
       return;
     }
 
-    this.router.setFeedbackLevel(message.level);
+    if (message.kind === 'setFeedback') {
+      this.router.setFeedbackLevel(message.level);
+      return;
+    }
+
+    this.router.setGate(message.open, message.velocity);
   }
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {

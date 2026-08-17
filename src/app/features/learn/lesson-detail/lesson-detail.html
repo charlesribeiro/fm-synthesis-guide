@@ -38,7 +38,7 @@
       [max]="tryThisValues().length - 1"
       step="1"
       [value]="tryThisIndex()"
-      [attr.aria-valuetext]="'' + tryThisValue()"
+      [attr.aria-valuetext]="tryThisValueText()"
       (input)="onTryThisInput($event)"
       aria-describedby="try-this-expected-effect try-this-value"
     />

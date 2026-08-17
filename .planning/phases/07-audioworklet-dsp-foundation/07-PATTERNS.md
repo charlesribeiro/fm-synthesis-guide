@@ -208,7 +208,7 @@ Every new browser boundary gets a `*Like` interface pair + `InjectionToken` (nev
 **Apply to:** `worklet-synth-engine.ts`
 ```typescript
 export interface SynthEngine {
-  readonly status: () => AudioEngineStatus;
+  readonly status: Signal<AudioEngineStatus>;
   initialize(): Promise<void>;
   setAlgorithm(algorithmId: AlgorithmId): void;
   updateOperatorLevel(operatorId: OperatorId, level: number): void;

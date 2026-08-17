@@ -1,7 +1,36 @@
+import { ALGORITHMS } from '../models/algorithms';
+import { deriveCarriers } from '../models/derive-role';
 import { OPERATOR_IDS, type OperatorId } from '../models/operator';
-import { DEFAULT_OPERATOR_PARAMETERS, type OperatorParameters } from '../models/operator-parameters';
+import {
+  DEFAULT_ENVELOPE,
+  DEFAULT_OPERATOR_PARAMETERS,
+  type Dx7Envelope,
+  type OperatorParameters,
+} from '../models/operator-parameters';
 import type { InstrumentPatch, OperatorParameterSet } from '../models/patch';
 import type { LessonDefinition, LessonId } from './lesson-definition';
+
+/**
+ * Algorithm 1's modulator envelope (Phase 9, ENGINE-03, D-01 — this plan):
+ * the concrete expression of the per-operator envelope capability the phase
+ * adds. Every operator the canonical `ALGORITHMS` dataset derives as a
+ * modulator for Algorithm 1 gets this envelope instead of the shared
+ * default; the two carriers keep `DEFAULT_ENVELOPE` unchanged. Rates
+ * `[80, 16, 16, 55]` attack slightly faster than the default's `74`, then
+ * decay through a middle level (`70`) to a third-segment level (`40`) well
+ * under half the attack peak (`99`), before the same zero release target.
+ * Decay rates of `16` take the 99→40 drop roughly one second under the
+ * geometric rate curve (rate 60 would finish it in tens of milliseconds).
+ * A held note in the lesson therefore opens at full modulation brightness
+ * and audibly mellows over roughly a second as the modulators fall toward
+ * their lower sustain, then releases cleanly — timbral evolution over the
+ * life of one note, not only a difference between patches. Frozen at every
+ * level, mirroring `DEFAULT_ENVELOPE`.
+ */
+const ALGORITHM_1_MODULATOR_ENVELOPE: Dx7Envelope = Object.freeze({
+  rates: Object.freeze([80, 16, 16, 55] as const),
+  levels: Object.freeze([99, 70, 40, 0] as const),
+});
 
 /**
  * Algorithm 32's lesson starting patch: all six operators independent
@@ -18,6 +47,13 @@ import type { LessonDefinition, LessonId } from './lesson-definition';
  * PARAMETERS` (both frozen precisely so no consumer can corrupt the shared
  * reset target — `patch.ts` T-03-01). Frozen at every level, mirroring
  * `patch.ts`'s `DEFAULT_PATCH`.
+ *
+ * Every operator keeps the shared `DEFAULT_ENVELOPE` (Phase 9, ENGINE-03):
+ * Algorithm 32 has no modulation edges at all, so there is no carrier-
+ * versus-modulator pair for a differentiated envelope to contrast — a
+ * uniform sustained envelope is the correct expression of this lesson's
+ * "six clean, independent partials" point, not an oversight left over from
+ * before per-operator envelopes existed.
  */
 function buildAlgorithm32StartingPatch(): InstrumentPatch {
   const operatorEntries = OPERATOR_IDS.map((operatorId) => {
@@ -55,8 +91,25 @@ function buildAlgorithm32StartingPatch(): InstrumentPatch {
  * per operator, never by mutating `DEFAULT_PATCH`/`DEFAULT_OPERATOR_
  * PARAMETERS` (T-03-01). Frozen at every level, mirroring
  * `buildAlgorithm32StartingPatch`.
+ *
+ * Every operator the canonical dataset derives as a carrier (1 and 3) keeps
+ * the shared `DEFAULT_ENVELOPE`: a fast attack straight to maximum, held
+ * there, then the default release. Every operator it derives as a modulator
+ * (2, 4, 5 and 6) gets `ALGORITHM_1_MODULATOR_ENVELOPE` instead — this
+ * plan's (Phase 9, ENGINE-03) concrete expression of the per-operator
+ * envelope capability D-01 adds: a held note opens at full modulation
+ * brightness and mellows as the modulators decay toward a lower sustain
+ * while the carriers hold steady, the same chain-depth brightness this
+ * lesson's explanation already describes, now audible over the life of one
+ * note rather than only across patches. The carrier set is read from
+ * `deriveCarriers` over the canonical `ALGORITHMS` dataset — never restated
+ * as a hardcoded operator-id list — so the envelope assignment and the
+ * dataset's own routing facts cannot disagree.
  */
 function buildAlgorithm1StartingPatch(): InstrumentPatch {
+  const algorithm1 = ALGORITHMS.find((algorithm) => algorithm.id === 1)!;
+  const carriers = deriveCarriers(algorithm1);
+
   const outputLevels: Readonly<Record<OperatorId, number>> = Object.freeze({
     1: 75, // carrier — short pair (2→1)
     2: 60, // modulator feeding the short pair
@@ -70,6 +123,7 @@ function buildAlgorithm1StartingPatch(): InstrumentPatch {
       ...DEFAULT_OPERATOR_PARAMETERS,
       ratio: 1,
       outputLevel: outputLevels[operatorId],
+      envelope: carriers.includes(operatorId) ? DEFAULT_ENVELOPE : ALGORITHM_1_MODULATOR_ENVELOPE,
     });
     return [operatorId, parameters] as const;
   });

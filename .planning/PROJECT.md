@@ -62,27 +62,45 @@ a parameter, and immediately understand why the sound changed.
       foundation Phase 8 cuts the live voice over to.
 - [x] All 32 canonical algorithm topologies routed through the worklet kernel with correct
       feedback, and the live engine cut over to it — Validated in Phase 8:
-      algorithm-routing-and-feedback (2026-08-14). ENGINE-02 complete: `GraphRouter` renders every
+      algorithm-routing-and-feedback (2026-08-13). ENGINE-02 complete: `GraphRouter` renders every
       algorithm's fixed descending topology with a true one-sample feedback delay, cross-checked
       sample-for-sample against an independently-authored recursive reference evaluator
       (`reference-evaluator.ts`) across all 32 rows plus a finite/bounded-output sweep at maximum
       feedback (D-10, D-11); the worklet message boundary is hardened against a hostile-payload
       matrix; `SYNTH_ENGINE` now resolves to `WorkletSynthEngine` everywhere (Playground, lessons)
       with live held-note re-patching on algorithm/feedback changes (D-01, D-13). Automated
-      must-haves 14/15 verified in `08-VERIFICATION.md` (1039+/1050 tests); D-12 listening truth is
-      open until the checkpoint is re-run with an auditable resume payload naming Additive /
-      Tree-Branch / Rooting / Parallel / max-feedback sample algorithm ids (`08-04-PLAN.md`
-      resume-signal; historical bare `approved` not retained — see `08-VALIDATION.md` draft).
+      must-haves verified in `08-VERIFICATION.md` (1039+/1050 tests); D-12 listening validation is
+      complete (ROADMAP: blocking listening checkpoint approved with zero findings, 2026-08-13).
       Code review flagged 1 critical (non-production-reachable gain-staging gap
       in an unused `additive`/`single` render-mode path) and 2 warnings (routing-config validator
       doesn't enforce the ordering/self-loop invariants `GraphRouter` assumes; a stale README
       status line) — see `08-REVIEW.md`. Disposition: resolved — mode-aware `MASTER_GAIN` in
       `WorkletSynthEngine.setRenderMode`/`buildAndStart`, structural routing validation in
       `parseWorkletMessage`, README status refreshed; owner Phase 8 review reconciliation.
+- [x] Six independent per-operator DX7-style four-rate/four-level envelopes drive the DSP
+      engine, replacing the global click-prevention voice ramp — Validated in Phase 9:
+      dx7-style-envelopes-and-parameter-mapping (2026-08-16). ENGINE-03 complete: a pure,
+      per-sample `EnvelopeGenerator` state machine (6 independent instances in `GraphRouter`)
+      driven by a new `setGate` worklet message; note-on/note-off jump the envelope from
+      wherever its level currently sits (D-04), never a fixed restart; velocity survives the
+      voice-gain-node removal via a final output-stage multiplier. A stranded, uncommitted
+      patch from an interrupted prior session (plan 09-01, Task 1) was recovered, audited
+      against the plan's must-haves/prohibitions, and completed rather than discarded or
+      trusted blindly. Ratio/fixed frequency-mode math (built in Phase 8) got explicit
+      regression coverage alongside the new envelope hostile-payload matrix, note-lifecycle
+      bounds, and modulator-envelope-reachability proof (09-02). The Algorithm 1 lesson now
+      demonstrates carrier-sustains/modulator-decays timbral evolution (09-03). A blocking
+      real-browser listening checkpoint (09-04) — release click-freeness, attack character,
+      modulator audibility, silence at rest, bounded worst-case feedback — was approved with
+      a complete auditable payload (`approved check2=3 check5=8 silence=clean
+      evolution=audible`), zero findings. 3/3 must-haves verified in `09-VERIFICATION.md`;
+      1189/1189 tests passing. Code review flagged 0 critical, 1 warning (a dev-harness-only
+      click risk in `harness-main.ts`, never shipped, isolated from production by
+      `verify:harness-isolation`) — see `09-REVIEW.md`.
 
 ### Active
 
-- [ ] Full 32-algorithm curriculum, envelopes, feedback, visualizers, A/B snapshots
+- [ ] Full 32-algorithm curriculum (remaining lesson content), visualizers, A/B snapshots
 - [ ] Web MIDI progressive enhancement, versioned persistence, import/export
 - [ ] Accessibility and performance hardening, Playwright smoke tests, deployment
 
@@ -148,4 +166,4 @@ a parameter, and immediately understand why the sound changed.
 | Phase 5: a post-checkpoint code-review fix (WR-01, commit `fd1b018`) lowered `MASTER_GAIN` from the 05-04-listening-approved 0.18 to 1/6 (≈0.63 dB quieter) to close a mathematically-provable safety-clamp gap (0.18 × 6 carriers could exceed full scale) | The change can only make the engine quieter/safer, never louder/riskier, but the exact shipped value was never itself heard in a real browser, and 05-04-PLAN.md's own must-have requires that it be | ✓ Good — re-confirmed via 05-UAT.md Test 1 (real-browser listening, single note + Algorithm 32 six-carrier worst case), both comfortably audible; verification status canonicalized to `passed` |
 
 ---
-*Last updated: 2026-08-14 after Phase 8 (algorithm-routing-and-feedback) completion*
+*Last updated: 2026-08-16 after Phase 9 (dx7-style-envelopes-and-parameter-mapping) completion*

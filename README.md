@@ -5,11 +5,12 @@ synthesis through the Yamaha DX7's 32 operator-routing algorithms — one algori
 interactive routing diagrams, guided lessons, and live sound. No affiliation with Yamaha or the
 Dexed project. See [full disclaimer](src/app/features/about/about.html).
 
-**Status:** Phase 8 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
+**Status:** Phase 9 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
 state, algorithm browser/SVG, first playable approximation, guided lessons (Alg 32 & 1),
-AudioWorklet DSP foundation, and full algorithm routing/feedback with live cutover to
-[`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts). See
-[`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
+AudioWorklet DSP foundation, full algorithm routing/feedback with live cutover to
+[`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts), and per-operator
+four-rate/four-level envelopes with a note-lifecycle gate message replacing the old global voice
+ramp. See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
 
 ## Setup
 
@@ -51,9 +52,19 @@ harness exercises the routed 32-algorithm path, not only the Phase 7 single-oper
 proof cases: an algorithm `<select>` (labelled with each option's id, name, and teaching-taxonomy
 group), a feedback-depth slider (0–7), a "maximum operator level" checkbox for the worst-case
 loudness case, and a "Play routed" button post the exact same `setAlgorithm`/
-`setOperatorParameters`/`setFeedback` messages `WorkletSynthEngine` posts against the live app.
-Changing the algorithm or the feedback depth while a routed note is sounding re-patches it live,
-without stopping the note. To run it:
+`setOperatorParameters`/`setFeedback` messages `WorkletSynthEngine` posts against the live app. As
+of Phase 9, the routed path also posts the same `setGate` message the live app's `noteOn`/`noteOff`
+post (frequency first, then gate) — the harness's own gain node is held at unity on this path, so
+the kernel's six per-operator envelope generators are the only amplitude shaping a listener hears;
+the single-operator and additive proof cases keep the harness's own click-prevention ramp, since
+neither runs through the router or has envelopes. An "Envelope preset" `<select>` offers four named
+shapes built by spreading the default patch's operator parameters and overriding only the envelope,
+so a listener compares exactly one variable at a time: the shipped default; a slow swell (an
+unmistakably long attack); a percussive decay (a sharp fall to a low sustain plateau); and a
+carrier-sustains/modulator-decays pair, whose carrier set is derived from the selected algorithm via
+`deriveCarriers` rather than hardcoded. Changing the algorithm, the feedback depth, or the envelope
+preset while a routed note is sounding re-patches it live, without stopping the note or restarting
+the envelopes. To run it:
 
 ```bash
 npm run start:harness    # rebuilds the harness, then serves it
@@ -109,7 +120,12 @@ lifecycle hook, so run it on demand rather than on every commit.
 - **Audio boundary** — [`SynthEngine`](src/app/core/audio/synth-engine.ts) is the DI seam;
   production resolves to [`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts) (Phase 8
   routed six-operator AudioWorklet engine). Implementations must never construct an
-  `AudioContext` at module-eval time or store `AudioNode`s in Angular signal state.
+  `AudioContext` at module-eval time or store `AudioNode`s in Angular signal state. As of Phase 9,
+  amplitude shaping happens per operator inside the worklet kernel itself
+  ([`envelope-generator.ts`](src/app/domain/dx7/dsp/envelope-generator.ts)'s four-rate/four-level
+  state machine), not on a single gain node outside it; the rate curve is an informed
+  approximation, with constants chosen from published measurements of real hardware and tuned by
+  listening, not a reproduction of the DX7's internal ROM tables.
 - **Instrument state facade** —
   [`InstrumentState`](src/app/state/instrument-state.ts) is the single source of truth for the
   selected algorithm, the six operators' parameters, and the feedback level. Writable signals stay

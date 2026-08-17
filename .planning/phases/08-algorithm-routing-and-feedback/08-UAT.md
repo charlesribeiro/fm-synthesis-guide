@@ -60,7 +60,8 @@ expected: |
   six-operator routed worklet kernel — a rounder FM timbre from the 4-deep modulator stack
   (6->5->4->3) plus the 2-operator tower (2->1) with feedback on operator 6, not a plain sine
   or a single-operator stand-in. No clicks on note-on/off, and volume is comfortable.
-result: pass
+result: pending
+notes: Live-app listening is part of the D-12 checkpoint; pending until the five-id auditable payload is recorded.
 
 ### 8. Independent reference evaluator implemented
 expected: Independent recursive reference evaluator (evaluateAlgorithmReference) implemented, importing nothing from graph-router.ts, derive-role.ts, or patch-plan.ts, and passing its own analytical self-tests
@@ -102,9 +103,9 @@ coverage_id: 08-02-D5
 expected: |
   parseWorkletMessage rejects every malformed shape of setAlgorithm/setOperatorParameters/setFeedback
   (missing/wrong-type/non-finite/non-integer/out-of-bounds/illegal-ratio fields, including a seventh
-  out-of-range operator id) as a silent null, never throwing. Structural coverage for 08-03-D1 also
-  includes rejecting out-of-order non-feedback edges, inconsistent self-loops, and duplicate /
-  inconsistent carrier+feedbackOperatorId shapes.
+  out-of-range operator id) as a silent null, never throwing. setAlgorithm carries connections and
+  carriers only — not feedbackOperatorId. Structural coverage for 08-03-D1 also includes rejecting
+  out-of-order non-feedback edges, inconsistent feedback self-loops, and duplicate carriers.
 result: pass
 source: automated
 coverage_id: 08-03-D1
@@ -178,22 +179,25 @@ notes: Same D-12 checkpoint re-run required; historical approval lacked auditabl
 
 ### 25. Maximum feedback stays bounded and harsh-not-tamed (D-07, D-08)
 expected: Output stays audibly bounded and never painfully loud at maximum feedback with every operator at maximum level, and maximum feedback is allowed to sound harsh rather than tamed
-result: pass
+result: pending
+notes: Same D-12 checkpoint re-run required; no separate auditable evidence currently verifies the maximum-feedback listening behavior.
 
 ### 26. Lesson 6 regression against the live engine (D-03)
 expected: Lesson 6's Algorithm 1 try-this completion flow still fires its completion state and the sound matches expectations against the now-live WorkletSynthEngine
-result: pass
+result: pending
+notes: Live Lesson 6 listening is part of the D-12 checkpoint; pending until the five-id auditable payload is recorded.
 
 ### 27. Honesty copy unchanged (D-05, AUDIO-03)
 expected: The persistent educational-approximation honesty label still reads exactly as it did before this phase — routing and feedback becoming real changed no honesty copy
-result: pass
+result: pending
+notes: Honesty-copy check is part of the D-12 checkpoint; pending until the five-id auditable payload is recorded.
 
 ## Summary
 
 total: 27
-passed: 24
+passed: 20
 issues: 0
-pending: 3
+pending: 7
 skipped: 0
 blocked: 0
 must_haves: 14/15 (truth 15 open pending auditable D-12 re-run)

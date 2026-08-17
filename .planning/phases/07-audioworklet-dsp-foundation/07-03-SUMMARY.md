@@ -70,7 +70,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D2
-    description: "npm run harness builds public/dev/worklet-harness.{js,html}; the flagless npm run build:worklet (and therefore npm run build) never creates public/dev/, so a production dist tree contains the worklet bundle but no dev directory"
+    description: "On a clean checkout, npm run harness builds public/dev/worklet-harness.{js,html}; flagless npm run build:worklet / npm run build do not create public/dev in that scenario. The realistic npm run harness then npm run build sequence, and production isolation of harness output, are 07-04's fix — this row does not claim every production build lacks a dev directory"
     requirement: "ENGINE-01"
     verification:
       - kind: other

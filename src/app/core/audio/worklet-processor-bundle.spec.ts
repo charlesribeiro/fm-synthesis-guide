@@ -3,6 +3,15 @@ import { buildRoutingConfig, GraphRouter } from '../../domain/dx7/dsp/graph-rout
 import { PhaseModulatedOperator } from '../../domain/dx7/dsp/operator';
 import { DX7_OPERATOR_PROCESSOR_NAME } from '../../domain/dx7/dsp/worklet-messages';
 import { ALGORITHMS } from '../../domain/dx7/models/algorithms';
+import { MAX_VELOCITY, envelopeRateToLevelUnitsPerSample } from '../../domain/dx7/audio/value-conversion';
+import {
+  DEFAULT_ENVELOPE,
+  MAX_ENVELOPE_LEVEL,
+  MAX_ENVELOPE_RATE,
+  MIN_ENVELOPE_LEVEL,
+  type Dx7Envelope,
+} from '../../domain/dx7/models/operator-parameters';
+import { OPERATOR_IDS } from '../../domain/dx7/models/operator';
 import type { OperatorParameterSet } from '../../domain/dx7/models/patch';
 
 /**
@@ -123,13 +132,39 @@ const ROUTED_NOTE_FREQUENCY_HZ = 220;
  * parameters could pass a wiring bug that swapped two operators' values. */
 function buildDistinctOperatorParameters(): OperatorParameterSet {
   return {
-    1: { enabled: true, mode: 'ratio', ratio: 1, fixedFrequencyHz: 440, detune: -3, outputLevel: 40, envelopeLevel: 70 },
-    2: { enabled: true, mode: 'ratio', ratio: 2, fixedFrequencyHz: 440, detune: -1, outputLevel: 55, envelopeLevel: 75 },
-    3: { enabled: true, mode: 'ratio', ratio: 3, fixedFrequencyHz: 440, detune: 0, outputLevel: 60, envelopeLevel: 80 },
-    4: { enabled: true, mode: 'ratio', ratio: 4, fixedFrequencyHz: 440, detune: 2, outputLevel: 65, envelopeLevel: 85 },
-    5: { enabled: true, mode: 'ratio', ratio: 5, fixedFrequencyHz: 440, detune: 4, outputLevel: 70, envelopeLevel: 90 },
-    6: { enabled: true, mode: 'ratio', ratio: 0.5, fixedFrequencyHz: 440, detune: 6, outputLevel: 75, envelopeLevel: 95 },
+    1: { enabled: true, mode: 'ratio', ratio: 1, fixedFrequencyHz: 440, detune: -3, outputLevel: 40, envelope: DEFAULT_ENVELOPE },
+    2: { enabled: true, mode: 'ratio', ratio: 2, fixedFrequencyHz: 440, detune: -1, outputLevel: 55, envelope: DEFAULT_ENVELOPE },
+    3: { enabled: true, mode: 'ratio', ratio: 3, fixedFrequencyHz: 440, detune: 0, outputLevel: 60, envelope: DEFAULT_ENVELOPE },
+    4: { enabled: true, mode: 'ratio', ratio: 4, fixedFrequencyHz: 440, detune: 2, outputLevel: 65, envelope: DEFAULT_ENVELOPE },
+    5: { enabled: true, mode: 'ratio', ratio: 5, fixedFrequencyHz: 440, detune: 4, outputLevel: 70, envelope: DEFAULT_ENVELOPE },
+    6: { enabled: true, mode: 'ratio', ratio: 0.5, fixedFrequencyHz: 440, detune: 6, outputLevel: 75, envelope: DEFAULT_ENVELOPE },
   };
+}
+
+/**
+ * Phase 9 (T-09-01): the gated-note parity fixture. Every operator's
+ * envelope is forced to maximum rate/maximum level so the router reaches its
+ * maximum-amplitude plateau within a small, exactly-computed number of
+ * warm-up blocks — the same `gateAndWarmUp` convention `graph-router.spec.ts`
+ * and `algorithm-routing.spec.ts` already established.
+ */
+const GATED_MAX_ENVELOPE: Dx7Envelope = Object.freeze({
+  rates: Object.freeze([MAX_ENVELOPE_RATE, MAX_ENVELOPE_RATE, MAX_ENVELOPE_RATE, MAX_ENVELOPE_RATE] as const),
+  levels: Object.freeze([MAX_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL] as const),
+});
+
+const GATED_WARM_UP_BLOCK_COUNT = Math.ceil(
+  Math.ceil(
+    (MAX_ENVELOPE_LEVEL - MIN_ENVELOPE_LEVEL) / envelopeRateToLevelUnitsPerSample(MAX_ENVELOPE_RATE, TEST_SAMPLE_RATE),
+  ) / BLOCK_SIZE,
+);
+
+/** {@link buildDistinctOperatorParameters}'s distinct per-operator values
+ * with every operator's envelope replaced by {@link GATED_MAX_ENVELOPE}. */
+function buildDistinctGatedOperatorParameters(): OperatorParameterSet {
+  const base = buildDistinctOperatorParameters();
+  const entries = OPERATOR_IDS.map((id) => [id, { ...base[id], envelope: GATED_MAX_ENVELOPE }] as const);
+  return Object.freeze(Object.fromEntries(entries)) as OperatorParameterSet;
 }
 
 function expectSingleRegistration(bundle: EvaluatedBundle): ProcessorRegistration {
@@ -242,6 +277,7 @@ describe('worklet-processor-bundle', () => {
     processor.port.onmessage?.(toMessageEvent({ kind: 'setOperatorParameters', operators }));
     processor.port.onmessage?.(toMessageEvent({ kind: 'setFeedback', level: ROUTED_FEEDBACK_LEVEL }));
     processor.port.onmessage?.(toMessageEvent({ kind: 'setFrequency', frequencyHz: ROUTED_NOTE_FREQUENCY_HZ }));
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setGate', open: true, velocity: MAX_VELOCITY }));
 
     const bundleBlock1 = new Float32Array(BLOCK_SIZE);
     const bundleBlock2 = new Float32Array(BLOCK_SIZE);
@@ -253,14 +289,60 @@ describe('worklet-processor-bundle', () => {
     reference.setOperatorParameters(operators);
     reference.setFeedbackLevel(ROUTED_FEEDBACK_LEVEL);
     reference.setNoteFrequencyHz(ROUTED_NOTE_FREQUENCY_HZ);
+    reference.setGate(true, MAX_VELOCITY);
 
     const referenceBlock1 = new Float32Array(BLOCK_SIZE);
     const referenceBlock2 = new Float32Array(BLOCK_SIZE);
     reference.render(referenceBlock1);
     reference.render(referenceBlock2);
 
+    expect(Array.from(bundleBlock1).some((sample) => sample !== 0)).toBe(true);
     expect(bundleBlock1).toEqual(referenceBlock1);
     expect(bundleBlock2).toEqual(referenceBlock2);
+  });
+
+  it('renders a non-silent, enveloped, gated note identical to a directly-constructed GraphRouter (Phase 9, T-09-01)', async () => {
+    const { ctor } = expectSingleRegistration(await evaluateBundle());
+    const algorithm = ALGORITHMS.find((entry) => entry.id === ROUTED_ALGORITHM_ID)!;
+    const routingConfig = buildRoutingConfig(algorithm);
+    const operators = buildDistinctGatedOperatorParameters();
+
+    const processor = new ctor({ processorOptions: { frequencyHz: 440 } });
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setMode', mode: 'routed' }));
+    processor.port.onmessage?.(
+      toMessageEvent({ kind: 'setAlgorithm', connections: routingConfig.connections, carriers: routingConfig.carriers }),
+    );
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setOperatorParameters', operators }));
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setFeedback', level: ROUTED_FEEDBACK_LEVEL }));
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setFrequency', frequencyHz: ROUTED_NOTE_FREQUENCY_HZ }));
+    // Without this gate message the router renders silence (Phase 9, D-02) —
+    // a parity case that omitted it would compare zeros to zeros and pass
+    // vacuously. Warm up past the envelope's maximum-amplitude plateau so the
+    // block under comparison is not still mid-attack.
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setGate', open: true, velocity: MAX_VELOCITY }));
+    for (let block = 0; block < GATED_WARM_UP_BLOCK_COUNT; block++) {
+      processor.process([], [[new Float32Array(BLOCK_SIZE)]]);
+    }
+
+    const bundleBlock = new Float32Array(BLOCK_SIZE);
+    processor.process([], [[bundleBlock]]);
+
+    const reference = new GraphRouter(TEST_SAMPLE_RATE, BLOCK_SIZE);
+    reference.setRouting(routingConfig);
+    reference.setOperatorParameters(operators);
+    reference.setFeedbackLevel(ROUTED_FEEDBACK_LEVEL);
+    reference.setNoteFrequencyHz(ROUTED_NOTE_FREQUENCY_HZ);
+    reference.setGate(true, MAX_VELOCITY);
+    const referenceScratch = new Float32Array(BLOCK_SIZE);
+    for (let block = 0; block < GATED_WARM_UP_BLOCK_COUNT; block++) {
+      reference.render(referenceScratch);
+    }
+    const referenceBlock = new Float32Array(BLOCK_SIZE);
+    reference.render(referenceBlock);
+
+    // Prove the case cannot pass by vacuously comparing zeros to zeros.
+    expect(Array.from(bundleBlock).some((sample) => sample !== 0)).toBe(true);
+    expect(bundleBlock).toEqual(referenceBlock);
   });
 
   it("replaces the processor's cached routing state atomically when a second algorithm with a different feedback operator id is applied (T-08-04)", async () => {
@@ -269,7 +351,7 @@ describe('worklet-processor-bundle', () => {
     const algorithm2 = ALGORITHMS.find((entry) => entry.id === ROUTED_ALGORITHM_SWITCH_ID)!;
     const routingConfig1 = buildRoutingConfig(algorithm1);
     const routingConfig2 = buildRoutingConfig(algorithm2);
-    const operators = buildDistinctOperatorParameters();
+    const operators = buildDistinctGatedOperatorParameters();
 
     const processor = new ctor({ processorOptions: { frequencyHz: 440 } });
     processor.port.onmessage?.(toMessageEvent({ kind: 'setMode', mode: 'routed' }));
@@ -279,6 +361,7 @@ describe('worklet-processor-bundle', () => {
     processor.port.onmessage?.(toMessageEvent({ kind: 'setOperatorParameters', operators }));
     processor.port.onmessage?.(toMessageEvent({ kind: 'setFeedback', level: ROUTED_FEEDBACK_LEVEL }));
     processor.port.onmessage?.(toMessageEvent({ kind: 'setFrequency', frequencyHz: ROUTED_NOTE_FREQUENCY_HZ }));
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setGate', open: true, velocity: MAX_VELOCITY }));
     // Render once under algorithm 1 first, to build up real phase and
     // feedback-history state that the switch below must not leak from.
     processor.process([], [[new Float32Array(BLOCK_SIZE)]]);
@@ -286,6 +369,9 @@ describe('worklet-processor-bundle', () => {
     processor.port.onmessage?.(
       toMessageEvent({ kind: 'setAlgorithm', connections: routingConfig2.connections, carriers: routingConfig2.carriers }),
     );
+    for (let block = 0; block < GATED_WARM_UP_BLOCK_COUNT; block++) {
+      processor.process([], [[new Float32Array(BLOCK_SIZE)]]);
+    }
     const bundleBlockAfterSwitch = new Float32Array(BLOCK_SIZE);
     processor.process([], [[bundleBlockAfterSwitch]]);
 
@@ -294,9 +380,15 @@ describe('worklet-processor-bundle', () => {
     freshReference.setOperatorParameters(operators);
     freshReference.setFeedbackLevel(ROUTED_FEEDBACK_LEVEL);
     freshReference.setNoteFrequencyHz(ROUTED_NOTE_FREQUENCY_HZ);
+    freshReference.setGate(true, MAX_VELOCITY);
+    const freshScratch = new Float32Array(BLOCK_SIZE);
+    for (let block = 0; block < GATED_WARM_UP_BLOCK_COUNT; block++) {
+      freshReference.render(freshScratch);
+    }
     const freshReferenceBlock = new Float32Array(BLOCK_SIZE);
     freshReference.render(freshReferenceBlock);
 
+    expect(Array.from(bundleBlockAfterSwitch).some((sample) => sample !== 0)).toBe(true);
     expect(bundleBlockAfterSwitch).toEqual(freshReferenceBlock);
   });
 
@@ -304,7 +396,7 @@ describe('worklet-processor-bundle', () => {
     const { ctor } = expectSingleRegistration(await evaluateBundle());
     const algorithm = ALGORITHMS.find((entry) => entry.id === ROUTED_ALGORITHM_ID)!;
     const routingConfig = buildRoutingConfig(algorithm);
-    const operators = buildDistinctOperatorParameters();
+    const operators = buildDistinctGatedOperatorParameters();
 
     function setUpRoutedProcessor(): CapturedProcessor {
       const processor = new ctor({ processorOptions: { frequencyHz: 440 } });
@@ -319,6 +411,10 @@ describe('worklet-processor-bundle', () => {
       processor.port.onmessage?.(toMessageEvent({ kind: 'setOperatorParameters', operators }));
       processor.port.onmessage?.(toMessageEvent({ kind: 'setFeedback', level: ROUTED_FEEDBACK_LEVEL }));
       processor.port.onmessage?.(toMessageEvent({ kind: 'setFrequency', frequencyHz: ROUTED_NOTE_FREQUENCY_HZ }));
+      processor.port.onmessage?.(toMessageEvent({ kind: 'setGate', open: true, velocity: MAX_VELOCITY }));
+      for (let block = 0; block < GATED_WARM_UP_BLOCK_COUNT; block++) {
+        processor.process([], [[new Float32Array(BLOCK_SIZE)]]);
+      }
       return processor;
     }
 
@@ -329,6 +425,7 @@ describe('worklet-processor-bundle', () => {
     const malformedFirst = new Float32Array(BLOCK_SIZE);
     untouched.process([], [[untouchedFirst]]);
     sentMalformed.process([], [[malformedFirst]]);
+    expect(Array.from(malformedFirst).some((sample) => sample !== 0)).toBe(true);
     expect(malformedFirst).toEqual(untouchedFirst);
 
     expect(() =>
@@ -342,6 +439,7 @@ describe('worklet-processor-bundle', () => {
     untouched.process([], [[untouchedSecond]]);
     sentMalformed.process([], [[malformedSecond]]);
 
+    expect(Array.from(malformedSecond).some((sample) => sample !== 0)).toBe(true);
     expect(malformedSecond).toEqual(untouchedSecond);
   });
 
@@ -349,12 +447,23 @@ describe('worklet-processor-bundle', () => {
     const { ctor } = expectSingleRegistration(await evaluateBundle());
     const algorithm = ALGORITHMS.find((entry) => entry.id === ROUTED_ALGORITHM_ID)!;
     const routingConfig = buildRoutingConfig(algorithm);
+    const operators = buildDistinctGatedOperatorParameters();
 
     const processor = new ctor({ processorOptions: { frequencyHz: 440 } });
     processor.port.onmessage?.(toMessageEvent({ kind: 'setMode', mode: 'routed' }));
     processor.port.onmessage?.(
       toMessageEvent({ kind: 'setAlgorithm', connections: routingConfig.connections, carriers: routingConfig.carriers }),
     );
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setOperatorParameters', operators }));
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setFeedback', level: ROUTED_FEEDBACK_LEVEL }));
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setFrequency', frequencyHz: ROUTED_NOTE_FREQUENCY_HZ }));
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setGate', open: true, velocity: MAX_VELOCITY }));
+    for (let block = 0; block < GATED_WARM_UP_BLOCK_COUNT; block++) {
+      processor.process([], [[new Float32Array(BLOCK_SIZE)]]);
+    }
+    const sounding = new Float32Array(BLOCK_SIZE);
+    processor.process([], [[sounding]]);
+    expect(Array.from(sounding).some((sample) => sample !== 0)).toBe(true);
 
     const unexpectedQuantum = new Float32Array(BLOCK_SIZE * 2);
     expect(() => processor.process([], [[unexpectedQuantum]])).not.toThrow();

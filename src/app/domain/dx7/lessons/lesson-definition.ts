@@ -39,13 +39,17 @@ export type TryThisDirection = 'increase' | 'decrease';
  *   operator is in `'ratio'` mode (`operator-parameters.ts` lines 32-37) —
  *   a try-this step targeting it would be silent, and an inaudible
  *   try-this step cannot satisfy D-06's "so the change was actually heard."
+ * - `envelope` is excluded because, as of Phase 9, it is a whole-object
+ *   structured field (`Dx7Envelope`) with no single meaningful increase/
+ *   decrease direction — the same reasoning already applied to `enabled`
+ *   and `mode`.
  * This is a strict subset of D-02's shape, so it preserves D-02's intent
  * (structured, verifiable data) without reducing what any lesson in this
  * phase can express.
  */
 export type TryThisParam = Exclude<
   keyof OperatorParameters,
-  'enabled' | 'mode' | 'fixedFrequencyHz'
+  'enabled' | 'mode' | 'fixedFrequencyHz' | 'envelope'
 >;
 
 /** Learner-facing label for each `TryThisParam` — the one place a component
@@ -54,7 +58,6 @@ export const TRY_THIS_PARAM_LABELS: Readonly<Record<TryThisParam, string>> = Obj
   ratio: 'Frequency ratio',
   detune: 'Detune',
   outputLevel: 'Output level',
-  envelopeLevel: 'Envelope level',
 });
 
 /**

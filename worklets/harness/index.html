@@ -88,13 +88,15 @@
       <button id="play-additive-button" type="button">Play additive six-carrier</button>
       <button id="stop-button" type="button">Stop</button>
     </div>
-    <h2>Routed algorithm playback (Phase 8)</h2>
+    <h2>Routed algorithm playback (Phase 8, envelopes in Phase 9)</h2>
     <p>
       Plays the selected algorithm through the same <code>setAlgorithm</code>,
-      <code>setOperatorParameters</code>, and <code>setFeedback</code> messages
-      <code>WorkletSynthEngine</code> posts against the live app &mdash; not only the Phase 7
-      single-operator and additive proof cases above. Changing the algorithm or the feedback depth
-      while a note is sounding re-patches it live, without stopping the note.
+      <code>setOperatorParameters</code>, <code>setFeedback</code>, and (Phase 9)
+      <code>setGate</code> messages <code>WorkletSynthEngine</code> posts against the live app
+      &mdash; not only the Phase 7 single-operator and additive proof cases above. The kernel's own
+      six per-operator envelope generators are the only amplitude shaping on this path; changing the
+      algorithm, the feedback depth, or the envelope preset while a note is sounding re-patches it
+      live, without stopping the note or restarting the envelopes.
     </p>
     <div class="routed-controls">
       <label for="algorithm-select">Algorithm</label>
@@ -104,6 +106,10 @@
       <label for="feedback-slider">Feedback depth (0&ndash;7)</label>
       <input id="feedback-slider" type="range" min="0" max="7" step="1" value="0" />
       <output id="feedback-readout" for="feedback-slider">0</output>
+    </div>
+    <div class="routed-controls">
+      <label for="envelope-preset-select">Envelope preset</label>
+      <select id="envelope-preset-select"></select>
     </div>
     <div class="routed-controls">
       <input id="max-level-checkbox" type="checkbox" />

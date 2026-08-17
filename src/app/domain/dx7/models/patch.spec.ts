@@ -38,6 +38,16 @@ describe('DEFAULT_PATCH', () => {
     }
   });
 
+  // D-06 (Phase 9): every operator shares the identical DEFAULT_ENVELOPE
+  // object reference, not merely an equal-by-value copy — made mechanical
+  // here rather than left implicit in the outer toEqual assertion above.
+  it('gives all six operators the identical envelope object reference (D-06)', () => {
+    const firstEnvelope = DEFAULT_PATCH.operators[1].envelope;
+    for (const id of OPERATOR_IDS) {
+      expect(DEFAULT_PATCH.operators[id].envelope).toBe(firstEnvelope);
+    }
+  });
+
   it('is frozen at every level: the patch, the operators record, and each operator (T-03-01)', () => {
     expect(() => {
       (DEFAULT_PATCH as { feedback: number }).feedback = 5;

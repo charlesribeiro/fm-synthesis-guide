@@ -209,8 +209,11 @@ per-algorithm curriculum beyond Lesson 6's regression check (Phase 11); removing
   edge-to-connection-list traversal `WebAudioSynthEngine` uses; this phase's kernel-facing routing
   translation should reuse or closely mirror this shape rather than re-deriving edge/feedback logic.
 - `src/app/domain/dx7/models/derive-role.ts` — `getFeedbackOperator`, `deriveCarriers`,
-  `getOperatorRole`, `hasFeedbackLoop` — the single source of truth this phase's routing and
-  feedback logic must read through, never re-derive.
+  `getOperatorRole`, `hasFeedbackLoop` — the single source of truth **production** routing must
+  read through. `graph-router.ts` and the main-thread routing translation (`buildRoutingConfig` /
+  `planConnections` / `deriveCarriers`) must use these helpers, never re-derive. `reference-evaluator.ts`
+  is the exception that preserves D-10: it must independently derive graph facts from
+  `algorithm.edges` and must not import these helpers.
 - `src/app/domain/dx7/models/validate-algorithm.ts` — the "higher-modulates-lower" invariant
   (edges always `from > to`, except the feedback self-loop `from === to`) — the structural fact the
   Claude's-Discretion evaluation-order item derives its descending-id order from.

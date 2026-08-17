@@ -5,6 +5,7 @@ import { ALGORITHMS } from '../domain/dx7/models/algorithms';
 import { OPERATOR_IDS, isOperatorId, type OperatorId } from '../domain/dx7/models/operator';
 import {
   validateOperatorParameters,
+  type Dx7Envelope,
   type OperatorParameters,
 } from '../domain/dx7/models/operator-parameters';
 import {
@@ -41,6 +42,13 @@ export const SNAPSHOT_SLOTS: readonly SnapshotSlot[] = Object.freeze(['a', 'b'])
  */
 export function isSnapshotSlot(value: string): value is SnapshotSlot {
   return SNAPSHOT_SLOTS.includes(value as SnapshotSlot);
+}
+
+function cloneEnvelope(envelope: Dx7Envelope): Dx7Envelope {
+  return {
+    rates: [envelope.rates[0]!, envelope.rates[1]!, envelope.rates[2]!, envelope.rates[3]!],
+    levels: [envelope.levels[0]!, envelope.levels[1]!, envelope.levels[2]!, envelope.levels[3]!],
+  };
 }
 
 /**
@@ -169,7 +177,12 @@ export class InstrumentState {
     validateOperatorParameters(changes);
     const previous = this._patch();
     const previousOperatorParameters = previous.operators[operatorId];
-    const nextOperatorParameters: OperatorParameters = { ...previousOperatorParameters, ...changes };
+    const { envelope: envelopeChange, ...otherChanges } = changes;
+    const nextOperatorParameters: OperatorParameters = {
+      ...previousOperatorParameters,
+      ...otherChanges,
+      envelope: envelopeChange !== undefined ? cloneEnvelope(envelopeChange) : previousOperatorParameters.envelope,
+    };
     const nextOperators = { ...previous.operators, [operatorId]: nextOperatorParameters } as OperatorParameterSet;
     this._patch.set({ ...previous, operators: nextOperators });
   }

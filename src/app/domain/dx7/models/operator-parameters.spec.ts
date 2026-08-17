@@ -1,14 +1,18 @@
 import {
   COARSE_RATIOS,
+  DEFAULT_ENVELOPE,
   DEFAULT_OPERATOR_PARAMETERS,
   MAX_DETUNE,
   MAX_ENVELOPE_LEVEL,
+  MAX_ENVELOPE_RATE,
   MAX_OUTPUT_LEVEL,
   MIN_DETUNE,
   MIN_ENVELOPE_LEVEL,
+  MIN_ENVELOPE_RATE,
   MIN_OUTPUT_LEVEL,
   isCoarseRatio,
   validateOperatorParameters,
+  type OperatorParameters,
 } from './operator-parameters';
 
 // D-10: COARSE_RATIOS is the DX7's 32 coarse-frequency positions, frozen so
@@ -71,10 +75,75 @@ describe('validateOperatorParameters', () => {
     expect(() => validateOperatorParameters({ outputLevel: 50.5 })).toThrow(RangeError);
   });
 
-  it('rejects an envelopeLevel above MAX_ENVELOPE_LEVEL, accepts the boundary', () => {
-    expect(() => validateOperatorParameters({ envelopeLevel: MAX_ENVELOPE_LEVEL + 1 })).toThrow(RangeError);
-    expect(() => validateOperatorParameters({ envelopeLevel: MAX_ENVELOPE_LEVEL })).not.toThrow();
-    expect(() => validateOperatorParameters({ envelopeLevel: MIN_ENVELOPE_LEVEL })).not.toThrow();
+  // Phase 9: envelope is now a structured Dx7Envelope, not a flat level.
+  // The malformed-shape cases deliberately pass tuples of the wrong length —
+  // exactly the hostile-shape input `validateOperatorParameters` must
+  // reject at runtime — so the call is cast through `unknown` to bypass the
+  // compile-time tuple-length check that would otherwise catch it statically.
+  it('rejects an envelope with the wrong tuple length', () => {
+    expect(() =>
+      validateOperatorParameters({
+        envelope: { rates: [1, 2, 3], levels: [99, 99, 99, 0] },
+      } as unknown as Partial<OperatorParameters>),
+    ).toThrow(RangeError);
+    expect(() =>
+      validateOperatorParameters({
+        envelope: { rates: [1, 2, 3, 4], levels: [99, 99, 99] },
+      } as unknown as Partial<OperatorParameters>),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects an envelope with a non-integer entry', () => {
+    expect(() =>
+      validateOperatorParameters({ envelope: { rates: [1.5, 2, 3, 4], levels: [99, 99, 99, 0] } }),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects an envelope with a rate above MAX_ENVELOPE_RATE', () => {
+    expect(() =>
+      validateOperatorParameters({
+        envelope: { rates: [MAX_ENVELOPE_RATE + 1, 2, 3, 4], levels: [99, 99, 99, 0] },
+      }),
+    ).toThrow(RangeError);
+  });
+
+  it('rejects an envelope with a level above MAX_ENVELOPE_LEVEL', () => {
+    expect(() =>
+      validateOperatorParameters({
+        envelope: { rates: [1, 2, 3, 4], levels: [MAX_ENVELOPE_LEVEL + 1, 99, 99, 0] },
+      }),
+    ).toThrow(RangeError);
+  });
+
+  it('accepts an envelope at both rate and level boundaries', () => {
+    expect(() =>
+      validateOperatorParameters({
+        envelope: {
+          rates: [MIN_ENVELOPE_RATE, MAX_ENVELOPE_RATE, MIN_ENVELOPE_RATE, MAX_ENVELOPE_RATE],
+          levels: [MIN_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL, MIN_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL],
+        },
+      }),
+    ).not.toThrow();
+  });
+
+  it('rejects a hostile envelope entry without invoking its custom toString/Symbol.toPrimitive', () => {
+    let toStringCalls = 0;
+    const hostileEntry = {
+      toString() {
+        toStringCalls++;
+        throw new Error('pwned — should never run');
+      },
+      [Symbol.toPrimitive]() {
+        toStringCalls++;
+        throw new Error('pwned — should never run');
+      },
+    };
+    expect(() =>
+      validateOperatorParameters({
+        envelope: { rates: [hostileEntry, 2, 3, 4], levels: [99, 99, 99, 0] },
+      } as unknown as Partial<OperatorParameters>),
+    ).toThrow(RangeError);
+    expect(toStringCalls).toBe(0);
   });
 
   it('rejects a non-coarse ratio, accepts a coarse one', () => {
@@ -99,7 +168,7 @@ describe('validateOperatorParameters', () => {
   // previous parameters (see updateOperator).
   it('rejects an explicit undefined for every supported field', () => {
     expect(() => validateOperatorParameters({ outputLevel: undefined })).toThrow(RangeError);
-    expect(() => validateOperatorParameters({ envelopeLevel: undefined })).toThrow(RangeError);
+    expect(() => validateOperatorParameters({ envelope: undefined })).toThrow(RangeError);
     expect(() => validateOperatorParameters({ detune: undefined })).toThrow(RangeError);
     expect(() => validateOperatorParameters({ ratio: undefined })).toThrow(RangeError);
     expect(() => validateOperatorParameters({ fixedFrequencyHz: undefined })).toThrow(RangeError);
@@ -116,7 +185,7 @@ describe('DEFAULT_OPERATOR_PARAMETERS', () => {
     expect(DEFAULT_OPERATOR_PARAMETERS.outputLevel).toBe(50);
     expect(DEFAULT_OPERATOR_PARAMETERS.ratio).toBe(1);
     expect(DEFAULT_OPERATOR_PARAMETERS.detune).toBe(0);
-    expect(DEFAULT_OPERATOR_PARAMETERS.envelopeLevel).toBe(99);
+    expect(DEFAULT_OPERATOR_PARAMETERS.envelope).toBe(DEFAULT_ENVELOPE);
     expect(DEFAULT_OPERATOR_PARAMETERS.mode).toBe('ratio');
     expect(DEFAULT_OPERATOR_PARAMETERS.enabled).toBe(true);
   });
@@ -124,6 +193,27 @@ describe('DEFAULT_OPERATOR_PARAMETERS', () => {
   it('is frozen and rejects a mutation attempt (T-03-01)', () => {
     expect(() => {
       (DEFAULT_OPERATOR_PARAMETERS as { outputLevel: number }).outputLevel = 10;
+    }).toThrow(TypeError);
+  });
+});
+
+// D-06: DEFAULT_ENVELOPE is frozen at every level (object + both tuples) and
+// its literal rate/level values are asserted directly.
+describe('DEFAULT_ENVELOPE', () => {
+  it('matches the documented rates and levels', () => {
+    expect(DEFAULT_ENVELOPE.rates).toEqual([74, 74, 74, 55]);
+    expect(DEFAULT_ENVELOPE.levels).toEqual([99, 99, 99, 0]);
+  });
+
+  it('is frozen at every level and rejects mutation attempts', () => {
+    expect(() => {
+      (DEFAULT_ENVELOPE as unknown as { rates: number[] }).rates = [0, 0, 0, 0];
+    }).toThrow(TypeError);
+    expect(() => {
+      (DEFAULT_ENVELOPE.rates as unknown as number[])[0] = 0;
+    }).toThrow(TypeError);
+    expect(() => {
+      (DEFAULT_ENVELOPE.levels as unknown as number[])[0] = 0;
     }).toThrow(TypeError);
   });
 });

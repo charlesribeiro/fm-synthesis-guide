@@ -72,6 +72,25 @@ describe('PhaseModulatedOperator', () => {
     }
   });
 
+  it('treats a shorter modulation buffer as zero for missing samples, matching a zero-padded buffer of output length', () => {
+    const shortOp = new PhaseModulatedOperator(SAMPLE_RATE, FREQUENCY_HZ);
+    const paddedOp = new PhaseModulatedOperator(SAMPLE_RATE, FREQUENCY_HZ);
+    const short = new Float32Array(8);
+    short[0] = 0.5;
+    const padded = new Float32Array(RENDER_QUANTUM_FRAMES);
+    padded[0] = 0.5;
+    const shortOutput = new Float32Array(RENDER_QUANTUM_FRAMES);
+    const paddedOutput = new Float32Array(RENDER_QUANTUM_FRAMES);
+
+    shortOp.render(shortOutput, short);
+    paddedOp.render(paddedOutput, padded);
+
+    expect(shortOutput).toEqual(paddedOutput);
+    for (const sample of shortOutput) {
+      expect(Number.isFinite(sample)).toBe(true);
+    }
+  });
+
   it('throws a RangeError naming the offending value for a non-finite or non-positive sampleRate', () => {
     expect(() => new PhaseModulatedOperator(0, FREQUENCY_HZ)).toThrow(RangeError);
     expect(() => new PhaseModulatedOperator(0, FREQUENCY_HZ)).toThrow(/0/);

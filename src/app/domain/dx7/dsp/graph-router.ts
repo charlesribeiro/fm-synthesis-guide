@@ -28,11 +28,13 @@ import {
   operatorFrequencyHz,
   outputLevelToAmplitude,
   outputLevelToModulationDepthHz,
+  velocityToAmplitude,
 } from '../audio/value-conversion';
 import type { AlgorithmDefinition } from '../models/algorithm-definition';
 import { deriveCarriers } from '../models/derive-role';
 import { OPERATOR_IDS, type OperatorId } from '../models/operator';
 import { DEFAULT_PATCH, type OperatorParameterSet } from '../models/patch';
+import { EnvelopeGenerator } from './envelope-generator';
 import { PhaseModulatedOperator } from './operator';
 
 /**
@@ -107,12 +109,20 @@ export class GraphRouter {
 
   /** Length {@link OPERATOR_TABLE_LENGTH}; index 0 unused. */
   private readonly operatorsById: readonly PhaseModulatedOperator[];
+  /** Length {@link OPERATOR_TABLE_LENGTH}; index 0 unused — one independent
+   * `EnvelopeGenerator` per operator (Phase 9, D-01), constructed once
+   * alongside `operatorsById`. */
+  private readonly envelopesById: readonly EnvelopeGenerator[];
   /** Length {@link OPERATOR_TABLE_LENGTH}; index 0 unused. One persistent
    * block per operator, reused every render call. */
   private readonly operatorBlocks: readonly Float32Array[];
   /** Shared per-target modulation-accumulation scratch buffer, reset with
    * `.fill(0)` at the start of each operator's turn in `render`. */
   private readonly modulationAccumulator: Float32Array;
+  /** Shared per-operator envelope-amplitude scratch buffer, allocated once
+   * and overwritten every operator's turn in `render` (Phase 9) — mirrors
+   * `modulationAccumulator`'s allocate-once-overwrite-every-call convention. */
+  private readonly envelopeScratch: Float32Array;
 
   private readonly frequencyHzTable = new Float64Array(OPERATOR_TABLE_LENGTH);
   private readonly modulationIndexTable = new Float64Array(OPERATOR_TABLE_LENGTH);
@@ -124,20 +134,30 @@ export class GraphRouter {
   private feedbackLevel = 0;
   private noteFrequencyHzValue = 0;
   private feedbackIndexValue = 0;
+  /** The velocity-derived output-stage amplitude multiplier (Phase 9, D-02).
+   * Starts at `0` — load-bearing: a router that has never received a
+   * `setGate(true, ...)` call renders silence even before any envelope has
+   * advanced, which is what keeps the engine quiet at rest now that the
+   * dedicated Web Audio voice gain node is gone. */
+  private velocityAmplitude = 0;
 
   constructor(sampleRate: number, blockSize: number) {
     validateBlockSize(blockSize);
     this.blockSize = blockSize;
 
     const operators: PhaseModulatedOperator[] = [];
+    const envelopes: EnvelopeGenerator[] = [];
     const blocks: Float32Array[] = [];
     for (let index = 0; index < OPERATOR_TABLE_LENGTH; index++) {
       operators.push(new PhaseModulatedOperator(sampleRate, 0));
+      envelopes.push(new EnvelopeGenerator(sampleRate));
       blocks.push(new Float32Array(blockSize));
     }
     this.operatorsById = operators;
+    this.envelopesById = envelopes;
     this.operatorBlocks = blocks;
     this.modulationAccumulator = new Float32Array(blockSize);
+    this.envelopeScratch = new Float32Array(blockSize);
   }
 
   /**
@@ -146,7 +166,10 @@ export class GraphRouter {
    * data here), then resets phase and feedback history on all six operators
    * so a topology change that relocates the feedback operator cannot read a
    * stale previous sample belonging to a different topology (Pitfall 4,
-   * T-08-04).
+   * T-08-04). Deliberately does NOT reset or re-gate `envelopesById` —
+   * envelope state must survive a routing change so a held-note algorithm
+   * switch re-patches the sound rather than restarting all six envelopes
+   * with an audible pop (D-04, Phase 8 D-13).
    */
   setRouting(config: RoutingConfig): void {
     this.routingConfig = config;
@@ -170,6 +193,29 @@ export class GraphRouter {
   setNoteFrequencyHz(noteFrequencyHz: number): void {
     this.noteFrequencyHzValue = noteFrequencyHz;
     this.recomputeDerivedValues();
+  }
+
+  /**
+   * The note-lifecycle entry point (Phase 9, D-01/D-02). Opening converts
+   * `velocity` through `velocityToAmplitude` and stores it, then gates all
+   * six envelope generators on; closing gates all six off and leaves the
+   * stored velocity amplitude alone, so the release tail keeps the loudness
+   * of the note being released. Deliberately does NOT call
+   * `recomputeDerivedValues` — that method exists for discrete parameter,
+   * routing, feedback and frequency changes, and an envelope's level changes
+   * every sample, so it can never be a cached derived value.
+   */
+  setGate(open: boolean, velocity: number): void {
+    if (open) {
+      this.velocityAmplitude = velocityToAmplitude(velocity);
+      for (const id of OPERATOR_IDS) {
+        this.envelopesById[id]!.gateOn();
+      }
+    } else {
+      for (const id of OPERATOR_IDS) {
+        this.envelopesById[id]!.gateOff();
+      }
+    }
   }
 
   /**
@@ -209,6 +255,10 @@ export class GraphRouter {
 
       this.frequencyHzTable[id] = frequencyHz;
       this.operatorsById[id]!.setFrequencyHz(frequencyHz);
+      // Deliberately does not reset level or segment index (EnvelopeGenerator.setEnvelope's
+      // own contract) — a live operator-parameter edit re-targets a sounding
+      // envelope without restarting it (D-04).
+      this.envelopesById[id]!.setEnvelope(parameters.envelope);
 
       this.modulationIndexTable[id] = frequencyIsUsable
         ? (outputLevelToModulationDepthHz(parameters.outputLevel, frequencyHz) / frequencyHz) * enabledMultiplier
@@ -231,7 +281,28 @@ export class GraphRouter {
    * operator" and "has incoming edges" are never treated as mutually
    * exclusive), or through the plain `render` otherwise.
    *
-   * Finally sums each carrier's block by its carrier amplitude, applies
+   * Immediately after an operator's block is rendered and strictly before
+   * that block is read by anything else, that operator's own
+   * `EnvelopeGenerator` renders into the shared {@link envelopeScratch}
+   * buffer and the block is multiplied by it sample for sample (Phase 9,
+   * D-01). Placing the multiply here — outside `renderWithFeedback`'s own
+   * body — is load-bearing twice over. First, the feedback delay line's
+   * one-sample history (`PhaseModulatedOperator.previousSample`) keeps
+   * reading the raw unscaled sample, so Phase 8's feedback correctness proof
+   * survives untouched. Second, because the descending render order
+   * guarantees a modulator's block is fully rendered before the operator it
+   * feeds reads it, applying the envelope to the block here reaches both
+   * consumers of that block — the carrier-summing loop below and the next
+   * operator's modulation accumulation above. Neither derived table
+   * (`modulationIndexTable`, `carrierAmplitudeTable`) is touched: folding
+   * the envelope into either would make a modulator's envelope silently
+   * inaudible, this phase's single highest-impact available mistake.
+   *
+   * Finally sums each carrier's already-enveloped block by its carrier
+   * amplitude, multiplies by the stored {@link velocityAmplitude} (Phase 9,
+   * D-02 — this is where velocity scaling lives now that the dedicated Web
+   * Audio voice gain node that used to supply it is removed; the total gain
+   * from carrier sum to destination is unchanged from Phase 8) and
    * {@link MASTER_GAIN}, and hard-clamps every sample to `[-1, 1]`. Both the
    * gain and the clamp live here — not only on a downstream Web Audio gain
    * node — for two reasons: the Vitest bounded-output proof in plan 08-02
@@ -243,7 +314,7 @@ export class GraphRouter {
    * exactly: six unity carriers reach one, not six. No other output shaping
    * of any kind is applied — no smooth transfer curve, no averaging on the
    * self-feedback path, no soft ceiling. The hard clamp is the only limiter
-   * (D-07/D-08).
+   * (D-07/D-08); it is not moved or duplicated by this phase's addition.
    */
   render(output: Float32Array): void {
     if (output.length !== this.blockSize) {
@@ -272,6 +343,11 @@ export class GraphRouter {
       } else {
         this.operatorsById[id]!.render(block, this.modulationAccumulator);
       }
+
+      this.envelopesById[id]!.render(this.envelopeScratch);
+      for (let i = 0; i < this.blockSize; i++) {
+        block[i] = block[i]! * this.envelopeScratch[i]!;
+      }
     }
 
     output.fill(0);
@@ -284,7 +360,7 @@ export class GraphRouter {
     }
 
     for (let i = 0; i < this.blockSize; i++) {
-      const scaled = output[i]! * MASTER_GAIN;
+      const scaled = output[i]! * this.velocityAmplitude * MASTER_GAIN;
       output[i] = Math.min(1, Math.max(-1, scaled));
     }
   }

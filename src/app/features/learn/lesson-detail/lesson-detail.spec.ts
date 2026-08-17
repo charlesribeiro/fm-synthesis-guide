@@ -309,6 +309,7 @@ describe('LessonDetail route — Algorithm 1 lesson (LESSON-02)', () => {
     const harness = await RouterTestingHarness.create();
     await harness.navigateByUrl('/learn/algorithm-1', LessonDetail);
     const rootEl = harness.routeNativeElement as HTMLElement;
+    const instrumentState = TestBed.inject(InstrumentState);
     const lessonProgress = TestBed.inject(LessonProgress);
 
     await enableAudio(rootEl, harness);
@@ -317,6 +318,11 @@ describe('LessonDetail route — Algorithm 1 lesson (LESSON-02)', () => {
     range.value = String(decreasedIndex);
     range.dispatchEvent(new Event('input'));
     await harness.fixture.whenStable();
+
+    expect(range.value).toBe(String(decreasedIndex));
+    expect(instrumentState.operators()[algorithm1Lesson.tryThis.targetOperator][algorithm1Lesson.tryThis.targetParam]).toBe(
+      algorithm1TryThisValues[decreasedIndex],
+    );
 
     const key = keyByNote(rootEl, 60);
     key.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }));
