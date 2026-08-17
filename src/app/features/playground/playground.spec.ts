@@ -2,30 +2,13 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AUDIO_CONTEXT_CTOR } from '../../core/audio/audio-context.token';
 import { AUDIO_WORKLET_NODE_CTOR } from '../../core/audio/audio-worklet-node.token';
-import { FakeAudioContext, FakeGainNode } from '../../core/audio/testing/fake-audio-context';
+import { FakeAudioContext } from '../../core/audio/testing/fake-audio-context';
 import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../core/audio/testing/fake-audio-worklet-node';
+import { MIN_VELOCITY } from '../../domain/dx7/audio/value-conversion';
+import { setGateMessage } from '../../domain/dx7/dsp/worklet-messages';
 import { SYNTH_ENGINE } from '../../core/audio/synth-engine.token';
 import type { SynthEngine } from '../../core/audio/synth-engine';
 import { Playground } from './playground';
-
-/** The masterGain is the fake gain node connected to `context.destination`. */
-function findMasterGain(context: FakeAudioContext): FakeGainNode {
-  const masterGain = context.createdGains.find((gain) => gain.connections.has(context.destination));
-  if (masterGain === undefined) {
-    throw new Error('masterGain was not created — buildGraph did not run as expected');
-  }
-  return masterGain;
-}
-
-/** The voiceGain is the fake gain node connected to masterGain. */
-function findVoiceGain(context: FakeAudioContext): FakeGainNode {
-  const masterGain = findMasterGain(context);
-  const voiceGain = context.createdGains.find((gain) => gain.connections.has(masterGain));
-  if (voiceGain === undefined) {
-    throw new Error('voiceGain was not created — buildGraph did not run as expected');
-  }
-  return voiceGain;
-}
 
 const APPROXIMATION_LABEL = 'Educational approximation — not a bit-accurate DX7 emulation';
 
@@ -35,8 +18,7 @@ describe('Playground', () => {
   // D-01 (Phase 8): SYNTH_ENGINE now resolves WorkletSynthEngine, which needs
   // both an AudioContext-like constructor AND an AudioWorkletNode-like
   // constructor to leave 'unavailable' — FakeAudioWorkletContext (extends
-  // FakeAudioContext, so `findMasterGain`/`findVoiceGain`'s `createdGains`
-  // lookups keep working unchanged) plus FakeAudioWorkletNode mirror
+  // FakeAudioContext) plus FakeAudioWorkletNode mirror
   // `worklet-synth-engine.spec.ts`'s own doubles.
   async function setup(
     ctor: typeof FakeAudioWorkletContext | null = FakeAudioWorkletContext,
@@ -90,30 +72,28 @@ describe('Playground', () => {
     expect(document.activeElement).toBe(compiled.querySelector('.key'));
   });
 
-  it('schedules a rising ramp on note-on and a release-to-zero on note-off', async () => {
+  it('posts an open gate message on note-on and a closed gate message on note-off (Phase 9 — click safety now lives in the kernel envelopes, not a Web Audio ramp)', async () => {
     const currentFixture = await setup();
     const compiled = currentFixture.nativeElement as HTMLElement;
 
     await enableAudio(currentFixture);
 
-    const context = FakeAudioContext.instances[0];
-    const voiceGain = findVoiceGain(context);
+    const node = FakeAudioWorkletNode.instances[0];
     const key = compiled.querySelector('.key') as HTMLButtonElement;
 
     key.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }));
     await currentFixture.whenStable();
 
-    const risingRamp = voiceGain.gain.automationEntries.find(
-      (entry) => entry.method === 'linearRampToValueAtTime' && entry.value > 0,
+    const openGate = node.port.postedMessages.find(
+      (message) => (message as { kind?: unknown }).kind === 'setGate' && (message as { open?: unknown }).open === true,
     );
-    expect(risingRamp).toBeTruthy();
+    expect(openGate).toBeTruthy();
 
     key.dispatchEvent(new Event('pointerup'));
     await currentFixture.whenStable();
 
-    const lastEntry = voiceGain.gain.automationEntries.at(-1);
-    expect(lastEntry?.method).toBe('setValueAtTime');
-    expect(lastEntry?.value).toBe(0);
+    const lastMessage = node.port.postedMessages.at(-1);
+    expect(lastMessage).toEqual(setGateMessage(false, MIN_VELOCITY));
   });
 
   it('shows the approximation label before and after enabling audio', async () => {
@@ -395,18 +375,21 @@ describe('Playground', () => {
     expect(noteOnSpy).toHaveBeenNthCalledWith(1, 60, expect.any(Number));
     expect(noteOnSpy).toHaveBeenNthCalledWith(2, 62, expect.any(Number));
 
-    // Releasing the older, already-superseded key (A) is not the tracked
-    // keyboardHeldCode — ownership is KeyS — so noteOff must not run for 60.
+    // Releasing the older key (A) turns off only that code's stored note.
+    // The engine's stale-release rule ignores noteOff(60) while 62 is held,
+    // so the sounding note is undisturbed; 62 stays visually pressed.
     document.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyA' }));
     await currentFixture.whenStable();
-    expect(noteOffSpy).not.toHaveBeenCalled();
+    expect(noteOffSpy).toHaveBeenCalledOnce();
+    expect(noteOffSpy).toHaveBeenCalledWith(60);
+    expect(keyByNote(compiled, 60).getAttribute('aria-pressed')).toBe('false');
     expect(keyByNote(compiled, 62).getAttribute('aria-pressed')).toBe('true');
 
-    // Releasing the newer key (S) — the one the tracker actually follows —
-    // must still cleanly turn its note off.
+    // Releasing the newer key (S) still cleanly turns its note off.
     document.dispatchEvent(new KeyboardEvent('keyup', { code: 'KeyS' }));
     await currentFixture.whenStable();
-    expect(noteOffSpy).toHaveBeenCalledWith(62);
+    expect(noteOffSpy).toHaveBeenCalledTimes(2);
+    expect(noteOffSpy).toHaveBeenLastCalledWith(62);
     expect(keyByNote(compiled, 62).getAttribute('aria-pressed')).toBe('false');
   });
 

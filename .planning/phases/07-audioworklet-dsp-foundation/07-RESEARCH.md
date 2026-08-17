@@ -328,11 +328,15 @@ export class PhaseModulatedOperator {
 
   /** Writes exactly `output.length` samples in place — never allocates
    * (CLAUDE.md: "DSP code must not allocate excessively inside the audio render loop").
-   * `modulationInput` defaults to undefined (D-03: unconnected/0). */
+   * `modulationInput` defaults to undefined (D-03: unconnected/0). A buffer
+   * shorter than `output` and any non-finite sample are treated as 0 so they
+   * cannot produce NaN. */
   render(output: Float32Array, modulationInput?: Float32Array): void {
     const increment = this.frequencyHz / this.sampleRate;
     for (let i = 0; i < output.length; i++) {
-      const modulation = modulationInput ? modulationInput[i] : 0;
+      const rawModulation =
+        modulationInput !== undefined && i < modulationInput.length ? modulationInput[i]! : 0;
+      const modulation = Number.isFinite(rawModulation) ? rawModulation : 0;
       output[i] = Math.sin(TWO_PI * this.phase + modulation);
       this.phase = (this.phase + increment) % 1; // wrap every sample — precision-stable forever
     }

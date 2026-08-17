@@ -255,7 +255,7 @@ keep the "never imported from `src/app/`" boundary note unchanged.
 
 **Analog:** `src/app/core/audio/web-audio-synth-engine.ts` (targeted reads: lines 130-330)
 
-**Constructor `effect()` shape to add** (`web-audio-synth-engine.ts` lines 153-178):
+**Constructor `effect()` shape to add** (`web-audio-synth-engine.ts` lines 153-178, adapted):
 ```typescript
 constructor() {
   this.destroyRef.onDestroy(() => this.destroy());
@@ -264,29 +264,42 @@ constructor() {
   // with an external system, never a computed() deriving graph shape).
   // Reading all three signals BEFORE the early return is load-bearing...
   effect(() => {
-    const algorithm = this.instrumentState.algorithm();
-    const operators = this.instrumentState.operators();
-    const feedback = this.instrumentState.feedback();
-
-    if (this.operatorNodes === null) {
-      return;
-    }
-    if (this.hasAppliedRoutingState(algorithm, operators, feedback)) {
-      return;
-    }
-    this.applyRouting(algorithm, operators, feedback);
-    this.rememberAppliedRoutingState(algorithm, operators, feedback);
+    this.applyInstrumentStateToWorklet();
   });
 }
+
+private applyInstrumentStateToWorklet(): void {
+  const algorithm = this.instrumentState.algorithm();
+  const operators = this.instrumentState.operators();
+  const feedback = this.instrumentState.feedback();
+
+  if (this.node === null) {
+    return;
+  }
+
+  if (algorithm !== this.lastAppliedAlgorithm) {
+    const routingConfig = buildRoutingConfig(algorithm);
+    this.node.port.postMessage(setAlgorithmMessage(routingConfig.connections, routingConfig.carriers));
+    this.lastAppliedAlgorithm = algorithm;
+  }
+  if (operators !== this.lastAppliedOperators) {
+    this.node.port.postMessage(setOperatorParametersMessage(operators));
+    this.lastAppliedOperators = operators;
+  }
+  if (feedback !== this.lastAppliedFeedback) {
+    this.node.port.postMessage(setFeedbackMessage(feedback));
+    this.lastAppliedFeedback = feedback;
+  }
+}
 ```
-`WorkletSynthEngine`'s current constructor (`worklet-synth-engine.ts` lines 151-157) explicitly
-documents having *no* `effect()` this phase ("unlike WebAudioSynthEngine, this engine has no
-InstrumentState subscription this phase") — that comment is exactly what Phase 8 supersedes. Add
-`inject(InstrumentState)`, the same three-signal `effect()`, and the same
-`hasAppliedRoutingState`/`rememberAppliedRoutingState` guard-and-remember pair (reference-equality
-comparison against `lastAppliedAlgorithm`/`lastAppliedOperators`/`lastAppliedFeedback` fields, per
-`web-audio-synth-engine.ts` lines 132-141) so a synchronous `setAlgorithm()` call and the
-`effect()`'s own flush of the same write never double-apply.
+`WorkletSynthEngine` adds `inject(InstrumentState)`, a constructor `effect()`, and **independent**
+reference-equality checks against `lastAppliedAlgorithm`, `lastAppliedOperators`, and
+`lastAppliedFeedback` — not an all-or-nothing `hasAppliedRoutingState`/`rememberAppliedRoutingState`
+guard. An algorithm change posts only `setAlgorithm` (unchanged operator/feedback snapshots are not
+resent); a parameter edit posts only `setOperatorParameters` (routing is not resent); a feedback
+edit posts only `setFeedback`. `planConnections` / `deriveCarriers` (via `buildRoutingConfig`) remain
+the algorithm-translation path. Independent checks also keep a synchronous `setAlgorithm()` call and
+the `effect()`'s flush of the same write from double-applying routing.
 
 **`applyRouting` → postMessage translation pattern** (`web-audio-synth-engine.ts` lines 275-309,
 and RESEARCH.md Pattern 4's excerpt of the target shape):
@@ -307,12 +320,12 @@ private applyRouting(
   }
 }
 ```
-`WorkletSynthEngine`'s equivalent `applyRoutingToWorklet` (see RESEARCH.md Pattern 4 for the exact
-target body) replaces per-node Web Audio graph mutation with three `postMessage` calls
-(`setAlgorithmMessage(planConnections(algorithm), deriveCarriers(algorithm))`,
+`WorkletSynthEngine`'s equivalent `applyRoutingToWorklet` posts **only the changed** message of the
+three (`setAlgorithmMessage(planConnections(algorithm), deriveCarriers(algorithm))`,
 `setOperatorParametersMessage(operators)`, `setFeedbackMessage(feedback)`), reusing the same
 `planConnections`/`deriveCarriers` imports `web-audio-synth-engine.ts` already uses — never
-re-deriving routing locally.
+re-deriving routing locally. Algorithm changes do not resend unchanged operator or feedback state;
+parameter edits do not resend routing.
 
 **No-op methods to turn real** (`worklet-synth-engine.ts` lines 285-305):
 ```typescript

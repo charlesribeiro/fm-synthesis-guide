@@ -1,11 +1,34 @@
 import { ALGORITHMS } from '../models/algorithms';
 import { deriveCarriers, getFeedbackOperator } from '../models/derive-role';
 import { OPERATOR_IDS, type OperatorId } from '../models/operator';
-import { validateOperatorParameters } from '../models/operator-parameters';
+import {
+  DEFAULT_ENVELOPE,
+  MIN_ENVELOPE_LEVEL,
+  RELEASE_SEGMENT_INDEX,
+  validateDx7Envelope,
+  validateOperatorParameters,
+} from '../models/operator-parameters';
 import { validateFeedbackLevel } from '../models/patch';
 import { LESSON_IDS } from './lesson-definition';
 import { getLesson, LESSONS } from './lessons';
 import { tryThisParamValues } from './try-this';
+
+/**
+ * Shipped-envelope invariants applied to a single {@link Dx7Envelope}
+ * (T-09-03): passes the same throwing validation guard the user-edit
+ * boundary applies, has a zero release-segment level, and is frozen at
+ * every level. Extracted so the dataset-iterating suite below and the
+ * standalone `DEFAULT_ENVELOPE` check (D-06 — the default and the lesson
+ * data are held to one standard) share one implementation rather than two
+ * copies that could drift.
+ */
+function expectShippedEnvelopeInvariants(envelope: { rates: readonly number[]; levels: readonly number[] }): void {
+  expect(() => validateDx7Envelope(envelope)).not.toThrow();
+  expect(envelope.levels[RELEASE_SEGMENT_INDEX]).toBe(MIN_ENVELOPE_LEVEL);
+  expect(Object.isFrozen(envelope)).toBe(true);
+  expect(Object.isFrozen(envelope.rates)).toBe(true);
+  expect(Object.isFrozen(envelope.levels)).toBe(true);
+}
 
 /**
  * Dataset invariant suite (T-06-03, T-06-06) — iterates `LESSONS` rather
@@ -58,6 +81,12 @@ describe.each([...LESSONS])('Lesson $id ($title)', (lesson) => {
     expect(Object.isFrozen(lesson.startingPatch.operators)).toBe(true);
     for (const operatorId of OPERATOR_IDS) {
       expect(Object.isFrozen(lesson.startingPatch.operators[operatorId])).toBe(true);
+    }
+  });
+
+  it("has every operator's envelope pass the throwing validation guard, have a zero release-segment level, and be frozen (T-09-03)", () => {
+    for (const operatorId of OPERATOR_IDS) {
+      expectShippedEnvelopeInvariants(lesson.startingPatch.operators[operatorId].envelope);
     }
   });
 
@@ -116,5 +145,71 @@ describe('Algorithm 1 lesson role cross-check (T-06-06)', () => {
 
   it('getFeedbackOperator for algorithm 1 equals the hand-populated expected feedback operator', () => {
     expect(getFeedbackOperator(algorithm1)).toBe(EXPECTED_ALGORITHM_1_FEEDBACK_OP);
+  });
+});
+
+/**
+ * D-06/T-09-03: proves the Algorithm 1 lesson's carrier-versus-modulator
+ * envelope differentiation is real, deriving the carrier set from the
+ * canonical `ALGORITHMS` dataset rather than from a hardcoded operator-id
+ * list — the same role split `lessons.ts` itself reads to assign each
+ * operator's envelope, so this test and the production code cannot silently
+ * disagree about which operator is which. Held segment index (index
+ * `RELEASE_SEGMENT_INDEX - 1`) is the de-facto sustain plateau a note holds
+ * at while gated on, mirroring `envelope-generator.ts`'s own naming for it.
+ */
+describe('Algorithm 1 lesson envelope differentiation (D-06, T-09-03)', () => {
+  const algorithm1 = ALGORITHMS.find((algorithm) => algorithm.id === 1)!;
+  const carriers = deriveCarriers(algorithm1);
+  const modulators = OPERATOR_IDS.filter((operatorId) => !carriers.includes(operatorId));
+  const algorithm1Lesson = getLesson('algorithm-1' as (typeof LESSON_IDS)[number]);
+  const heldSegmentIndex = RELEASE_SEGMENT_INDEX - 1;
+
+  it('has at least one carrier and one modulator to actually contrast', () => {
+    expect(carriers.length).toBeGreaterThan(0);
+    expect(modulators.length).toBeGreaterThan(0);
+  });
+
+  it("gives every derived carrier's held-segment level strictly greater than every derived modulator's", () => {
+    const carrierLevels = carriers.map(
+      (operatorId) => algorithm1Lesson.startingPatch.operators[operatorId].envelope.levels[heldSegmentIndex],
+    );
+    const modulatorLevels = modulators.map(
+      (operatorId) => algorithm1Lesson.startingPatch.operators[operatorId].envelope.levels[heldSegmentIndex],
+    );
+
+    for (const carrierLevel of carrierLevels) {
+      for (const modulatorLevel of modulatorLevels) {
+        expect(carrierLevel).toBeGreaterThan(modulatorLevel);
+      }
+    }
+  });
+});
+
+/**
+ * D-06: Algorithm 32 has no modulation edges at all (every operator is its
+ * own carrier), so there is no carrier-versus-modulator pair for
+ * differentiated envelopes to contrast — every operator keeps the shared
+ * default envelope *reference*, asserted with `toBe` rather than `toEqual`
+ * so a future accidental per-operator copy (which would still pass a
+ * structural equality check) fails this test.
+ */
+describe('Algorithm 32 lesson shares the default envelope reference (D-06)', () => {
+  it('gives every operator the exact DEFAULT_ENVELOPE object', () => {
+    const algorithm32Lesson = getLesson('algorithm-32' as (typeof LESSON_IDS)[number]);
+    for (const operatorId of OPERATOR_IDS) {
+      expect(algorithm32Lesson.startingPatch.operators[operatorId].envelope).toBe(DEFAULT_ENVELOPE);
+    }
+  });
+});
+
+/**
+ * T-09-03: the shared default envelope is held to the exact same shipped-
+ * envelope standard as every lesson's starting patch — one standard for the
+ * default and the lesson data, not two.
+ */
+describe('DEFAULT_ENVELOPE shipped-envelope invariants (T-09-03)', () => {
+  it('passes the throwing validation guard, has a zero release-segment level, and is frozen', () => {
+    expectShippedEnvelopeInvariants(DEFAULT_ENVELOPE);
   });
 });

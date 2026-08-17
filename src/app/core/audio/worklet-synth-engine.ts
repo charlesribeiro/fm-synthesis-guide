@@ -10,7 +10,6 @@ import {
   MIN_MIDI_NOTE,
   MIN_VELOCITY,
   midiNoteToFrequency,
-  velocityToAmplitude,
 } from '../../domain/dx7/audio/value-conversion';
 import { buildRoutingConfig } from '../../domain/dx7/dsp/graph-router';
 import {
@@ -18,6 +17,7 @@ import {
   setAlgorithmMessage,
   setFeedbackMessage,
   setFrequencyMessage,
+  setGateMessage,
   setModeMessage,
   setOperatorParametersMessage,
   type WorkletRenderMode,
@@ -42,27 +42,23 @@ interface BuiltWorkletGraph {
   readonly context: AudioContextLike;
   node: AudioWorkletNodeLike | null;
   masterGain: GainNodeLike | null;
-  voiceGain: GainNodeLike | null;
 }
 
 /**
- * Click-prevention attack ramp length — intentionally mirrors
- * `web-audio-synth-engine.ts`'s `ATTACK_SECONDS` (listening-checkpoint
- * verified in Phase 5), but is declared independently rather than imported:
- * importing it would make this module depend on Phase 5's live engine
- * class, which D-01's isolation forbids. Independently tunable per engine.
+ * `postMessage` to the worklet's port crosses the main-thread ->
+ * `AudioWorkletGlobalScope` realm boundary asynchronously — the render
+ * thread is not guaranteed to have applied a `setMode` message by the time
+ * `postMessage` returns. `setRenderMode` schedules its gain change this many
+ * seconds past `AudioContext.currentTime` (never at the same instant the
+ * mode message is posted) so the message has a real audio-clock window to
+ * land before a render quantum can observe the new gain target applied to
+ * the processor's still-prior mode. One render quantum at 44.1kHz is
+ * ~2.9ms; this margin is a multiple of that with headroom for slower
+ * devices, and costs nothing audible — nothing new starts playing during
+ * it, since the graph is silent (or already in its prior, gain-matched
+ * mode) throughout.
  */
-export const WORKLET_ATTACK_SECONDS = 0.015;
-
-/** Exponential-decay release time constant — same value/rationale as
- * `web-audio-synth-engine.ts`'s `RELEASE_TIME_CONSTANT`, declared
- * independently for the same D-01 isolation reason. */
-export const WORKLET_RELEASE_TIME_CONSTANT = 0.015;
-
-/** Five time constants is what the ear hears as "fully decayed" — mirrors
- * `web-audio-synth-engine.ts`'s `RELEASE_SECONDS` derivation. */
-const WORKLET_RELEASE_TIME_CONSTANT_COUNT = 5;
-export const WORKLET_RELEASE_SECONDS = WORKLET_RELEASE_TIME_CONSTANT * WORKLET_RELEASE_TIME_CONSTANT_COUNT;
+const WORKLET_MODE_SWITCH_SETTLE_SECONDS = 0.01;
 
 /**
  * Duplicated in shape from `web-audio-synth-engine.ts`'s `validateNote` —
@@ -95,11 +91,13 @@ function validateVelocity(velocity: number): void {
  * Routing across the canonical 32-algorithm dataset, and per-operator pitch
  * and level, are real as of this phase — `setAlgorithm`, `setFeedback` and
  * `updateOperatorLevel` all forward into `InstrumentState` and reapply the
- * resulting snapshot to the worklet's persistent `GraphRouter`. Envelope-
- * segment shaping (attack/decay/sustain/release curves beyond the current
- * single `envelopeLevel` stand-in) remains Phase 9's job (ENGINE-03). This
- * is NOT an exact DX7 emulation and must never be documented as one
- * (CLAUDE.md).
+ * resulting snapshot to the worklet's persistent `GraphRouter`. Envelope
+ * shaping is real as of Phase 9 (ENGINE-03): the note lifecycle now reaches
+ * the kernel as a validated `setGate` message, and six independent
+ * per-operator `EnvelopeGenerator` instances inside `GraphRouter` do the
+ * attack/decay/sustain/release shaping — click safety lives entirely in
+ * those per-operator release segments now, not in this class. This is NOT
+ * an exact DX7 emulation and must never be documented as one (CLAUDE.md).
  *
  * D-01: `SYNTH_ENGINE` (`synth-engine.token.ts`) now resolves to this
  * class — Playground and the `/learn` lessons hear this routed worklet
@@ -124,7 +122,6 @@ export class WorkletSynthEngine implements SynthEngine {
   private context: AudioContextLike | null = null;
   private node: AudioWorkletNodeLike | null = null;
   private masterGain: GainNodeLike | null = null;
-  private voiceGain: GainNodeLike | null = null;
 
   private heldNote: number | null = null;
 
@@ -206,7 +203,6 @@ export class WorkletSynthEngine implements SynthEngine {
         this.context = built.context;
         this.node = built.node;
         this.masterGain = built.masterGain;
-        this.voiceGain = built.voiceGain;
         this._status.set('ready');
         // The constructor effect() already ran and returned early while
         // `this.node` was still null, so nothing else delivers the initial
@@ -248,7 +244,6 @@ export class WorkletSynthEngine implements SynthEngine {
       context,
       node: null,
       masterGain: null,
-      voiceGain: null,
     };
 
     try {
@@ -278,22 +273,21 @@ export class WorkletSynthEngine implements SynthEngine {
       built.node = node;
 
       const masterGain = context.createGain();
-      const voiceGain = context.createGain();
       const now = context.currentTime;
-      // Default processor mode is `'single'` until initialize posts
-      // `'routed'`. Single/additive paths do not apply MASTER_GAIN in the
-      // kernel (AdditiveOperatorBank says attenuation is the engine's job),
-      // so start at MASTER_GAIN; setRenderMode('routed') later switches to
-      // unity because GraphRouter.render() already scales and clamps.
-      masterGain.gain.setValueAtTime(MASTER_GAIN, now);
-      voiceGain.gain.setValueAtTime(0, now);
+      // Starts at zero rather than MASTER_GAIN — a real regression guard,
+      // not cosmetics (Phase 9, D-02). The dedicated per-voice gain node
+      // that used to hold the graph silent between the node being built and
+      // the routed-mode message arriving is gone; the processor is still in
+      // its default single-operator mode (a continuous tone) during that
+      // window, so starting the master gain at zero closes it at no cost.
+      // `setRenderMode` assigns the mode-appropriate value once routing is
+      // actually established.
+      masterGain.gain.setValueAtTime(0, now);
 
-      node.connect(voiceGain);
-      voiceGain.connect(masterGain);
+      node.connect(masterGain);
       masterGain.connect(context.destination);
 
       built.masterGain = masterGain;
-      built.voiceGain = voiceGain;
       return built;
     } catch (error) {
       this.discardLocalGraph(built);
@@ -307,7 +301,6 @@ export class WorkletSynthEngine implements SynthEngine {
       built.node.port.onmessage = null;
       built.node.disconnect();
     }
-    built.voiceGain?.disconnect();
     built.masterGain?.disconnect();
     void built.context.close();
   }
@@ -345,8 +338,14 @@ export class WorkletSynthEngine implements SynthEngine {
     this.node.port.postMessage(setModeMessage(mode));
     // GraphRouter.render() (routed) already applies MASTER_GAIN + clamp;
     // single/additive fixture paths do not, so this gain supplies it.
+    // Scheduled WORKLET_MODE_SWITCH_SETTLE_SECONDS past `now`, not at `now`
+    // itself — see that constant's doc for why raising gain in the same
+    // instant the mode message is posted is unsafe.
     const now = this.context.currentTime;
-    this.masterGain.gain.setValueAtTime(mode === 'routed' ? 1 : MASTER_GAIN, now);
+    this.masterGain.gain.setValueAtTime(
+      mode === 'routed' ? 1 : MASTER_GAIN,
+      now + WORKLET_MODE_SWITCH_SETTLE_SECONDS,
+    );
   }
 
   /**
@@ -396,27 +395,26 @@ export class WorkletSynthEngine implements SynthEngine {
     }
   }
 
-  /** Validates first — before touching the port or any `AudioParam` — then
-   * posts the shared frequency message and schedules a click-safe attack.
-   * Silently no-ops when the graph has not been built (`status()` is not
-   * `'ready'`). */
+  /** Validates first, then resolves the note frequency, posts the shared
+   * frequency message and an open gate message carrying the raw velocity,
+   * and records the held note. Performs no `AudioParam` scheduling of any
+   * kind (Phase 9, D-02) — click-safe attack shaping now lives entirely in
+   * the kernel's six per-operator envelope generators, reached through the
+   * gate message. Silently no-ops when the graph has not been built
+   * (`status()` is not `'ready'`). */
   noteOn(note: number, velocity: number): void {
     validateNote(note);
     validateVelocity(velocity);
 
-    if (this.context === null || this.node === null || this.voiceGain === null) {
+    if (this.context === null || this.node === null) {
       return;
     }
 
-    const now = this.context.currentTime;
     const frequencyHz = midiNoteToFrequency(note);
-    const targetLevel = velocityToAmplitude(velocity);
 
     this.node.port.postMessage(setFrequencyMessage(frequencyHz));
+    this.node.port.postMessage(setGateMessage(true, velocity));
     this.heldNote = note;
-
-    this.voiceGain.gain.cancelAndHoldAtTime(now);
-    this.voiceGain.gain.linearRampToValueAtTime(targetLevel, now + WORKLET_ATTACK_SECONDS);
   }
 
   /** Ignores a release for a note that is not the currently held note — a
@@ -436,16 +434,16 @@ export class WorkletSynthEngine implements SynthEngine {
     this.heldNote = null;
   }
 
-  /** Exponential-decay release terminating at an exact, assertable zero —
-   * identical shape to `WebAudioSynthEngine.releaseVoice()`. */
+  /** Posts a closed gate message with the minimum velocity — performs no
+   * `AudioParam` scheduling of any kind (Phase 9, D-02). The kernel's
+   * per-operator envelope release segments run from wherever each
+   * envelope's level currently sits (D-04), which is what keeps this
+   * click-free without any Web Audio ramp. */
   private releaseVoice(): void {
-    if (this.context === null || this.voiceGain === null) {
+    if (this.context === null || this.node === null) {
       return;
     }
-    const now = this.context.currentTime;
-    this.voiceGain.gain.cancelAndHoldAtTime(now);
-    this.voiceGain.gain.setTargetAtTime(0, now, WORKLET_RELEASE_TIME_CONSTANT);
-    this.voiceGain.gain.setValueAtTime(0, now + WORKLET_RELEASE_SECONDS);
+    this.node.port.postMessage(setGateMessage(false, MIN_VELOCITY));
   }
 
   destroy(): void {
@@ -457,10 +455,11 @@ export class WorkletSynthEngine implements SynthEngine {
     this.initializationGeneration += 1;
     this.pendingInitialize = null;
 
-    if (this.voiceGain !== null && this.context !== null) {
-      const now = this.context.currentTime;
-      this.voiceGain.gain.cancelScheduledValues(now);
-      this.voiceGain.gain.setValueAtTime(0, now);
+    // Release an in-flight note before tearing the graph down, rather than
+    // just cutting it — mirrors the previous voice-gain cancel/silence
+    // behaviour but through the gate message the kernel now understands.
+    if (this.node !== null) {
+      this.node.port.postMessage(setGateMessage(false, MIN_VELOCITY));
     }
     this.heldNote = null;
 
@@ -482,11 +481,9 @@ export class WorkletSynthEngine implements SynthEngine {
       this.node.port.onmessage = null;
       this.node.disconnect();
     }
-    this.voiceGain?.disconnect();
     this.masterGain?.disconnect();
 
     this.node = null;
-    this.voiceGain = null;
     this.masterGain = null;
     this.lastAppliedAlgorithm = undefined;
     this.lastAppliedOperators = undefined;

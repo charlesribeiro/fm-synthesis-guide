@@ -6,18 +6,26 @@ import {
   MAX_VELOCITY,
   MIN_MIDI_NOTE,
   MIN_VELOCITY,
+  envelopeRateToLevelUnitsPerSample,
   midiNoteToFrequency,
   velocityToAmplitude,
 } from '../../domain/dx7/audio/value-conversion';
-import { buildRoutingConfig } from '../../domain/dx7/dsp/graph-router';
+import { GraphRouter, buildRoutingConfig } from '../../domain/dx7/dsp/graph-router';
+import { RENDER_QUANTUM_FRAMES } from '../../domain/dx7/dsp/operator';
+import { ALGORITHMS } from '../../domain/dx7/models/algorithms';
 import { MAX_ALGORITHM_ID, MIN_ALGORITHM_ID } from '../../domain/dx7/models/algorithm';
-import { MAX_FEEDBACK_LEVEL, MIN_FEEDBACK_LEVEL } from '../../domain/dx7/models/patch';
-import { MAX_OUTPUT_LEVEL, MIN_OUTPUT_LEVEL } from '../../domain/dx7/models/operator-parameters';
+import { DEFAULT_PATCH, MAX_FEEDBACK_LEVEL, MIN_FEEDBACK_LEVEL } from '../../domain/dx7/models/patch';
+import {
+  DEFAULT_ENVELOPE,
+  MAX_OUTPUT_LEVEL,
+  MIN_OUTPUT_LEVEL,
+} from '../../domain/dx7/models/operator-parameters';
 import {
   DX7_OPERATOR_PROCESSOR_NAME,
   setAlgorithmMessage,
   setFeedbackMessage,
   setFrequencyMessage,
+  setGateMessage,
   setModeMessage,
   setOperatorParametersMessage,
 } from '../../domain/dx7/dsp/worklet-messages';
@@ -37,7 +45,7 @@ import {
 } from './testing/fake-audio-worklet-node';
 import type { SynthEngine } from './synth-engine';
 import { SYNTH_ENGINE } from './synth-engine.token';
-import { WORKLET_RELEASE_TIME_CONSTANT, WorkletSynthEngine } from './worklet-synth-engine';
+import { WorkletSynthEngine } from './worklet-synth-engine';
 
 /**
  * Mirrors `web-audio-synth-engine.spec.ts`'s `setup()`-helper-plus-flat-
@@ -74,24 +82,13 @@ function findMasterGain(context: FakeAudioWorkletContext): FakeGainNode {
   return masterGain;
 }
 
-/** The voiceGain is the fake gain node connected to masterGain. */
-function findVoiceGain(context: FakeAudioWorkletContext): FakeGainNode {
-  const masterGain = findMasterGain(context);
-  const voiceGain = context.createdGains.find((gain) => gain.connections.has(masterGain));
-  if (voiceGain === undefined) {
-    throw new Error('voiceGain was not created — buildAndStart did not run as expected');
-  }
-  return voiceGain;
-}
-
 async function setupReady() {
   const { service } = setup();
   await service.initialize();
   const context = FakeAudioWorkletContext.instances[0] as FakeAudioWorkletContext;
   const node = FakeAudioWorkletNode.instances[0];
-  const voiceGain = findVoiceGain(context);
   const instrumentState = TestBed.inject(InstrumentState);
-  return { service, context, node, voiceGain, instrumentState };
+  return { service, context, node, instrumentState };
 }
 
 /** The three routing-state messages `applyInstrumentStateToWorklet` posts
@@ -250,15 +247,29 @@ describe('WorkletSynthEngine', () => {
     });
   });
 
-  it('schedules the master gain to MASTER_GAIN initially then unity once routed mode is applied, and the voice gain to 0, both via setValueAtTime, during initialize()', async () => {
+  it('schedules the master gain to 0 initially (Phase 9, D-02 — the dedicated voice gain node that used to close this window is gone) then unity once routed mode is applied, both via setValueAtTime, during initialize()', async () => {
     const { context } = await setupReady();
     const masterGain = findMasterGain(context);
-    const voiceGain = findVoiceGain(context);
 
     const masterEntries = masterGain.gain.automationEntries.filter((entry) => entry.method === 'setValueAtTime');
-    expect(masterEntries.map((entry) => entry.value)).toEqual([MASTER_GAIN, 1]);
-    const voiceEntry = voiceGain.gain.automationEntries.find((entry) => entry.method === 'setValueAtTime');
-    expect(voiceEntry?.value).toBe(0);
+    expect(masterEntries.map((entry) => entry.value)).toEqual([0, 1]);
+  });
+
+  it('constructs exactly one gain node across a full build (Phase 9, D-02 — the mechanical form of "the dedicated per-voice gain node is gone")', async () => {
+    const { context } = await setupReady();
+
+    expect(context.createdGains.length).toBe(1);
+  });
+
+  it('invokes no gain-parameter scheduling method across a full note-on/note-off lifecycle (Phase 9, D-02 — click-safety now lives entirely in the kernel\'s envelopes)', async () => {
+    const { service, context } = await setupReady();
+    const masterGain = findMasterGain(context);
+    const entriesBefore = masterGain.gain.automationEntries.length;
+
+    service.noteOn(60, 100);
+    service.noteOff(60);
+
+    expect(masterGain.gain.automationEntries.length).toBe(entriesBefore);
   });
 
   it("once initialize() resolves, has posted the routed-mode message and one each of the three state messages; changing InstrumentState.algorithm then posts exactly one further routing-config message", async () => {
@@ -276,19 +287,16 @@ describe('WorkletSynthEngine', () => {
   });
 
   describe('note lifecycle', () => {
-    it('posts the shared setFrequency message after the initial routing-state messages and schedules a rising ramp toward velocityToAmplitude on noteOn, with zero direct gain assignments', async () => {
-      const { service, node, voiceGain } = await setupReady();
-      const directAssignmentsBefore = voiceGain.gain.directAssignmentCount;
+    it('posts the shared setFrequency message and an open gate message carrying the velocity on noteOn, with no AudioParam scheduling of any kind (Phase 9, D-02)', async () => {
+      const { service, node } = await setupReady();
       const before = node.port.postedMessages.length;
 
       service.noteOn(69, 100);
 
-      expect(node.port.postedMessages.slice(before)).toEqual([setFrequencyMessage(midiNoteToFrequency(69))]);
-      const risingRamp = voiceGain.gain.automationEntries.find(
-        (entry) => entry.method === 'linearRampToValueAtTime' && entry.value > 0,
-      );
-      expect(risingRamp?.value).toBeCloseTo(velocityToAmplitude(100), 10);
-      expect(voiceGain.gain.directAssignmentCount).toBe(directAssignmentsBefore);
+      expect(node.port.postedMessages.slice(before)).toEqual([
+        setFrequencyMessage(midiNoteToFrequency(69)),
+        setGateMessage(true, 100),
+      ]);
     });
 
     it('rejects a non-integer, out-of-range, NaN, or Infinity note with a RangeError and posts no additional message', async () => {
@@ -313,37 +321,33 @@ describe('WorkletSynthEngine', () => {
       expect(node.port.postedMessages.length).toBe(before);
     });
 
-    it('noteOff for the held note schedules an exponential release terminating at exactly 0', async () => {
-      const { service, voiceGain } = await setupReady();
+    it('noteOff for the held note posts a closed gate message', async () => {
+      const { service, node } = await setupReady();
       service.noteOn(60, 100);
+      const before = node.port.postedMessages.length;
 
       service.noteOff(60);
 
-      const releaseEntry = voiceGain.gain.automationEntries.find((entry) => entry.method === 'setTargetAtTime');
-      expect(releaseEntry?.timeConstant).toBe(WORKLET_RELEASE_TIME_CONSTANT);
-      const lastEntry = voiceGain.gain.automationEntries.at(-1);
-      expect(lastEntry?.method).toBe('setValueAtTime');
-      expect(lastEntry?.value).toBe(0);
+      expect(node.port.postedMessages.slice(before)).toEqual([setGateMessage(false, MIN_VELOCITY)]);
     });
 
-    it('noteOff for a note that is not the currently held note changes nothing', async () => {
-      const { service, voiceGain } = await setupReady();
+    it('noteOff for a note that is not the currently held note posts nothing', async () => {
+      const { service, node } = await setupReady();
       service.noteOn(60, 100);
-      const entriesAfterNoteOn = voiceGain.gain.automationEntries.length;
+      const before = node.port.postedMessages.length;
 
       service.noteOff(61);
 
-      expect(voiceGain.gain.automationEntries.length).toBe(entriesAfterNoteOn);
+      expect(node.port.postedMessages.length).toBe(before);
     });
 
-    it('allNotesOff releases unconditionally, terminating at exactly 0', async () => {
-      const { service, voiceGain } = await setupReady();
+    it('allNotesOff posts a closed gate message unconditionally', async () => {
+      const { service, node } = await setupReady();
+      const before = node.port.postedMessages.length;
 
       service.allNotesOff();
 
-      const lastEntry = voiceGain.gain.automationEntries.at(-1);
-      expect(lastEntry?.method).toBe('setValueAtTime');
-      expect(lastEntry?.value).toBe(0);
+      expect(node.port.postedMessages.slice(before)).toEqual([setGateMessage(false, MIN_VELOCITY)]);
     });
   });
 
@@ -474,39 +478,47 @@ describe('WorkletSynthEngine', () => {
     });
   });
 
-  it("D-13: switching algorithms while a note is held re-patches live — setAlgorithm posts a routing-config message while the note is still held, with no second note-frequency message and no silencing gain schedule", async () => {
-    const { service, node, voiceGain } = await setupReady();
+  it("D-13: switching algorithms while a note is held re-patches live — setAlgorithm posts a routing-config message while the note is still held, with no second note-frequency message and no gate message", async () => {
+    const { service, node } = await setupReady();
     service.noteOn(60, 100);
     const before = node.port.postedMessages.length;
-    const gainEntriesBefore = voiceGain.gain.automationEntries.length;
 
     service.setAlgorithm(32);
 
     expect(messagesOfKindSince(node, 'setAlgorithm', before).length).toBe(1);
     expect(messagesOfKindSince(node, 'setFrequency', before)).toEqual([]);
-    // setAlgorithm never touches voiceGain — no new automation entry of any
-    // kind (in particular, no silencing schedule to 0) was added by the switch.
-    expect(voiceGain.gain.automationEntries.length).toBe(gainEntriesBefore);
+    // setAlgorithm never touches the gate — no gate message of any kind (in
+    // particular, no silencing close-gate message) was posted by the switch.
+    expect(messagesOfKindSince(node, 'setGate', before)).toEqual([]);
 
     // The held voice is still sounding, not cut: the previously-held note 60
     // still triggers a real release, proving the switch never cleared
     // `heldNote` (mirrors WebAudioSynthEngine's D-13 held-note behaviour).
+    const beforeRelease = node.port.postedMessages.length;
     service.noteOff(60);
-    const releaseEntry = voiceGain.gain.automationEntries.find((entry) => entry.method === 'setTargetAtTime');
-    expect(releaseEntry?.timeConstant).toBe(WORKLET_RELEASE_TIME_CONSTANT);
+    expect(node.port.postedMessages.slice(beforeRelease)).toEqual([setGateMessage(false, MIN_VELOCITY)]);
   });
 
   it('destroy() clears the worklet port handler, empties every created node connection, closes the context exactly once, and resets status to suspended', async () => {
-    const { service, context, node, voiceGain } = await setupReady();
+    const { service, context, node } = await setupReady();
     node.port.onmessage = () => undefined;
 
     service.destroy();
 
     expect(node.port.onmessage).toBeNull();
     expect(node.connections.size).toBe(0);
-    expect(voiceGain.connections.size).toBe(0);
     expect(context.closeCalls).toBe(1);
     expect(service.status()).toBe('suspended');
+  });
+
+  it('destroy() posts a closed gate message for an in-flight note before tearing the graph down, releasing it rather than cutting it', async () => {
+    const { service, node } = await setupReady();
+    service.noteOn(60, 100);
+    const before = node.port.postedMessages.length;
+
+    service.destroy();
+
+    expect(node.port.postedMessages.slice(before)).toEqual([setGateMessage(false, MIN_VELOCITY)]);
   });
 
   it('destroy() leaves no held note: noteOff for the previously held note throws nothing and posts nothing', async () => {
@@ -524,5 +536,70 @@ describe('WorkletSynthEngine', () => {
     const engine = TestBed.inject(SYNTH_ENGINE);
 
     expect(engine).toBeInstanceOf(WorkletSynthEngine);
+  });
+});
+
+/**
+ * Pitfall 2's mechanical guard, end to end (Phase 9): `WorkletSynthEngine`
+ * itself no longer applies velocity — it posts the raw MIDI-style value
+ * unconverted (proved above) — so this regression exercises `GraphRouter`
+ * directly, the render-thread kernel where `setGate`'s velocity conversion
+ * actually happens. Two independently-constructed, identically-configured
+ * routers gated at different velocities are compared, proving both the
+ * direction (louder velocity is louder) and the exact curve-predicted ratio
+ * survived the removal of the dedicated per-voice Web Audio gain node.
+ */
+describe('End-to-end velocity regression (Pitfall 2) — GraphRouter, since WorkletSynthEngine no longer converts velocity', () => {
+  const SAMPLE_RATE = 44100;
+  const NOTE_FREQUENCY_HZ = 440;
+  const LOW_VELOCITY = 20;
+  const HIGH_VELOCITY = 120;
+  const routedAlgorithm = ALGORITHMS.find((algorithm) => algorithm.id === 1)!;
+
+  /** Enough blocks for `DEFAULT_ENVELOPE`'s attack segment (rate index 0) to
+   * fully complete, computed from the exported rate curve rather than
+   * hardcoded, plus a one-block margin. */
+  const ATTACK_BLOCK_COUNT =
+    Math.ceil(
+      Math.ceil(99 / envelopeRateToLevelUnitsPerSample(DEFAULT_ENVELOPE.rates[0], SAMPLE_RATE)) /
+        RENDER_QUANTUM_FRAMES,
+    ) + 1;
+
+  function renderGatedBlock(velocity: number): Float32Array {
+    const router = new GraphRouter(SAMPLE_RATE, RENDER_QUANTUM_FRAMES);
+    router.setRouting(buildRoutingConfig(routedAlgorithm));
+    router.setOperatorParameters(DEFAULT_PATCH.operators);
+    router.setFeedbackLevel(0);
+    router.setNoteFrequencyHz(NOTE_FREQUENCY_HZ);
+    router.setGate(true, velocity);
+
+    const scratch = new Float32Array(RENDER_QUANTUM_FRAMES);
+    for (let block = 0; block < ATTACK_BLOCK_COUNT; block++) {
+      router.render(scratch);
+    }
+    const output = new Float32Array(RENDER_QUANTUM_FRAMES);
+    router.render(output);
+    return output;
+  }
+
+  function peakAbsAmplitude(block: Float32Array): number {
+    let peak = 0;
+    for (const sample of block) {
+      peak = Math.max(peak, Math.abs(sample));
+    }
+    return peak;
+  }
+
+  it('two notes gated at different velocities produce peak amplitudes in the direction, and at the ratio, velocityToAmplitude predicts', () => {
+    const lowPeak = peakAbsAmplitude(renderGatedBlock(LOW_VELOCITY));
+    const highPeak = peakAbsAmplitude(renderGatedBlock(HIGH_VELOCITY));
+
+    expect(highPeak).toBeGreaterThan(lowPeak);
+
+    const actualRatio = highPeak / lowPeak;
+    const expectedRatio = velocityToAmplitude(HIGH_VELOCITY) / velocityToAmplitude(LOW_VELOCITY);
+    // Matches this codebase's existing cross-check convention
+    // (CROSS_CHECK_DECIMAL_PLACES = 6 in algorithm-routing.spec.ts).
+    expect(actualRatio).toBeCloseTo(expectedRatio, 6);
   });
 });

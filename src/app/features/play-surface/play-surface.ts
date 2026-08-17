@@ -55,31 +55,49 @@ export class PlaySurface {
 
   protected readonly isReady = computed(() => this.status() === 'ready');
 
-  /** The currently sounding note (a plain number, never an `AudioNode` —
-   * CLAUDE.md forbids audio nodes in signal state), or `null`. */
-  private readonly _heldNote = signal<number | null>(null);
-  protected readonly heldNote = this._heldNote.asReadonly();
+  /** Persistent live-region copy for every `AudioEngineStatus` — one
+   * container in the template, text only changes here. */
+  protected readonly statusMessage = computed(() => {
+    switch (this.status()) {
+      case 'unavailable':
+        return "Your browser doesn't support Web Audio, so you can't hear sound here. Everything else on this page still works.";
+      case 'error':
+        return 'Audio failed to start. Enable audio to try again.';
+      case 'ready':
+        return 'Audio is ready. Play notes on the keyboard below.';
+      default:
+        return 'Audio is off. Enable audio to play notes on the keyboard below.';
+    }
+  });
 
-  /** The `KeyboardEvent.code` of the physical key currently held down via
-   * the document-level keyboard path (`onDocumentKeydown`), or `null` when
-   * no keyboard-originated note is in progress. Tracks one continuous
-   * press/release pair so `onDocumentKeyup` can tell "this is that key's
-   * own release" apart from an unrelated keyup — see the guard note on
-   * `onDocumentKeyup` for why that distinction matters. */
-  private keyboardHeldCode: string | null = null;
+  /** The currently sounding notes (plain numbers, never `AudioNode`s —
+   * CLAUDE.md forbids audio nodes in signal state). A Set so every input
+   * path can represent its own held keys independently. */
+  private readonly _heldNotes = signal(new Set<number>());
+  protected readonly heldNotes = this._heldNotes.asReadonly();
+
+  /** Physical `KeyboardEvent.code` → MIDI note started by that keydown.
+   * A Map so two held computer-keyboard keys each release independently. */
+  private readonly keyboardHeldByCode = new Map<string, number>();
+
+  /** Reference count of input sources currently holding each note. Multiple
+   * sources can legitimately hold the identical note at once — e.g. a
+   * pointer press on a key while the computer-keyboard key mapped to that
+   * same note is also held — so a note must stay sounding (and stay in
+   * `heldNotes`) until every owner has released it, not just the first.
+   * `pressKey` increments; `releaseKey` decrements and only reaches the
+   * engine's `noteOff` (and clears the note from `heldNotes`) when the count
+   * drops to zero. */
+  private readonly noteHoldCount = new Map<number, number>();
 
   /** The note currently held via a *primary-button* pointer press on a key
-   * (`onKeyPointerDown`), or `null`. Mirrors `keyboardHeldCode`'s role: lets
-   * `onKeyPointerUp` (bound to `pointerup`/`pointerleave`/`pointercancel`)
-   * release only the note a primary-button press actually started, so a
-   * right-click's own release events — reachable even though its
-   * `pointerdown` is ignored — can never silence a note sounding via a
-   * different input path. See `onKeyPointerDown`'s WR-07 note. */
+   * (`onKeyPointerDown`), or `null`. Lets `onKeyPointerUp` release only the
+   * note a primary-button press actually started. */
   private pointerHeldNote: number | null = null;
 
   /** The note currently held via a Space/Enter activation on a focused
    * on-screen key button (`onKeyButtonKeydown`), or `null`. Mirrors
-   * `pointerHeldNote`/`keyboardHeldCode`'s role: a key button's keyup is
+   * `pointerHeldNote` / `keyboardHeldByCode`'s role: a key button's keyup is
    * bound to whichever note the template gave *that element*, which is not
    * necessarily the note this path actually started — moving focus with Tab
    * while Space/Enter is still physically held delivers the eventual keyup
@@ -102,6 +120,11 @@ export class PlaySurface {
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
       this.engine.allNotesOff();
+      this._heldNotes.set(new Set());
+      this.keyboardHeldByCode.clear();
+      this.noteHoldCount.clear();
+      this.pointerHeldNote = null;
+      this.buttonHeldNote = null;
     });
   }
 
@@ -123,8 +146,6 @@ export class PlaySurface {
     }
 
     if (this.isReady()) {
-      // OnPush: flush the ready-state bindings (`disabled`/`tabindex`) before
-      // focusing so the first `.key` is actually enabled in the DOM.
       this.changeDetector.detectChanges();
       const firstKey = this.host.nativeElement.querySelector('.key') as HTMLButtonElement | null;
       firstKey?.focus();
@@ -155,6 +176,9 @@ export class PlaySurface {
     if (!this.pressKey(note)) {
       return;
     }
+    if (this.pointerHeldNote !== null && this.pointerHeldNote !== note) {
+      this.releaseKey(this.pointerHeldNote);
+    }
     this.pointerHeldNote = note;
   }
 
@@ -175,26 +199,49 @@ export class PlaySurface {
   /** Returns `true` when the note started. Returns immediately (and
    * `false`) unless the engine is ready. Never called with an out-of-table
    * note — every caller resolves through `PLAYABLE_KEYS` or
-   * `noteForKeyCode` first. */
+   * `noteForKeyCode` first. Always posts a fresh `noteOn` (existing
+   * retrigger-on-repeated-press behavior, unchanged by `noteHoldCount` —
+   * that count only gates the *release* side) and increments this note's
+   * hold count so a second source pressing the same note becomes a second
+   * owner rather than silently colliding with the first. */
   protected pressKey(note: number): boolean {
     if (!this.isReady()) {
       return false;
     }
     this.engine.noteOn(note, PLAYABLE_VELOCITY);
-    this._heldNote.set(note);
+    this.noteHoldCount.set(note, (this.noteHoldCount.get(note) ?? 0) + 1);
+    this.markHeld(note);
     this.notePlayed.emit(note);
     return true;
   }
 
-  /** Always tells the engine to release `note` — the engine's own stale-
-   * release rule (D-04) is what makes a superseded release harmless. Only
-   * clears local `heldNote` state when it still equals `note`, so a stale
-   * release can never clear the state of the note now sounding. */
+  /** Decrements `note`'s hold count and only reaches the engine's `noteOff`
+   * (and clears the local held set) when the LAST owner releases — a note
+   * held by two sources at once must not go silent just because one of them
+   * let go while the other is still physically held. The engine's own
+   * stale-release rule (D-04) remains the backstop for any release that
+   * still reaches it out of order. */
   protected releaseKey(note: number): void {
-    this.engine.noteOff(note);
-    if (this._heldNote() === note) {
-      this._heldNote.set(null);
+    const remaining = (this.noteHoldCount.get(note) ?? 1) - 1;
+    if (remaining > 0) {
+      this.noteHoldCount.set(note, remaining);
+      return;
     }
+    this.noteHoldCount.delete(note);
+    this.engine.noteOff(note);
+    this.unmarkHeld(note);
+  }
+
+  private markHeld(note: number): void {
+    const next = new Set(this._heldNotes());
+    next.add(note);
+    this._heldNotes.set(next);
+  }
+
+  private unmarkHeld(note: number): void {
+    const next = new Set(this._heldNotes());
+    next.delete(note);
+    this._heldNotes.set(next);
   }
 
   /** Space/Enter pressed on a focused key button — keeps the keyboard
@@ -213,6 +260,9 @@ export class PlaySurface {
       return;
     }
     this.pressKey(note);
+    if (this.buttonHeldNote !== null && this.buttonHeldNote !== note) {
+      this.releaseKey(this.buttonHeldNote);
+    }
     this.buttonHeldNote = note;
   }
 
@@ -256,26 +306,27 @@ export class PlaySurface {
     if (note === null) {
       return;
     }
-    this.keyboardHeldCode = event.code;
+    if (this.keyboardHeldByCode.has(event.code)) {
+      return;
+    }
+    this.keyboardHeldByCode.set(event.code, note);
     this.pressKey(note);
   }
 
-  /** Release ownership is `keyboardHeldCode` for the document play path, and
-   * `buttonHeldNote` for Space/Enter activations that started on a focused
-   * key button. The activation-code branch is what ends a note when Tab
-   * moved focus while Space/Enter was still held — the keyup then lands on
-   * a different button (so `onKeyButtonKeyup` correctly refuses it) but
-   * still reaches the document. Clearing `buttonHeldNote` here before
-   * `releaseKey` means a later matching `onKeyButtonKeyup` is a no-op and
-   * cannot double-release. Modifier/editable-target guards belong on the
-   * keydown path only. Readiness is intentionally not re-checked. */
+  /** Release ownership is the Map entry for this `event.code` on the
+   * document play path, and `buttonHeldNote` for Space/Enter activations
+   * that started on a focused key button. The activation-code branch is what
+   * ends a note when Tab moved focus while Space/Enter was still held — the
+   * keyup then lands on a different button (so `onKeyButtonKeyup` correctly
+   * refuses it) but still reaches the document. Clearing `buttonHeldNote`
+   * here before `releaseKey` means a later matching `onKeyButtonKeyup` is a
+   * no-op and cannot double-release. Modifier/editable-target guards belong
+   * on the keydown path only. Readiness is intentionally not re-checked. */
   protected onDocumentKeyup(event: KeyboardEvent): void {
-    if (event.code === this.keyboardHeldCode) {
-      const note = noteForKeyCode(event.code);
-      this.keyboardHeldCode = null;
-      if (note !== null) {
-        this.releaseKey(note);
-      }
+    const mappedNote = this.keyboardHeldByCode.get(event.code);
+    if (mappedNote !== undefined) {
+      this.keyboardHeldByCode.delete(event.code);
+      this.releaseKey(mappedNote);
       return;
     }
 
@@ -290,8 +341,9 @@ export class PlaySurface {
   /** Alt-tabbing (or any focus loss) mid-note must not strand a voice. */
   protected onWindowBlur(): void {
     this.engine.allNotesOff();
-    this._heldNote.set(null);
-    this.keyboardHeldCode = null;
+    this._heldNotes.set(new Set());
+    this.keyboardHeldByCode.clear();
+    this.noteHoldCount.clear();
     this.pointerHeldNote = null;
     this.buttonHeldNote = null;
   }

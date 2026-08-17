@@ -6,9 +6,24 @@
  * stay finite and inside the hard output bound at maximum feedback with
  * every operator at maximum output level.
  */
-import { MASTER_GAIN, feedbackLevelToDepthHz, operatorFrequencyHz, outputLevelToAmplitude, outputLevelToModulationDepthHz } from '../audio/value-conversion';
+import {
+  MASTER_GAIN,
+  MAX_VELOCITY,
+  envelopeRateToLevelUnitsPerSample,
+  feedbackLevelToDepthHz,
+  operatorFrequencyHz,
+  outputLevelToAmplitude,
+  outputLevelToModulationDepthHz,
+} from '../audio/value-conversion';
 import { ALGORITHMS } from '../models/algorithms';
-import { MAX_OUTPUT_LEVEL, type OperatorParameters } from '../models/operator-parameters';
+import {
+  MAX_ENVELOPE_LEVEL,
+  MAX_ENVELOPE_RATE,
+  MAX_OUTPUT_LEVEL,
+  MIN_ENVELOPE_LEVEL,
+  type Dx7Envelope,
+  type OperatorParameters,
+} from '../models/operator-parameters';
 import { OPERATOR_IDS, type OperatorId } from '../models/operator';
 import { MAX_FEEDBACK_LEVEL, type OperatorParameterSet } from '../models/patch';
 import { PhaseModulatedOperator, RENDER_QUANTUM_FRAMES } from './operator';
@@ -18,6 +33,60 @@ import { evaluateAlgorithmReference, type ReferenceEvaluationInput } from './ref
 const SAMPLE_RATE = 44100;
 const BLOCK_SIZE = RENDER_QUANTUM_FRAMES;
 const NOTE_FREQUENCY_HZ = 440;
+
+/**
+ * Phase 9: the render path now requires the router to be gated, and every
+ * operator's envelope needs to have reached its maximum-amplitude plateau,
+ * before its output is arithmetically identical to Phase 8's un-enveloped
+ * expected values. This fixture envelope's first three levels are the level
+ * maximum and its rates are the rate maximum — at the maximum level the
+ * envelope's amplitude factor is exactly one
+ * (`outputLevelToAmplitude(MAX_ENVELOPE_LEVEL) === 1`), so once every
+ * operator's envelope has reached that plateau the router's output is
+ * unchanged from Phase 8's. The release segment (index 3) is never reached
+ * in this suite — no case gates off — so its values are irrelevant and set
+ * to the same maximum for consistency.
+ */
+const GATED_MAX_ENVELOPE: Dx7Envelope = Object.freeze({
+  rates: Object.freeze([MAX_ENVELOPE_RATE, MAX_ENVELOPE_RATE, MAX_ENVELOPE_RATE, MAX_ENVELOPE_RATE] as const),
+  levels: Object.freeze([MAX_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL] as const),
+});
+
+/**
+ * The number of full render blocks needed for {@link GATED_MAX_ENVELOPE}'s
+ * fastest-possible segment to reach its target level, computed from the
+ * exported rate curve rather than hardcoded: the full level range divided
+ * by the rate-maximum per-sample step, divided by the block size, rounded
+ * up. Every cross-check case below renders this many warm-up blocks (which
+ * it then discards) before rendering the block under comparison.
+ */
+const WARM_UP_BLOCK_COUNT = Math.ceil(
+  Math.ceil((MAX_ENVELOPE_LEVEL - MIN_ENVELOPE_LEVEL) / envelopeRateToLevelUnitsPerSample(MAX_ENVELOPE_RATE, SAMPLE_RATE)) /
+    BLOCK_SIZE,
+);
+
+/**
+ * Gates `router` open at maximum velocity with every operator's envelope
+ * set to {@link GATED_MAX_ENVELOPE}, then renders and discards
+ * {@link WARM_UP_BLOCK_COUNT} blocks so every envelope has reached its
+ * maximum-amplitude plateau before the caller renders the block under
+ * comparison. At the maximum velocity the velocity factor is exactly one
+ * (`velocityToAmplitude(MAX_VELOCITY) === 1`), so combined with the
+ * maximum-level envelope plateau, the router's post-warm-up output is
+ * arithmetically identical to Phase 8's.
+ */
+function gateAndWarmUp(router: GraphRouter, operators: OperatorParameterSet): void {
+  const gatedOperators = buildOperatorParameterSet(
+    (id) => ({ ...operators[id], envelope: GATED_MAX_ENVELOPE }) as OperatorParameters,
+  );
+  router.setOperatorParameters(gatedOperators);
+  router.setGate(true, MAX_VELOCITY);
+
+  const scratch = new Float32Array(BLOCK_SIZE);
+  for (let block = 0; block < WARM_UP_BLOCK_COUNT; block++) {
+    router.render(scratch);
+  }
+}
 
 /**
  * D-10's tolerance: how many decimal places `toBeCloseTo` requires between
@@ -57,7 +126,9 @@ const CROSS_CHECK_OPERATORS: OperatorParameterSet = buildOperatorParameterSet((i
   fixedFrequencyHz: 440,
   detune: id - 4, // -3, -2, -1, 0, 1, 2 — distinct, all inside -7..7
   outputLevel: 10 + (id - 1) * 17, // 10, 27, 44, 61, 78, 95 — distinct, spread across 0..99
-  envelopeLevel: 99,
+  // Overridden by gateAndWarmUp before every render — present here only to
+  // satisfy OperatorParameters' shape.
+  envelope: GATED_MAX_ENVELOPE,
 }));
 
 /**
@@ -73,7 +144,9 @@ const MAX_LEVEL_OPERATORS: OperatorParameterSet = buildOperatorParameterSet((id)
   fixedFrequencyHz: 440,
   detune: id - 4,
   outputLevel: MAX_OUTPUT_LEVEL,
-  envelopeLevel: 99,
+  // Overridden by gateAndWarmUp before every render — present here only to
+  // satisfy OperatorParameters' shape.
+  envelope: GATED_MAX_ENVELOPE,
 }));
 
 /**
@@ -99,6 +172,10 @@ function buildCrossCheckFixture(
   router.setOperatorParameters(CROSS_CHECK_OPERATORS);
   router.setFeedbackLevel(feedbackLevel);
   router.setNoteFrequencyHz(noteFrequencyHz);
+  // Gates the router and warms every envelope up to its maximum-amplitude
+  // plateau (Phase 9) — from here on the router's output is arithmetically
+  // identical to Phase 8's un-enveloped expected values.
+  gateAndWarmUp(router, CROSS_CHECK_OPERATORS);
 
   const frequenciesHz = {} as Record<OperatorId, number>;
   const modulationIndices = {} as Record<OperatorId, number>;
@@ -111,18 +188,24 @@ function buildCrossCheckFixture(
     carrierAmplitudes[id] = outputLevelToAmplitude(parameters.outputLevel);
   }
 
-  // The routing config's own `isFeedback` flag names the feedback operator
-  // (never re-derived here) — consistent with `GraphRouter.setRouting`'s
-  // own `findFeedbackOperatorId` reading the same field.
-  const feedbackConnection = routingConfig.connections.find((connection) => connection.isFeedback);
-  const feedbackOperatorId = feedbackConnection ? feedbackConnection.from : null;
+  // The dataset's own self-loop (`from === to`) names the feedback operator
+  // independently of `buildRoutingConfig` / `isFeedback`, so a translation
+  // bug in that flag cannot silently agree with the reference fixture.
+  const feedbackEdge = algorithm.edges.find((edge) => edge.from === edge.to);
+  const feedbackOperatorId = feedbackEdge !== undefined ? feedbackEdge.from : null;
   const feedbackIndex = feedbackOperatorId
     ? feedbackLevelToDepthHz(feedbackLevel, frequenciesHz[feedbackOperatorId]) / frequenciesHz[feedbackOperatorId]
     : 0;
 
+  // The reference is evaluated over the warm-up span plus one block —
+  // `reference-evaluator.ts` computes phase closed-form from the absolute
+  // sample index and never sees an envelope, so this span's tail (the last
+  // BLOCK_SIZE samples) is the reference's exact expectation for the
+  // router's post-warm-up block, without ever touching
+  // `reference-evaluator.ts` itself.
   const referenceInput: ReferenceEvaluationInput = {
     sampleRate: SAMPLE_RATE,
-    blockSize: BLOCK_SIZE,
+    blockSize: (WARM_UP_BLOCK_COUNT + 1) * BLOCK_SIZE,
     operatorFrequenciesHz: frequenciesHz,
     modulationIndices,
     carrierAmplitudes,
@@ -146,9 +229,10 @@ describe.each(ALGORITHMS)('Algorithm $id ($name)', (algorithm) => {
     router.render(actual);
 
     const expected = evaluateAlgorithmReference(algorithm, referenceInput);
+    const expectedTail = expected.slice(expected.length - BLOCK_SIZE);
 
     for (let i = 0; i < BLOCK_SIZE; i++) {
-      expect(actual[i]).toBeCloseTo(expected[i]!, CROSS_CHECK_DECIMAL_PLACES);
+      expect(actual[i]).toBeCloseTo(expectedTail[i]!, CROSS_CHECK_DECIMAL_PLACES);
     }
   });
 
@@ -165,6 +249,7 @@ describe.each(ALGORITHMS)('Algorithm $id ($name)', (algorithm) => {
     router.setOperatorParameters(MAX_LEVEL_OPERATORS);
     router.setFeedbackLevel(MAX_FEEDBACK_LEVEL);
     router.setNoteFrequencyHz(NOTE_FREQUENCY_HZ);
+    gateAndWarmUp(router, MAX_LEVEL_OPERATORS);
 
     const blockCount = 4;
     for (let block = 0; block < blockCount; block++) {
@@ -198,6 +283,10 @@ describe('GraphRouter degenerate routing configs (T-08-06)', () => {
     router.setOperatorParameters(CROSS_CHECK_OPERATORS);
     router.setFeedbackLevel(0);
     router.setNoteFrequencyHz(NOTE_FREQUENCY_HZ);
+    // Gated (and warmed to the envelope's maximum-amplitude plateau) so
+    // this all-zero result is proven to come from the empty carrier list,
+    // not merely from an ungated router already rendering silence.
+    gateAndWarmUp(router, CROSS_CHECK_OPERATORS);
 
     const output = new Float32Array(BLOCK_SIZE);
     router.render(output);
@@ -219,6 +308,7 @@ describe('GraphRouter degenerate routing configs (T-08-06)', () => {
     router.setOperatorParameters(CROSS_CHECK_OPERATORS);
     router.setFeedbackLevel(feedbackLevel);
     router.setNoteFrequencyHz(NOTE_FREQUENCY_HZ);
+    gateAndWarmUp(router, CROSS_CHECK_OPERATORS);
 
     const actual = new Float32Array(BLOCK_SIZE);
     router.render(actual);
@@ -227,22 +317,25 @@ describe('GraphRouter degenerate routing configs (T-08-06)', () => {
     // PhaseModulatedOperator instances: operator 1 gets its own feedback
     // term and nothing else; operators 2-6 get no modulation input at all
     // (an unmodulated plain sine each) — proving the router never leaks
-    // modulation into an operator absent from `connections`.
-    const expected = buildUnmodulatedExceptFeedbackReference(feedbackLevel);
+    // modulation into an operator absent from `connections`. Evaluated over
+    // the warm-up span plus one block, then only the tail compared, for the
+    // same reason the cross-check above does.
+    const expected = buildUnmodulatedExceptFeedbackReference(feedbackLevel, (WARM_UP_BLOCK_COUNT + 1) * BLOCK_SIZE);
+    const expectedTail = expected.slice(expected.length - BLOCK_SIZE);
 
     for (let i = 0; i < BLOCK_SIZE; i++) {
-      expect(actual[i]).toBeCloseTo(expected[i]!, CROSS_CHECK_DECIMAL_PLACES);
+      expect(actual[i]).toBeCloseTo(expectedTail[i]!, CROSS_CHECK_DECIMAL_PLACES);
     }
   });
 });
 
-function buildUnmodulatedExceptFeedbackReference(feedbackLevel: number): Float32Array {
-  const output = new Float32Array(BLOCK_SIZE);
+function buildUnmodulatedExceptFeedbackReference(feedbackLevel: number, sampleCount: number = BLOCK_SIZE): Float32Array {
+  const output = new Float32Array(sampleCount);
   for (const id of OPERATOR_IDS) {
     const parameters = CROSS_CHECK_OPERATORS[id];
     const frequencyHz = operatorFrequencyHz(parameters, NOTE_FREQUENCY_HZ);
     const amplitude = outputLevelToAmplitude(parameters.outputLevel);
-    const block = new Float32Array(BLOCK_SIZE);
+    const block = new Float32Array(sampleCount);
     const operator = new PhaseModulatedOperator(SAMPLE_RATE, frequencyHz);
 
     if (id === 1) {
@@ -252,12 +345,12 @@ function buildUnmodulatedExceptFeedbackReference(feedbackLevel: number): Float32
       operator.render(block);
     }
 
-    for (let i = 0; i < BLOCK_SIZE; i++) {
+    for (let i = 0; i < sampleCount; i++) {
       output[i]! += block[i]! * amplitude;
     }
   }
 
-  for (let i = 0; i < BLOCK_SIZE; i++) {
+  for (let i = 0; i < sampleCount; i++) {
     output[i] = Math.min(1, Math.max(-1, output[i]! * MASTER_GAIN));
   }
   return output;

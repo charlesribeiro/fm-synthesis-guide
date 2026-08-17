@@ -10,8 +10,8 @@ requires:
     provides: "Plan 08-01's GraphRouter/WorkletSynthEngine cutover, plan 08-02's 32-row cross-check, plan 08-03's hostile-payload hardening, bundle parity, and live held-note re-patch — the fully-proven routed kernel this plan puts in front of a human's ears"
 provides:
   - "Extended dev harness (algorithm select over all 32 ALGORITHMS rows, feedback-depth 0-7 slider, a maximum-operator-level checkbox, routed playback posting the same three messages the Angular engine posts) — closes the phase's only remaining gap no automated test could reach"
-  - "A completed, signed-off 08-VALIDATION.md: every Per-Task Verification Map row traced to a real task id/plan/wave and a spec file that exists on disk, status: validated, nyquist_compliant: true"
-  - "The phase's D-02/D-12 blocking listening checkpoint, approved with zero findings — the last open item closing ENGINE-02 and the ROADMAP's three Phase 8 success criteria"
+  - "A draft 08-VALIDATION.md pending D-12 re-run: every Per-Task Verification Map row traced to a real task id/plan/wave and a spec file that exists on disk; status remains draft and nyquist_compliant remains false until the auditable five-id resume payload is recorded"
+  - "The phase's D-02/D-12 blocking listening checkpoint: historical zero-finding approval is incomplete audit evidence (bare 'approved', no sample algorithm ids) and is not treated as sign-off; re-run must record Additive, Tree/Branch, Rooting, Parallel, and maximum-feedback sample ids before validation may be marked signed off"
 affects: [09-envelope-shaping]
 
 # Actuals (#2632)
@@ -55,58 +55,64 @@ coverage:
         status: pass
     human_judgment: false
   - id: D2
-    description: "A human confirmed one algorithm from each of the four teaching taxonomy groups (Additive Stacks, Tree/Branch, Rooting, Parallel) plus maximum feedback depth and maximum operator level route and sound correct in a real browser (D-12)"
+    description: "Pending D-12 re-run: one algorithm from each of the four teaching taxonomy groups (Additive Stacks, Tree/Branch, Rooting, Parallel) plus maximum feedback depth and maximum operator level route and sound correct in a real browser (D-12). Not current human confirmation — incomplete_historical until the five sample algorithm ids are recorded."
     requirement: ENGINE-02
     verification: []
     human_judgment: true
-    rationale: "jsdom has no AudioWorkletGlobalScope — nothing short of a real AudioContext + audioWorklet.addModule() can prove the routed graph loads, routes, and sounds correct, and D-07's authentically-harsh-at-maximum-feedback character is inherently a listening judgment. Approved with zero findings (checkpoint response: 'approved')."
+    rationale: "jsdom has no AudioWorkletGlobalScope — nothing short of a real AudioContext + audioWorklet.addModule() can prove the routed graph loads, routes, and sounds correct, and D-07's authentically-harsh-at-maximum-feedback character is inherently a listening judgment. Historically closed with a bare 'approved' response and zero findings — but that response predates the tightened resume-signal requiring the Additive/Tree-Branch/Rooting/Parallel/max-feedback sample algorithm ids, so it is incomplete audit evidence, not current sign-off."
     checkpoint_response: "approved"
+    audit_status: "incomplete_historical — bare 'approved' recorded before the five-sample-id resume-signal existed; re-run required before this row counts as signed off"
   - id: D3
-    description: "A human confirmed switching algorithms while a note is held re-patches the sound audibly without cutting the note and without leaving a stuck voice (D-13, ROADMAP success criterion 3)"
+    description: "Pending D-12 re-run: switching algorithms while a note is held re-patches the sound audibly without cutting the note and without leaving a stuck voice (D-13, ROADMAP success criterion 3). Not current human confirmation — incomplete_historical until the five sample algorithm ids are recorded."
     requirement: ENGINE-02
     verification: []
     human_judgment: true
-    rationale: "Held-note re-patch is a real-time audio behavior only a live listening pass can confirm reads as a re-patch rather than a glitch. Approved with zero findings."
+    rationale: "Held-note re-patch is a real-time audio behavior only a live listening pass can confirm reads as a re-patch rather than a glitch. Historically closed with a bare 'approved' response and zero findings — but that response predates the tightened resume-signal, so it is incomplete audit evidence, not current sign-off."
     checkpoint_response: "approved"
+    audit_status: "incomplete_historical — bare 'approved' recorded before the five-sample-id resume-signal existed; re-run required before this row counts as signed off"
   - id: D4
-    description: "A human confirmed output stays audibly bounded and never painfully loud at maximum feedback with every operator at maximum level (D-08), and that maximum feedback is allowed to sound harsh rather than tamed (D-07)"
+    description: "Pending D-12 re-run: output stays audibly bounded and never painfully loud at maximum feedback with every operator at maximum level (D-08), and maximum feedback is allowed to sound harsh rather than tamed (D-07). Not current human confirmation — incomplete_historical until the five sample algorithm ids are recorded."
     requirement: ENGINE-02
     verification: []
     human_judgment: true
-    rationale: "Hearing safety and the harsh-not-tamed character judgment are both perceptual, not something a bounded-output unit test proves by itself. Approved with zero findings — no conversion constant was changed."
+    rationale: "Hearing safety and the harsh-not-tamed character judgment are both perceptual, not something a bounded-output unit test proves by itself. Historically closed with a bare 'approved' response and zero findings (no conversion constant was changed) — but that response predates the tightened resume-signal, so it is incomplete audit evidence, not current sign-off."
     checkpoint_response: "approved"
+    audit_status: "incomplete_historical — bare 'approved' recorded before the five-sample-id resume-signal existed; re-run required before this row counts as signed off"
   - id: D5
-    description: "A human re-ran Lesson 6's Algorithm 1 try-this completion flow against the now-live WorkletSynthEngine and confirmed the completion state still fires and the sound matches expectations (D-03)"
+    description: "Pending D-12 re-run: Lesson 6's Algorithm 1 try-this completion flow against the live WorkletSynthEngine still fires completion and the sound matches expectations (D-03). Not current human confirmation — incomplete_historical until the five sample algorithm ids are recorded."
     requirement: ENGINE-02
     verification: []
     human_judgment: true
-    rationale: "The lesson's try-this completion detection is a live UI interaction tied to real audio parameter changes reaching the newly-cut-over engine; the general 32-algorithm correctness suite does not exercise this specific detection path. Approved with zero findings."
+    rationale: "The lesson's try-this completion detection is a live UI interaction tied to real audio parameter changes reaching the newly-cut-over engine; the general 32-algorithm correctness suite does not exercise this specific detection path. Historically closed with a bare 'approved' response and zero findings — but that response predates the tightened resume-signal, so it is incomplete audit evidence, not current sign-off."
     checkpoint_response: "approved"
+    audit_status: "incomplete_historical — bare 'approved' recorded before the five-sample-id resume-signal existed; re-run required before this row counts as signed off"
   - id: D6
-    description: "The persistent educational-approximation honesty label still reads exactly as it did before this phase — routing and feedback becoming real changed no honesty copy (D-05, AUDIO-03)"
+    description: "Pending D-12 re-run: the persistent educational-approximation honesty label still reads exactly as it did before this phase (D-05, AUDIO-03). Not current human confirmation — incomplete_historical until the five sample algorithm ids are recorded."
     requirement: ENGINE-02
     verification: []
     human_judgment: true
-    rationale: "Confirming wording is unchanged and does not now overstate the engine's fidelity is a human reading judgment. Approved with zero findings."
+    rationale: "Confirming wording is unchanged and does not now overstate the engine's fidelity is a human reading judgment. Historically closed with a bare 'approved' response and zero findings — but that response predates the tightened resume-signal, so it is incomplete audit evidence, not current sign-off."
     checkpoint_response: "approved"
+    audit_status: "incomplete_historical — bare 'approved' recorded before the five-sample-id resume-signal existed; re-run required before this row counts as signed off"
   - id: D7
-    description: "08-VALIDATION.md records a real task id, plan and wave for every row of the requirement-to-test contract, with status: validated and nyquist_compliant: true"
+    description: "08-VALIDATION.md records a real task id, plan and wave for every row of the requirement-to-test contract; remains status: draft and nyquist_compliant: false until the D-12 re-run records all five sample algorithm ids"
     requirement: ENGINE-02
     verification:
       - kind: unit
-        ref: "grep -c 'TBD' 08-VALIDATION.md == 0; grep -q 'nyquist_compliant: true' && grep -q 'status: validated'"
+        ref: "grep -c 'TBD' 08-VALIDATION.md == 0; grep -q 'status: draft' && grep -q 'nyquist_compliant: false' && grep -q 'wave_0_complete: false'"
         status: pass
     human_judgment: false
 
 # Metrics
 duration: ~5h07m across two sessions (Task 1 committed 16:50:01-03:00; checkpoint wait spanned the interval; Task 3 committed 21:57:10-03:00)
 completed: 2026-08-13
+# plan-execution status only — not D-12 validation sign-off (see audit_status incomplete_historical)
 status: complete
 ---
 
 # Phase 08 Plan 04: Dev Harness Listening Controls, Blocking Checkpoint, and Phase Validation Record Summary
 
-**Extended the dev harness with algorithm-select and feedback-depth controls over the routed worklet path, got the phase's D-02/D-12 blocking listening checkpoint approved with zero findings across all nine checks, and completed `08-VALIDATION.md` as a fully signed-off validation record — closing ENGINE-02 and Phase 8.**
+**Extended the dev harness with algorithm-select and feedback-depth controls over the routed worklet path. The D-02/D-12 listening checkpoint historically closed with a bare `approved` and zero findings, but that is incomplete audit evidence (no Additive / Tree/Branch / Rooting / Parallel / max-feedback sample algorithm ids). `08-VALIDATION.md` stays `status: draft` until a re-run records that five-id payload and succeeds.**
 
 ## Performance
 
@@ -117,13 +123,13 @@ status: complete
 
 ## Accomplishments
 
-- `worklets/harness/index.html` gained three labelled, keyboard-operable controls: an algorithm `<select>` populated from all 32 `ALGORITHMS` rows (each option's text carries id, name, and teaching-tag group), a feedback-depth `<input type="range">` spanning 0-7 with a live numeric read-out, and a "Play routed" button — while the existing Phase 7 enable/play-single/play-additive/stop controls stayed exactly as they were.
-- `worklets/harness/harness-main.ts` populates the select from `ALGORITHMS` (no hardcoded list) and plays the routed engine by posting the exact same three messages, in the same order, that `WorkletSynthEngine` posts: the routing-config message built by `buildRoutingConfig`, an operator-parameters message, and a feedback message — using `DEFAULT_PATCH.operators` as the default parameter set.
+- `worklets/harness/index.html` gained four labelled, keyboard-operable controls: an algorithm `<select>` populated from all 32 `ALGORITHMS` rows (each option's text carries id, name, and teaching-tag group), a feedback-depth `<input type="range">` spanning 0-7 with a live numeric read-out, a `max-level-checkbox` that raises every operator's output level to the maximum, and a "Play routed" button — while the existing Phase 7 enable/play-single/play-additive/stop controls stayed exactly as they were.
+- `worklets/harness/harness-main.ts` populates the select from `ALGORITHMS` (no hardcoded list). The three routed state-sync messages — routing-config from `buildRoutingConfig`, operator-parameters, and feedback — use `DEFAULT_PATCH.operators` as the default parameter set. Complete routed playback also posts `setMode` (`routed`) and the note-frequency message, in that order with the three state-sync messages: mode, routing-config, operator-parameters, feedback, then frequency.
 - A `max-level-checkbox` control gives the checkpoint's worst-case loudness step (check 5) a single, unambiguous toggle: checked, every operator's `outputLevel` is overridden to `MAX_OUTPUT_LEVEL` via `buildMaxLevelOperatorParameters()`; unchecked, `DEFAULT_PATCH.operators` is used.
 - Changing the algorithm select or feedback slider while a note sounds re-posts the corresponding message immediately without stopping the note — the harness-side equivalent of D-13's live re-patch, giving the checkpoint's check 6 something to actually hear.
 - The harness bundle stayed framework-free (`dev-dist/worklet-harness.js` — 0 matches for `@angular`) and unreachable from a production build (`npm run verify:harness-isolation` green); the module URL literal and attack/release constants stayed intentionally duplicated, per the file's own header note.
-- The D-02/D-12 blocking listening checkpoint (Task 2) was approved: all nine checks passed with zero findings — four taxonomy-group algorithms sounding correctly distinct, maximum feedback and maximum operator level staying harsh-but-bounded, held-note algorithm switching re-patching cleanly across three-plus switches with no stuck voice, the app itself (`/playground`) sounding correct over the live `WorkletSynthEngine`, Lesson 6's Algorithm 1 try-this completion flow still firing correctly, and the honesty-copy disclaimer reading unchanged.
-- `08-VALIDATION.md` (Task 3) was rebuilt from the draft's nine `TBD` placeholder rows to 14 fully-attributed rows (11 automated unit rows across the four plans, 2 manual-blocking checkpoint rows, plus the automated harness-isolation gate), every row traced via `git log --follow` on its spec file to a real task id/plan/wave. Six rows beyond the draft's original nine were added for coverage the draft did not anticipate: built-bundle routed-path parity, routing-replacement atomicity, degenerate-config backstops, held-note re-patch, direct-`InstrumentState`-write, and ratio/detune/mode propagation. `status: validated`, `nyquist_compliant: true`, `wave_0_complete: true` are all now set; every Wave 0 Requirements checkbox and every Validation Sign-Off checkbox is ticked.
+- The D-02/D-12 blocking listening checkpoint (Task 2) historically closed with a bare `approved` and zero findings. That close is incomplete audit evidence: it did not record Additive, Tree/Branch, Rooting, Parallel, and maximum-feedback sample algorithm ids. Those five ids must be captured on a re-run before validation may be marked signed off; do not invent them.
+- `08-VALIDATION.md` (Task 3) was rebuilt from the draft's nine `TBD` placeholder rows to 14 fully-attributed rows (11 automated unit rows across the four plans, 2 manual-blocking checkpoint rows, plus the automated harness-isolation gate), every row traced via `git log --follow` on its spec file to a real task id/plan/wave. Six rows beyond the draft's original nine were added for coverage the draft did not anticipate: built-bundle routed-path parity, routing-replacement atomicity, degenerate-config backstops, held-note re-patch, direct-`InstrumentState`-write, and ratio/detune/mode propagation. Frontmatter remains `status: draft`, `nyquist_compliant: false`, `wave_0_complete: false` until the D-12 re-run records the five sample algorithm ids.
 
 ## Task Commits
 
@@ -137,15 +143,15 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 
-- `worklets/harness/harness-main.ts` — algorithm select populated from `ALGORITHMS`, feedback-depth slider, max-level checkbox, routed playback posting the shared three-message contract, live re-patch on selection/slider change while a note sounds
-- `worklets/harness/index.html` — the three new labelled controls (select, range input, checkbox) plus the "Play routed" button, alongside the unchanged Phase 7 controls
+- `worklets/harness/harness-main.ts` — algorithm select populated from `ALGORITHMS`, feedback-depth slider, max-level checkbox, routed playback posting `setMode` then the three state-sync messages then note frequency, live re-patch on selection/slider change while a note sounds
+- `worklets/harness/index.html` — the four new labelled controls (select, feedback range, max-level checkbox, "Play routed"), alongside the unchanged Phase 7 controls
 - `README.md` — dev-harness section updated to describe the new controls and the routed 32-algorithm path
-- `.planning/phases/08-algorithm-routing-and-feedback/08-VALIDATION.md` — completed: real task ids/plan/wave for every row, six added rows for undocumented coverage, both manual-only rows recorded with the checkpoint's approved-zero-findings outcome, all checkboxes ticked, `status: validated`
+- `.planning/phases/08-algorithm-routing-and-feedback/08-VALIDATION.md` — Per-Task Verification Map completed from executed plans; D-12 listening rows pending re-run; frontmatter remains `status: draft` / `nyquist_compliant: false` until the five sample algorithm ids are recorded. Historical bare `approved` is incomplete audit evidence, not sign-off.
 
 ## Decisions Made
 
 - D-12's four-algorithm interpretation (one per taxonomy group, one of those four replayed at maximum feedback, not a fifth distinct algorithm) was flagged in the plan and restated in the checkpoint text before verification, and is now also recorded in `08-VALIDATION.md`'s sign-off section for future readers.
-- The checkpoint's bare "approved" response was treated as sufficient per the checkpoint's own resume-signal contract ("Type 'approved' if all nine checks pass...") — Task 3 made zero source changes and did not fabricate specific algorithm ids or per-check detail beyond what was reported.
+- The checkpoint's bare "approved" response is retained as historical listening notes only. Under the updated resume-signal it is incomplete audit evidence (no five sample algorithm ids) and is not treated as validation sign-off.
 - `08-VALIDATION.md`'s Per-Task Verification Map was reconstructed from the SUMMARY.md coverage sections of all four plans (08-01 through 08-04) cross-checked against `git log --follow` on each named spec file, following the same method plan 06-04 used, rather than trusting the draft's guessed row assignments.
 
 ## Deviations from Plan
@@ -158,14 +164,14 @@ None.
 
 ## User Setup Required
 
-None beyond the checkpoint's own listening pass, already completed and approved.
+A D-12 checkpoint re-run that records Additive, Tree/Branch, Rooting, Parallel, and maximum-feedback sample algorithm ids. Do not invent those ids.
 
 ## Next Phase Readiness
 
 - All verification commands are green at phase close: `npm test` (1039/1039), `npm run build`, `npm run lint`, `npm run typecheck:worklet`, `npm run verify:harness-isolation`.
-- `08-VALIDATION.md` is `status: validated`, `nyquist_compliant: true`, `wave_0_complete: true`, with zero `TBD` placeholders remaining.
-- ENGINE-02 and all three of the ROADMAP's Phase 8 success criteria are closed: the routed kernel is proven correct for all 32 algorithms (08-01/08-02), hardened against malformed input and proven bundle-faithful (08-03), and now confirmed to sound correct by a human across every teaching taxonomy group, maximum feedback, held-note switching, and the Lesson 6 regression (08-04).
-- Phase 8 (algorithm-routing-and-feedback) is complete. Phase 9 (envelope-shaping) can build on a fully-proven, fully-validated routed engine with no open Phase 8 gaps.
+- `08-VALIDATION.md` remains `status: draft`, `nyquist_compliant: false`, `wave_0_complete: false`, with the Per-Task Verification Map free of `TBD` placeholders. Automated coverage is in place; D-12 listening sign-off waits on the five-id re-run.
+- ENGINE-02's automated ROADMAP criteria (topology, bounded max feedback, held-note switch) are proven in unit tests (08-01/08-02/08-03). Human confirmation across teaching taxonomy groups, maximum feedback, and held-note switching stays open until the D-12 re-run records sample algorithm ids.
+- Phase 9 (envelope-shaping) can build on the routed kernel; Phase 8 validation must not be treated as signed off until that checkpoint payload exists.
 
 ---
 *Phase: 08-algorithm-routing-and-feedback*

@@ -2,10 +2,8 @@ import {
   COARSE_RATIOS,
   DEFAULT_OPERATOR_PARAMETERS,
   MAX_DETUNE,
-  MAX_ENVELOPE_LEVEL,
   MAX_OUTPUT_LEVEL,
   MIN_DETUNE,
-  MIN_ENVELOPE_LEVEL,
   MIN_OUTPUT_LEVEL,
   validateOperatorParameters,
   type OperatorParameters,
@@ -75,7 +73,6 @@ describe('tryThisParamValues', () => {
     { param: 'ratio', expectedFirst: COARSE_RATIOS[0], expectedLast: COARSE_RATIOS.at(-1) as number },
     { param: 'detune', expectedFirst: MIN_DETUNE, expectedLast: MAX_DETUNE },
     { param: 'outputLevel', expectedFirst: MIN_OUTPUT_LEVEL, expectedLast: MAX_OUTPUT_LEVEL },
-    { param: 'envelopeLevel', expectedFirst: MIN_ENVELOPE_LEVEL, expectedLast: MAX_ENVELOPE_LEVEL },
   ];
 
   it.each(cases)(

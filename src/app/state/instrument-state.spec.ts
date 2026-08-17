@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { InstrumentState, SNAPSHOT_SLOTS, type SnapshotSlot } from './instrument-state';
 import { ALGORITHMS } from '../domain/dx7/models/algorithms';
 import { deriveCarriers, getFeedbackOperator, getOperatorRole } from '../domain/dx7/models/derive-role';
+import { DEFAULT_ENVELOPE, type Dx7Envelope } from '../domain/dx7/models/operator-parameters';
 import type { OperatorId } from '../domain/dx7/models/operator';
 
 describe('InstrumentState', () => {
@@ -182,6 +183,21 @@ describe('InstrumentState', () => {
     expect(service.patch()).not.toBe(patchBefore);
   });
 
+  it('deep-clones a supplied envelope so later mutation of the caller-owned object cannot change stored state', () => {
+    const { service } = setup();
+    const rates: [number, number, number, number] = [10, 20, 30, 40];
+    const levels: [number, number, number, number] = [50, 60, 70, 0];
+    const envelope: Dx7Envelope = { rates, levels };
+
+    service.updateOperator(1, { envelope });
+    rates[0] = 99;
+    levels[1] = 11;
+
+    expect(service.operators()[1].envelope.rates[0]).toBe(10);
+    expect(service.operators()[1].envelope.levels[1]).toBe(60);
+    expect(service.operators()[1].envelope).not.toBe(envelope);
+  });
+
   // ROADMAP SC1: every selector resolves synchronously, no await, no fixture change detection.
   it('reflects a setAlgorithm call synchronously in the same block, with no await', () => {
     const { service } = setup();
@@ -303,8 +319,9 @@ describe('InstrumentState', () => {
   // D-04 / D-11: reset restores the fixed default patch, asserted against literal values.
   it('restores the D-11 default patch literals on reset', () => {
     const { service } = setup();
+    const editedEnvelope: Dx7Envelope = { rates: [10, 20, 30, 40], levels: [50, 60, 70, 0] };
     service.setAlgorithm(9);
-    service.updateOperator(1, { outputLevel: 3, ratio: 2, detune: -5, envelopeLevel: 10 });
+    service.updateOperator(1, { outputLevel: 3, ratio: 2, detune: -5, envelope: editedEnvelope });
     service.setFeedback(6);
 
     service.reset();
@@ -319,7 +336,7 @@ describe('InstrumentState', () => {
         fixedFrequencyHz: 440,
         detune: 0,
         outputLevel: 50,
-        envelopeLevel: 99,
+        envelope: DEFAULT_ENVELOPE,
       });
     }
   });

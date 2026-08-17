@@ -1,7 +1,8 @@
 /**
  * The one shared worklet message contract (Phase 7, ENGINE-01; threat
  * `T-07-01` from `07-RESEARCH.md`; widened for Phase 8/ENGINE-02's routed
- * mode, threat `T-08-01`) between the main thread, the
+ * mode, threat `T-08-01`; widened again for Phase 9/ENGINE-03's note-gate
+ * message, threat `T-09-01`) between the main thread, the
  * `AudioWorkletProcessor` adapter (`worklets/dx7-worklet-processor.ts`),
  * and (in a later plan) the dev harness — so none of the three can drift.
  * Zero Angular imports, enforced by the domain-purity ESLint gate
@@ -15,21 +16,14 @@
  * malformed shape by returning `null`, and never throws — including for a
  * payload whose own property getter throws — matching
  * `docs/ACCEPTANCE_CRITERIA.md`'s "reject non-finite output" floor. This
- * stays the single choke point for the three Phase 8 message kinds too — no
- * second validator appears anywhere in the processor.
+ * stays the single choke point for all six message kinds too — no second
+ * validator appears anywhere in the processor.
  */
 import type { OperatorConnection } from '../audio/patch-plan';
 import { OPERATOR_IDS, isOperatorId, type OperatorId } from '../models/operator';
-import {
-  MAX_DETUNE,
-  MAX_ENVELOPE_LEVEL,
-  MAX_OUTPUT_LEVEL,
-  MIN_DETUNE,
-  MIN_ENVELOPE_LEVEL,
-  MIN_OUTPUT_LEVEL,
-  isCoarseRatio,
-} from '../models/operator-parameters';
+import { MAX_DETUNE, MAX_OUTPUT_LEVEL, MIN_DETUNE, MIN_OUTPUT_LEVEL, isCoarseRatio, isDx7EnvelopeLike } from '../models/operator-parameters';
 import { MAX_FEEDBACK_LEVEL, MIN_FEEDBACK_LEVEL, type OperatorParameterSet } from '../models/patch';
+import { MAX_VELOCITY, MIN_VELOCITY } from '../audio/value-conversion';
 
 /** The one processor name this project registers and constructs by. */
 export const DX7_OPERATOR_PROCESSOR_NAME = 'dx7-operator';
@@ -86,12 +80,31 @@ export interface SetFeedbackMessage {
   readonly level: number;
 }
 
+/**
+ * The note-lifecycle message (Phase 9, D-01/D-02; ENGINE-03) — new
+ * production surface, not a refactor: before this phase the worklet had no
+ * concept of a note event at all. `velocity` is carried on the DX7/MIDI
+ * integer scale (`MIN_VELOCITY`..`MAX_VELOCITY`) rather than pre-converted
+ * to a Web Audio amplitude, matching this contract's existing convention
+ * that every message carries authored integer scales and the render thread
+ * performs the conversion. `velocity` is ignored by the consumer when
+ * `open` is `false` (a closing gate has no attack to scale), but is still
+ * validated in range so the guard stays total rather than conditional on
+ * `open`.
+ */
+export interface SetGateMessage {
+  readonly kind: 'setGate';
+  readonly open: boolean;
+  readonly velocity: number;
+}
+
 export type WorkletMessage =
   | SetFrequencyMessage
   | SetModeMessage
   | SetAlgorithmMessage
   | SetOperatorParametersMessage
-  | SetFeedbackMessage;
+  | SetFeedbackMessage
+  | SetGateMessage;
 
 export function setFrequencyMessage(frequencyHz: number): SetFrequencyMessage {
   return { kind: 'setFrequency', frequencyHz };
@@ -114,6 +127,10 @@ export function setOperatorParametersMessage(operators: OperatorParameterSet): S
 
 export function setFeedbackMessage(level: number): SetFeedbackMessage {
   return { kind: 'setFeedback', level };
+}
+
+export function setGateMessage(open: boolean, velocity: number): SetGateMessage {
+  return { kind: 'setGate', open, velocity };
 }
 
 export function isValidFrequencyHz(value: unknown): value is number {
@@ -149,7 +166,11 @@ function isRoutingConnectionsArray(value: unknown): value is readonly OperatorCo
   if (!Array.isArray(value) || !value.every(isOperatorConnectionLike)) {
     return false;
   }
-  return value.every(isStructurallyValidConnection);
+  if (!value.every(isStructurallyValidConnection)) {
+    return false;
+  }
+  const keys = value.map((connection) => `${connection.from}:${connection.to}:${connection.isFeedback}`);
+  return new Set(keys).size === keys.length;
 }
 
 function isCarrierIdArray(value: unknown): value is readonly OperatorId[] {
@@ -173,7 +194,6 @@ function isValidOperatorParametersEntry(value: unknown): boolean {
   const ratio = value['ratio'];
   const detune = value['detune'];
   const outputLevel = value['outputLevel'];
-  const envelopeLevel = value['envelopeLevel'];
 
   return (
     typeof enabled === 'boolean' &&
@@ -191,10 +211,7 @@ function isValidOperatorParametersEntry(value: unknown): boolean {
     Number.isInteger(outputLevel) &&
     outputLevel >= MIN_OUTPUT_LEVEL &&
     outputLevel <= MAX_OUTPUT_LEVEL &&
-    typeof envelopeLevel === 'number' &&
-    Number.isInteger(envelopeLevel) &&
-    envelopeLevel >= MIN_ENVELOPE_LEVEL &&
-    envelopeLevel <= MAX_ENVELOPE_LEVEL
+    isDx7EnvelopeLike(value['envelope'])
   );
 }
 
@@ -220,6 +237,19 @@ function isValidFeedbackLevel(value: unknown): value is number {
     Number.isInteger(value) &&
     value >= MIN_FEEDBACK_LEVEL &&
     value <= MAX_FEEDBACK_LEVEL
+  );
+}
+
+/** Mirrors the feedback-level guard's shape, importing `MIN_VELOCITY`/
+ * `MAX_VELOCITY` from `value-conversion.ts` rather than writing numeric
+ * literals — the same never-let-two-validators-drift rule this file already
+ * applies to the operator bounds. */
+function isValidGateVelocity(value: unknown): value is number {
+  return (
+    typeof value === 'number' &&
+    Number.isInteger(value) &&
+    value >= MIN_VELOCITY &&
+    value <= MAX_VELOCITY
   );
 }
 
@@ -264,6 +294,12 @@ export function parseWorkletMessage(data: unknown): WorkletMessage | null {
     if (kind === 'setFeedback') {
       const level = (data as { level?: unknown }).level;
       return isValidFeedbackLevel(level) ? setFeedbackMessage(level) : null;
+    }
+
+    if (kind === 'setGate') {
+      const open = (data as { open?: unknown }).open;
+      const velocity = (data as { velocity?: unknown }).velocity;
+      return typeof open === 'boolean' && isValidGateVelocity(velocity) ? setGateMessage(open, velocity) : null;
     }
 
     return null;

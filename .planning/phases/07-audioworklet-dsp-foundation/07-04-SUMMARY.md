@@ -44,7 +44,7 @@ key-files:
 key-decisions:
   - "Chose the gap report's remedy 3 (relocate harness output outside public/) over remedy 1 (clean the legacy directory) or excluding dev/** from the asset glob, per the plan's explicit reversibility rationale: relocation is the only remedy that holds independently of invocation order. Applied remedy 1 on top of it as migration repair for machines that already leaked under the pre-07-04 layout."
   - "Found and overwrote a partial, differently-shaped fix already present on disk from an earlier session (angular.json's production configuration had an `ignore: [\"dev/**\"]` asset override, and scripts/verify-harness-isolation.mjs existed as a simpler 2-command script without the exported assertNoHarnessInDist, the CLI entry point, or the 3-stage/positive-control structure this plan's Task 2 specifies). That earlier fix conflicted directly with this plan's acceptance criteria (which require production/development configurations to carry zero assets override) and predates 07-VERIFICATION.md's gap report by all appearances, so it was replaced rather than reconciled — the plan's remedy-3 design is the one this SUMMARY documents as shipped."
-  - "Dropped the `--keep-dev` flag's special-casing inside scripts/build-worklet.mjs's flagless-path rm — it is now unconditional per Task 1's explicit instruction, since the harness no longer writes into public/dev at all. package.json's prestart script still literally passes --keep-dev (left unchanged per the plan's instruction to leave that script's text exactly as it was); the flag is now inert rather than removed, since removing it from prestart's invocation was not in this plan's scope."
+  - "Dropped the `--keep-dev` flag entirely: `scripts/build-worklet.mjs` has no such flag, and `package.json`'s `prestart` is `node scripts/build-worklet.mjs` with no extra arguments, matching the 07-04-PLAN acceptance assertion."
 
 patterns-established:
   - "A build script's fail-closed assertion module (assertNoHarnessInDist) is both an importable function for a heavier gate and a standalone CLI via an import.meta.url === file://${process.argv[1]} guard — reusable pattern for any future postbuild self-check."
@@ -57,7 +57,7 @@ coverage:
     requirement: "ENGINE-01"
     verification:
       - kind: other
-        ref: "npm run harness && test -f dev-dist/worklet-harness.js && test -f dev-dist/worklet-harness.html && test ! -e public/dev; mkdir -p public/dev && touch public/dev/stale.js && npm run build:worklet && test ! -e public/dev; npm run build && test ! -e dist/dx7-algorithm-lab/browser/dev && test -f dist/dx7-algorithm-lab/browser/worklets/dx7-worklet-processor.js"
+        ref: "npm run harness && test -f dev-dist/worklet-harness.js && test -f dev-dist/worklet-harness.html && test ! -e public/dev; mkdir -p public/dev && touch public/dev/worklet-harness.js public/dev/worklet-harness.html && npm run build:worklet && test ! -e public/dev; npm run build && test ! -e dist/dx7-algorithm-lab/browser/dev && test -f dist/dx7-algorithm-lab/browser/worklets/dx7-worklet-processor.js"
         status: pass
       - kind: other
         ref: "node -e checks against angular.json (harness config carries 2 assets, production/development carry none, base options.assets byte-identical) and package.json (start:harness/prestart:harness present, existing lifecycle scripts unchanged)"
@@ -72,7 +72,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D3
-    description: "README documents the corrected mechanism and current commands; 07-VALIDATION.md carries the gap-closure rows without disturbing the approved D-06/D-07 checkpoint record; npm run build/test/lint/typecheck:worklet all green with the same 870-test suite unchanged in count and outcome"
+    description: "README documents the corrected mechanism and current commands; 07-VALIDATION.md carries the gap-closure rows without disturbing the approved D-06/D-07 checkpoint record; npm run build/test/lint/typecheck:worklet all green. This plan added no tests; the recorded suite at close was 870/870 (the post-07-02 count after 2004eea added concurrent-initialize coverage in worklet-synth-engine.spec.ts and the AdditiveOperatorBank blockSize guard in additive-fixture.spec.ts). 07-04-PLAN still cited the earlier 866 figure."
     requirement: "ENGINE-01"
     verification:
       - kind: other
@@ -138,11 +138,12 @@ status: complete
   untouched (`git diff` on the file shows additions only).
 - Verified end-to-end: the realistic harness-then-build sequence with no cleanup leaves
   `dist/dx7-algorithm-lab/browser/` free of any `dev` artifact while still shipping
-  `worklets/dx7-worklet-processor.js`; a planted legacy `public/dev/stale.js` is removed by the next
-  flagless `build:worklet`; a planted harness artifact in `dist/` drives
+  `worklets/dx7-worklet-processor.js`; planted legacy `public/dev/worklet-harness.js` and
+  `public/dev/worklet-harness.html` are removed by the next flagless `build:worklet` (and `public/dev`
+  itself only if then empty); a planted harness artifact in `dist/` drives
   `assert-no-harness-in-dist.mjs` non-zero and clean again once removed; a missing output tree also
   drives it non-zero; `npm run verify:harness-isolation` passes all three stages and cleans its own
-  scratch trees; `npm run build`, `npm test` (870/870, same count as before this plan), `npm run
+  scratch trees; `npm run build`, `npm test` (870/870; this plan added no tests — 07-04-PLAN's 866 was the pre-2004eea figure), `npm run
   lint`, and `npm run typecheck:worklet` are all green; `git diff --exit-code src/ worklets/
   tsconfig.harness.json tsconfig.worklet.json` confirms no application source, kernel, adapter, or
   harness page changed.
@@ -177,9 +178,8 @@ remedy 3 (relocate outside `public/`) rather than the remedy-1-style partial fix
 ["dev/**"]` asset override plus a simpler 2-command isolation script) that was already present on
 disk from an earlier, unrelated session — that earlier fix predates 07-VERIFICATION.md's gap report
 and directly conflicts with this plan's acceptance criteria, so it was replaced. The `--keep-dev`
-flag's conditioning was dropped from `build-worklet.mjs`'s flagless-path cleanup (now unconditional)
-while `package.json`'s `prestart` script text was left exactly as it was, per the plan's explicit
-instruction — the flag is now inert on the flagless path rather than removed from its invocation.
+flag was removed from `package.json`'s `prestart` (now `node scripts/build-worklet.mjs`) so the
+recorded script, the plan's acceptance assertion, and this summary agree.
 
 ## Deviations from Plan
 

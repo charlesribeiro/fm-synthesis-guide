@@ -11,7 +11,10 @@ Framework-independent TypeScript:
 - Algorithm definitions and graph validation.
 - Operator parameter models.
 - Ratio/frequency calculations.
-- Envelope state machine.
+- Envelope state machine — shipped as of Phase 9
+  ([`envelope-generator.ts`](../src/app/domain/dx7/dsp/envelope-generator.ts)), an original,
+  from-first-principles implementation, not a transcription of any DX7 ROM disassembly or Dexed
+  source.
 - Lesson definitions and completion rules.
 - Patch serialization/migrations.
 - Optional pure DSP kernel.
@@ -105,7 +108,9 @@ One processor can own a single voice initially:
 
 - Six phase accumulators.
 - Per-operator frequency increment.
-- Envelope generators.
+- Envelope generators — shipped as of Phase 9: six independent per-operator four-rate/four-level
+  generators live inside the router, each scaling its own operator's block before that block is
+  read as a carrier contribution or a modulation source.
 - Operator output scaling.
 - Algorithm routing.
 - Feedback memory.
@@ -118,7 +123,10 @@ Main-thread messages should update compact parameter structures. Avoid per-frame
 After deterministic monophony:
 
 - Voice allocation and stealing.
-- Per-voice envelope/note state.
+- Per-voice envelope/note state — still future work; the app is monophonic as of Phase 9. The
+  Phase 9 envelope generator's state is already scoped per instance (one per operator, six per
+  router) rather than as router-wide globals, a shape chosen not to preclude allocating one
+  generator set per voice later.
 - Global patch parameters.
 - All-notes-off recovery.
 

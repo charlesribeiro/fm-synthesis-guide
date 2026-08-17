@@ -19,7 +19,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 6: Guided lessons for Algorithm 32 and Algorithm 1** - First end-to-end vertical slice
 - [x] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading (all 4 plans executed, including 07-04 gap closure; completed 2026-08-12)
 - [x] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output (all 4 plans executed, blocking listening checkpoint approved with zero findings; completed 2026-08-13)
-- [ ] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes
+- [x] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes (completed 2026-08-16)
 - [ ] **Phase 10: Visualizers and comparison tools** - Oscilloscope, spectrum, A/B, randomization
 - [ ] **Phase 11: Curriculum across all 32 algorithms** - Lesson/experiment/preset per algorithm
 - [ ] **Phase 12: MIDI and patch persistence** - Web MIDI, versioned storage, import/export
@@ -300,7 +300,30 @@ Plans:
   2. Ratio and fixed-frequency operator modes both produce correct frequencies
   3. Note release and parameter smoothing never produce audible clicks or NaN output
 
-**Plans**: TBD
+**Plans**: 4/4 plans executed
+
+Plans:
+
+**Wave 1**
+
+- [x] 09-01-PLAN.md — Tracer: `Dx7Envelope` widening, the pure per-operator `EnvelopeGenerator`,
+      the rate curve, the new `setGate` worklet message, routed per-sample envelope application,
+      and the removal of the global voice ramp — one note enveloped end to end (ENGINE-03)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [x] 09-02-PLAN.md — Hostile-payload matrix for the gate and envelope shapes, the full
+      note-lifecycle bounded/finite sweep, modulator-envelope reachability, silence at rest,
+      velocity survival, and the ratio/fixed-frequency regression (ENGINE-03)
+
+- [x] 09-03-PLAN.md — Carrier-sustains / modulator-decays envelopes in the Algorithm 1 lesson,
+      shipped-envelope invariants, and the documentation truth-up (ENGINE-03)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [x] 09-04-PLAN.md — Dev-harness gate wiring and envelope presets, the blocking listening
+      checkpoint for click safety, silence at rest and audible timbral evolution, then the phase
+      validation record (ENGINE-03)
 
 ### Phase 10: Visualizers and comparison tools
 
@@ -382,7 +405,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 6. Guided lessons (Alg 32 & 1) | 4/4 | Complete    | 2026-08-10 |
 | 7. AudioWorklet DSP foundation | 4/4 | Complete    | 2026-08-12 |
 | 8. Algorithm routing and feedback | 4/4 | Complete    | 2026-08-13 |
-| 9. Envelopes and parameter mapping | 0/TBD | Not started | - |
+| 9. Envelopes and parameter mapping | 4/4 | Complete    | 2026-08-16 |
 | 10. Visualizers and comparison tools | 0/TBD | Not started | - |
 | 11. Curriculum (all 32 algorithms) | 0/TBD | Not started | - |
 | 12. MIDI and patch persistence | 0/TBD | Not started | - |

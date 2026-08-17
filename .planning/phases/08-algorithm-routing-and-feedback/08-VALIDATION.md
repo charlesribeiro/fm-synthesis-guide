@@ -5,7 +5,7 @@ slug: algorithm-routing-and-feedback
 # audit-milestone §5.5 distinguishes NOT-VALIDATED (draft) from PARTIAL (validated + nyquist_compliant: false) (#2117)
 status: draft
 nyquist_compliant: false
-wave_0_complete: true
+wave_0_complete: false
 created: 2026-08-12
 # Listening evidence note: the original D-02/D-12 checkpoint closed with a bare
 # "approved" and no recorded Additive / Tree-Branch / Rooting / Parallel /
@@ -71,9 +71,9 @@ against `git log --follow` on each spec file, not from this draft's original int
 this leak once already), T-08-10 (routed audio output → the listener's ears — the one boundary no
 automated test crosses) — see `08-04-PLAN.md` § threat_model.*
 
-Pre-close full-suite confirmation for this table (08-04 Task 3): `npm test` — 1039/1039 passed,
-`npm run build` exits 0, `npm run lint` exits 0 (all three re-run 2026-08-13 as part of closing this
-plan, with zero source changes since the checkpoint was approved with zero findings).
+Pre-close full-suite confirmation for this table (08-04 Task 3, 2026-08-13 pre-review snapshot):
+`npm test` — 1039/1039 passed, `npm run build` exits 0, `npm run lint` exits 0. That run was before
+later post-review source fixes and must not be read as "zero source changes after the checkpoint."
 
 ---
 

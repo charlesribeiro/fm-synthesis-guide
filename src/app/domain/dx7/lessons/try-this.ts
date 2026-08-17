@@ -1,10 +1,8 @@
 import {
   COARSE_RATIOS,
   MAX_DETUNE,
-  MAX_ENVELOPE_LEVEL,
   MAX_OUTPUT_LEVEL,
   MIN_DETUNE,
-  MIN_ENVELOPE_LEVEL,
   MIN_OUTPUT_LEVEL,
   type OperatorParameters,
 } from '../models/operator-parameters';
@@ -51,8 +49,6 @@ export function tryThisParamValues(param: TryThisParam): readonly number[] {
       return integerRange(MIN_DETUNE, MAX_DETUNE);
     case 'outputLevel':
       return integerRange(MIN_OUTPUT_LEVEL, MAX_OUTPUT_LEVEL);
-    case 'envelopeLevel':
-      return integerRange(MIN_ENVELOPE_LEVEL, MAX_ENVELOPE_LEVEL);
   }
 }
 
