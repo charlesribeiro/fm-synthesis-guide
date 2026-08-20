@@ -140,8 +140,11 @@ feedback-specific algorithm. This interpretation was flagged explicitly in `08-0
 `<flagged_assumptions>` and stated again in the checkpoint's own `<how-to-verify>` text: every one of
 the 32 rows in `algorithms.ts` already declares a feedback self-loop, so there is no feedback-free
 algorithm in this dataset that could serve as a distinct fifth sample. The checkpoint's D-12 coverage
-is therefore complete under this interpretation, and the human verifier had the reasoning available
-at verification time, not supplied retroactively.
+is therefore complete in *scope* under this interpretation (four teaching groups plus max-feedback
+as a repeat of one sampled group), while the *evidence* remains pending: the historical checkpoint
+closed without recording those five algorithm ids. The manual rows stay pending and this file's
+frontmatter stays `status: draft` until a re-run records the auditable payload. The human verifier
+had the four-group-plus-repeat reasoning available at verification time, not supplied retroactively.
 
 **Review reconciliation:** `08-REVIEW.md` recorded 1 critical + 2 warnings (+ 1 info). Post-review
 disposition (docs/code reconciliation): CR-01 resolved via mode-aware `MASTER_GAIN` in

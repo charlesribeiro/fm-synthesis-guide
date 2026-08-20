@@ -96,9 +96,11 @@ per-algorithm curriculum beyond Lesson 6's regression check (Phase 11); removing
   already have today; the core value ("change a parameter, immediately understand why the sound
   changed") applies to algorithm choice, not only operator params.
 - **D-14:** The algorithm switch reaches the running worklet processor via a new worklet message
-  (extending `worklet-messages.ts`'s existing `setFrequency`/`setMode` pattern) carrying the new
-  algorithm's routing config (edges/carriers/feedback operator), translated from the canonical
-  dataset on the main thread — the processor rebuilds its internal routing table on receipt.
+  (extending `worklet-messages.ts`'s existing `setFrequency`/`setMode` pattern) carrying only
+  `connections` and `carriers`, translated from the canonical dataset on the main thread — the
+  processor rebuilds its internal routing table on receipt. `GraphRouter` derives
+  `feedbackOperatorId` from `connections[].isFeedback`; `feedbackOperatorId` is not a `setAlgorithm`
+  payload field.
 - **D-15:** The worklet engine reuses `operatorFrequencyHz` (ratio/detune/fixed-mode conversion,
   already pure domain code, already proven in Phase 5) for each operator's pitch — not naive/flat
   per-operator frequencies. Makes this phase's own listening checkpoint musically meaningful and
@@ -114,9 +116,11 @@ per-algorithm curriculum beyond Lesson 6's regression check (Phase 11); removing
 
 ### Claude's Discretion
 - Exact TypeScript shape of the new routing-config worklet message (D-14) — field names/nesting
-  for edges/carriers/feedback-operator, and whether it's one message or several — informed by
-  `worklet-messages.ts`'s existing `parseWorkletMessage` choke-point pattern (never throws, rejects
-  malformed shapes by returning `null`) and `patch-plan.ts`'s `OperatorConnection` shape.
+  for connections and carriers only (`feedbackOperatorId` is derived by `GraphRouter` from
+  `connections[].isFeedback`, not carried on the payload), and whether it's one message or several
+  — informed by `worklet-messages.ts`'s existing `parseWorkletMessage` choke-point pattern (never
+  throws, rejects malformed shapes by returning `null`) and `patch-plan.ts`'s `OperatorConnection`
+  shape.
 - Exact module/file layout for the kernel's graph-routing logic (e.g. a new
   `src/app/domain/dx7/dsp/graph-router.ts` or similar) and for the independent reference evaluator
   used by D-10's correctness proof — informed by the domain-purity ESLint gate (DOMAIN-04) and the

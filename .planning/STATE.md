@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 10
-current_phase_name: Visualizers and comparison tools
+current_phase: 11
+current_phase_name: Curriculum across all 32 algorithms
 status: planning
-stopped_at: Phase 9 complete; Phase 10 not yet started
-last_updated: "2026-08-16T20:28:44.609Z"
-last_activity: 2026-08-16
-last_activity_desc: Phase 09 complete, transitioned to Phase 10
+stopped_at: Phase 10 complete, ready to plan Phase 11
+last_updated: "2026-08-19T04:11:02.121Z"
+last_activity: 2026-08-19
+last_activity_desc: Phase 10 complete, transitioned to Phase 11
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 32
-  completed_plans: 32
+  total_phases: 14
+  completed_phases: 10
+  total_plans: 36
+  completed_plans: 36
 ---
 
 # Project State
@@ -24,22 +24,24 @@ See: .planning/PROJECT.md (updated 2026-08-07)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 10 — visualizers-and-comparison-tools
+**Current focus:** Phase 11 — Curriculum across all 32 algorithms
 
 ## Current Position
 
-Phase: 10 — Visualizers and comparison tools
+Phase: 11 — Curriculum across all 32 algorithms
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-16 — Phase 09 complete, transitioned to Phase 10
+Last activity: 2026-08-19 — Phase 10 complete, transitioned to Phase 11
 
-Progress: [██████████] 100% — 32/32 plans, 9 completed phases (1-9).
+Progress: [██████████░░░░] 71% — 10/14 phases complete (1–10). Plan counters are the
+repository's 36 `*PLAN.md` files (all complete). Phase 1's `01-01` is listed in ROADMAP
+but is not a `*PLAN.md` file and is excluded from those totals.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 33
+- Total plans completed: 36 (the 36 `*PLAN.md` files; Phase 1's untracked `01-01` is not counted)
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -47,7 +49,7 @@ Progress: [██████████] 100% — 32/32 plans, 9 completed pha
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Angular 22 foundation | 1 | - | - |
+| 1. Angular 22 foundation | untracked (not a PLAN.md; excluded from the 36) | - | - |
 | 02 | 5 | - | - |
 | 03 | 2 | - | - |
 | 04 | 5 | - | - |
@@ -56,6 +58,7 @@ Progress: [██████████] 100% — 32/32 plans, 9 completed pha
 | 07 | 4 | - | - |
 | 08 | 4 | - | - |
 | 09 | 4 | - | - |
+| 10 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -92,6 +95,14 @@ Progress: [██████████] 100% — 32/32 plans, 9 completed pha
 | Phase 08 P02 | ~10min | 2 tasks | 3 files |
 | Phase 08 P03 | ~25min | 3 tasks | 5 files |
 | Phase 08 P04 | ~5h07m | 3 tasks | 4 files |
+| Phase 09 P01 | ~2h | 2 tasks | 22 files |
+| Phase 09 P02 | ~1h10m | 3 tasks | 5 files |
+| Phase 09 P03 | ~10min | 2 tasks | 4 files |
+| Phase 09 P04 | ~25min + checkpoint | 3 tasks | 4 files |
+| Phase 10 P01 | ~55min | 2 tasks | 18 files |
+| Phase 10 P02 | ~15min | 3 tasks | 10 files |
+| Phase 10 P03 | ~15min | 2 tasks | 4 files |
+| Phase 10 P04 | ~5min + checkpoint | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -175,6 +186,6 @@ checkpoint has been stopped.
 
 ## Session Continuity
 
-Last session: 2026-08-16T20:28:44.609Z
-Stopped at: Phase 9 complete (all four plans executed, verified, and merged); Phase 10 not yet discussed or planned
-Resume file: none — Phase 10 has no CONTEXT.md or PLAN.md yet; next step is `/gsd-discuss-phase 10` or `/gsd-plan-phase 10`
+Last session: 2026-08-19T04:11:02.121Z
+Stopped at: Phase 10 complete, ready to plan Phase 11
+Resume file: .planning/phases/10-visualizers-and-comparison-tools/10-CONTEXT.md (Phase 11 has no context file yet)

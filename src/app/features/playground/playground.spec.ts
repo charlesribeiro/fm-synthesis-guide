@@ -4,6 +4,10 @@ import { AUDIO_CONTEXT_CTOR } from '../../core/audio/audio-context.token';
 import { AUDIO_WORKLET_NODE_CTOR } from '../../core/audio/audio-worklet-node.token';
 import { FakeAudioContext } from '../../core/audio/testing/fake-audio-context';
 import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../core/audio/testing/fake-audio-worklet-node';
+import { ANIMATION_FRAME_SCHEDULER } from '../../core/browser/animation-frame.token';
+import { CANVAS_2D_CONTEXT_FACTORY } from '../../core/browser/canvas-2d.token';
+import { FakeAnimationFrameScheduler } from '../../core/browser/testing/fake-animation-frame-scheduler';
+import { FakeCanvas2dContext } from '../../core/browser/testing/fake-canvas-2d-context';
 import { MIN_VELOCITY } from '../../domain/dx7/audio/value-conversion';
 import { setGateMessage } from '../../domain/dx7/dsp/worklet-messages';
 import { SYNTH_ENGINE } from '../../core/audio/synth-engine.token';
@@ -20,6 +24,11 @@ describe('Playground', () => {
   // constructor to leave 'unavailable' — FakeAudioWorkletContext (extends
   // FakeAudioContext) plus FakeAudioWorkletNode mirror
   // `worklet-synth-engine.spec.ts`'s own doubles.
+  //
+  // The embedded `app-visualizer` (10-01-PLAN.md) also gets the fake
+  // animation-frame scheduler and the fake canvas 2D context factory here
+  // (10-01-PLAN.md Task 2) so the existing suite below neither starts a
+  // real frame loop nor reaches for a real drawing context.
   async function setup(
     ctor: typeof FakeAudioWorkletContext | null = FakeAudioWorkletContext,
   ): Promise<ComponentFixture<Playground>> {
@@ -30,6 +39,8 @@ describe('Playground', () => {
       providers: [
         { provide: AUDIO_CONTEXT_CTOR, useValue: ctor },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: ctor === null ? null : FakeAudioWorkletNode },
+        { provide: ANIMATION_FRAME_SCHEDULER, useValue: new FakeAnimationFrameScheduler() },
+        { provide: CANVAS_2D_CONTEXT_FACTORY, useValue: () => new FakeCanvas2dContext() },
       ],
     }).compileComponents();
 
@@ -122,6 +133,31 @@ describe('Playground', () => {
     await setup();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelectorAll('.feature-list li').length).toBeGreaterThan(0);
+  });
+
+  it("no longer lists the oscilloscope as a coming-soon item (10-02-PLAN.md D-04) and still lists the operator strips as genuine future work", async () => {
+    await setup();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const items = Array.from(compiled.querySelectorAll('.feature-list li')).map((li) => li.textContent);
+
+    expect(items.some((text) => text?.toLowerCase().includes('oscilloscope'))).toBe(false);
+    expect(items.some((text) => text?.toLowerCase().includes('operator strips'))).toBe(true);
+  });
+
+  it('lists exactly the algorithm selector and operator strips as coming-soon, and no longer mentions the oscilloscope, spectrum, snapshot comparison or randomization (10-04-PLAN.md Task 2, D-04)', async () => {
+    await setup();
+    const compiled = fixture.nativeElement as HTMLElement;
+    const items = Array.from(compiled.querySelectorAll('.feature-list li')).map(
+      (li) => li.textContent?.toLowerCase() ?? '',
+    );
+
+    expect(items.length).toBe(2);
+    expect(items.some((text) => text.includes('algorithm selector'))).toBe(true);
+    expect(items.some((text) => text.includes('operator strips'))).toBe(true);
+    expect(items.some((text) => text.includes('oscilloscope'))).toBe(false);
+    expect(items.some((text) => text.includes('spectrum'))).toBe(false);
+    expect(items.some((text) => text.includes('snapshot comparison') || text.includes('a/b'))).toBe(false);
+    expect(items.some((text) => text.includes('randomization'))).toBe(false);
   });
 
   it('renders exactly 12 key buttons before and after audio is enabled, in ascending note order', async () => {
@@ -587,4 +623,80 @@ describe('Playground', () => {
       }
     }
   });
+
+  describe('embedded Visualizer (10-01-PLAN.md Task 2)', () => {
+    it('renders exactly one app-visualizer element positioned after app-play-surface when audio is unavailable', async () => {
+      const unavailableFixture = await setup(null);
+      assertVisualizerAfterPlaySurface(unavailableFixture.nativeElement as HTMLElement);
+    });
+
+    it('renders exactly one app-visualizer element positioned after app-play-surface before audio is enabled (suspended)', async () => {
+      const suspendedFixture = await setup();
+      assertVisualizerAfterPlaySurface(suspendedFixture.nativeElement as HTMLElement);
+    });
+
+    it('renders exactly one app-visualizer element positioned after app-play-surface once audio is enabled (ready)', async () => {
+      const readyFixture = await setup();
+      await enableAudio(readyFixture);
+      assertVisualizerAfterPlaySurface(readyFixture.nativeElement as HTMLElement);
+    });
+  });
+
+  describe('embedded ToolsPanel and full page ordering (10-04-PLAN.md Task 2)', () => {
+    it('renders play surface, visualizer, then tools panel in that document order when audio is unavailable', async () => {
+      const unavailableFixture = await setup(null);
+      assertRegionOrder(unavailableFixture.nativeElement as HTMLElement);
+    });
+
+    it('renders play surface, visualizer, then tools panel in that document order before audio is enabled (suspended)', async () => {
+      const suspendedFixture = await setup();
+      assertRegionOrder(suspendedFixture.nativeElement as HTMLElement);
+    });
+
+    it('renders play surface, visualizer, then tools panel in that document order once audio is enabled (ready)', async () => {
+      const readyFixture = await setup();
+      await enableAudio(readyFixture);
+      assertRegionOrder(readyFixture.nativeElement as HTMLElement);
+    });
+  });
 });
+
+/** Exactly one `app-play-surface` and one `app-visualizer`, in that
+ * document order — `compareDocumentPosition` is used rather than array
+ * index comparison so this holds regardless of what else Playground's
+ * template ever grows between them. */
+function assertVisualizerAfterPlaySurface(compiled: HTMLElement): void {
+  const playSurfaces = compiled.querySelectorAll('app-play-surface');
+  const visualizers = compiled.querySelectorAll('app-visualizer');
+  expect(playSurfaces.length).toBe(1);
+  expect(visualizers.length).toBe(1);
+
+  const playSurface = playSurfaces[0];
+  const visualizer = visualizers[0];
+  // DOCUMENT_POSITION_FOLLOWING (4) set means `visualizer` comes after
+  // `playSurface` in document order.
+  const position = playSurface.compareDocumentPosition(visualizer);
+  expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+}
+
+/** Exactly one `app-play-surface`, one `app-visualizer` and one
+ * `app-tools-panel`, in that document order — `compareDocumentPosition` is
+ * used rather than array index comparison so this holds regardless of what
+ * else Playground's template ever grows between them (10-04-PLAN.md Task 2). */
+function assertRegionOrder(compiled: HTMLElement): void {
+  const playSurfaces = compiled.querySelectorAll('app-play-surface');
+  const visualizers = compiled.querySelectorAll('app-visualizer');
+  const toolsPanels = compiled.querySelectorAll('app-tools-panel');
+  expect(playSurfaces.length).toBe(1);
+  expect(visualizers.length).toBe(1);
+  expect(toolsPanels.length).toBe(1);
+
+  const playSurface = playSurfaces[0];
+  const visualizer = visualizers[0];
+  const toolsPanel = toolsPanels[0];
+
+  // DOCUMENT_POSITION_FOLLOWING (4) set means the second node comes after
+  // the first in document order.
+  expect(playSurface.compareDocumentPosition(visualizer) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(visualizer.compareDocumentPosition(toolsPanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+}

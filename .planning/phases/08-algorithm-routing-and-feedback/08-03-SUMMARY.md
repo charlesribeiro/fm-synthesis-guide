@@ -198,8 +198,8 @@ None - no external service configuration required.
 
 - All four verification commands (`npm test`, `npm run build`, `npm run lint`, `npm run typecheck:worklet`) are green: 1039/1039 tests passing (up from 1030 at the start of this plan).
 - `src/app/core/audio/web-audio-synth-engine.ts` remains untouched across the whole phase (D-04), verified via `git diff --stat` against this phase's base commit.
-- The routed path is now proven at all three levels the plan's `<verification>` section required: the pure kernel (plans 08-01/08-02), the real built bundle (this plan's Task 2), and the Angular engine over a fake node boundary (this plan's Task 3).
-- Phase 8 (algorithm-routing-and-feedback) is functionally complete: ENGINE-02 is fully covered by 08-01 (Algorithm 1 end-to-end + kernel invariants), 08-02 (32-row cross-check + bounded-output sweep), and this plan (hostile-payload hardening + bundle parity + live parameter/algorithm reality). Plan 08-04, if any, or phase closeout is the next step.
+- ENGINE-02 implementation is complete: the routed path is proven at all three levels the plan's `<verification>` section required: the pure kernel (plans 08-01/08-02), the real built bundle (this plan's Task 2), and the Angular engine over a fake node boundary (this plan's Task 3).
+- Phase 8 validation remains pending: Plan 08-04 still requires the blocking D-12 browser listening check, and `08-VALIDATION.md` is still `status: draft` until that checkpoint records its auditable sample-id payload.
 
 ---
 *Phase: 08-algorithm-routing-and-feedback*

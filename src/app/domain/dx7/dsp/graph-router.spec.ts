@@ -86,9 +86,13 @@ function gateAndWarmUp(router: GraphRouter, operators: OperatorParameterSet): vo
  * hardcoding four algorithm ids — a future dataset change cannot silently
  * narrow this sweep.
  */
-const TAXONOMY_SWEEP_ALGORITHMS: readonly AlgorithmDefinition[] = TEACHING_TAGS.map(
-  (tag) => ALGORITHMS.find((algorithm) => algorithm.teachingTags.includes(tag))!,
-);
+const TAXONOMY_SWEEP_ALGORITHMS: readonly AlgorithmDefinition[] = TEACHING_TAGS.map((tag) => {
+  const algorithm = ALGORITHMS.find((candidate) => candidate.teachingTags.includes(tag));
+  if (algorithm === undefined) {
+    throw new Error(`TAXONOMY_SWEEP_ALGORITHMS: no ALGORITHMS row carries teaching tag "${tag}"`);
+  }
+  return algorithm;
+});
 
 function assertFiniteAndBounded(block: Float32Array): void {
   for (const sample of block) {

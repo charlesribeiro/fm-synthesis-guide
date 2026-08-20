@@ -25,7 +25,7 @@
 // isolation` reproduces the exact harness-then-build sequence
 // 07-VERIFICATION.md failed on and asserts it clean.
 import { build } from 'esbuild';
-import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, rmdirSync } from 'node:fs';
 
 const buildHarness = process.argv.includes('--harness');
 
@@ -36,7 +36,7 @@ function removeLegacyPublicDevHarnessFiles() {
   rmSync('public/dev/worklet-harness.js', { force: true });
   rmSync('public/dev/worklet-harness.html', { force: true });
   if (existsSync('public/dev') && readdirSync('public/dev').length === 0) {
-    rmSync('public/dev');
+    rmdirSync('public/dev');
   }
 }
 

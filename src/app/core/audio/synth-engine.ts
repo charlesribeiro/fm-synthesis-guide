@@ -41,3 +41,52 @@ export interface SynthEngine {
   allNotesOff(): void;
   destroy(): void;
 }
+
+/**
+ * D-08's locked `AnalyserNode.fftSize` value. It also happens to be the
+ * platform default, but stating it explicitly here — rather than relying on
+ * an implicit default — is what makes every downstream buffer size
+ * (`ANALYSER_FREQUENCY_BIN_COUNT`, the component's preallocated read
+ * buffers) provably derived from one place instead of silently inherited
+ * from a browser default that could differ.
+ */
+export const ANALYSER_FFT_SIZE = 2048;
+
+/** Always half of `fftSize` (MDN `AnalyserNode.frequencyBinCount`). */
+export const ANALYSER_FREQUENCY_BIN_COUNT = ANALYSER_FFT_SIZE / 2;
+
+/**
+ * A read-only tap onto an engine's live master-output analyser, exposed as
+ * plain data-copying methods rather than signals or a node accessor. Both
+ * read methods copy into a caller-owned, caller-preallocated buffer and
+ * return `true` only when live data was written; a `false` return means
+ * there is no live tap right now and the buffer was left untouched.
+ *
+ * These are plain methods — not signals, not a node getter — because they
+ * are polled from an animation-frame callback many times a second and must
+ * stay entirely off the signal graph (VIZ-01's "no change detection per
+ * frame" requirement), and because handing out the node itself would put an
+ * audio node within reach of component state, which CLAUDE.md forbids
+ * outright ("never store AudioNodes in Angular signal state").
+ */
+export interface AnalysisTap {
+  getAnalysisSampleRate(): number;
+  readTimeDomainInto(target: Uint8Array): boolean;
+  readFrequencyInto(target: Uint8Array): boolean;
+}
+
+/**
+ * Structural capability guard, deliberately not a required member of
+ * `SynthEngine`: the reference fallback engine (`WebAudioSynthEngine`) is
+ * not the live path and is not being given a tap, so a component asks
+ * whether the engine it was handed can be analysed rather than assuming
+ * every implementation can.
+ */
+export function hasAnalysisTap(engine: SynthEngine): engine is SynthEngine & AnalysisTap {
+  const candidate = engine as Partial<AnalysisTap>;
+  return (
+    typeof candidate.getAnalysisSampleRate === 'function' &&
+    typeof candidate.readTimeDomainInto === 'function' &&
+    typeof candidate.readFrequencyInto === 'function'
+  );
+}

@@ -1,0 +1,81 @@
+// Embedded region, not a route — no `layout.page` mixin here (mirrors
+// play-surface.scss's and visualizer.scss's posture).
+
+.tools-panel {
+  margin-block: var(--space-4);
+}
+
+.tools-panel__group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+}
+
+.tools-panel__slot-line {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.tools-panel__randomize {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-block-start: var(--space-4);
+}
+
+.tools-panel__hint {
+  max-width: 60ch;
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
+.tools-panel__status {
+  display: inline-block;
+  max-width: 60ch;
+  margin-block-start: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-base);
+  color: var(--color-text-muted);
+}
+
+// Replicates play-surface.scss's .button rule body — component-scoped, no
+// global button style to inherit.
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--easing-standard);
+
+  &:hover:not(:disabled) {
+    background: var(--color-surface-raised);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-focus-ring);
+    outline-offset: 2px;
+  }
+
+  // Non-color-only disabled state (CLAUDE.md): reduced opacity + dashed
+  // border + not-allowed cursor together, never color/opacity alone. The
+  // button's own worded label (Recall A/B's "slot is empty" text) is the
+  // primary carrier of the disabled reason — this is the visual backup.
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    border-style: dashed;
+  }
+}

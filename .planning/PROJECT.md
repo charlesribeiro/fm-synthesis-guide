@@ -97,10 +97,32 @@ a parameter, and immediately understand why the sound changed.
       1189/1189 tests passing. Code review flagged 0 critical, 1 warning (a dev-harness-only
       click risk in `harness-main.ts`, never shipped, isolated from production by
       `verify:harness-isolation`) — see `09-REVIEW.md`.
+- [x] Off-change-detection oscilloscope/spectrum visualizers plus A/B compare and constrained
+      randomization in Playground — Validated in Phase 10: visualizers-and-comparison-tools
+      (2026-08-19). VIZ-01/VIZ-02 complete: an `AnalyserNodeLike` tap inserted between the
+      worklet engine's master gain and destination drives a Canvas 2D oscilloscope and a
+      logarithmic bar spectrum (drawn frequency tick labels, accessible descriptions,
+      reduced-motion throttle) on an injected animation-frame loop that writes zero Angular
+      signals; a pure bounded random-walk module and a validated, atomic
+      `InstrumentState.randomize()` command back a six-control tools panel (Capture A/B,
+      Recall A/B, Reset, Randomize) wired directly onto the Phase 3 snapshot facade. 10/10
+      must-haves verified in `10-VERIFICATION.md`; 1296/1296 tests passing. Wave 1's first
+      executor attempt was interrupted mid-task by a session-quota error (not a defect) and
+      recovered by cherry-picking its already-committed work into a fresh worktree; one
+      production bug was caught and fixed along the way (`WorkletSynthEngine.buildAndStart`
+      could leak audio nodes on a mid-construction throw). A blocking real-browser listening
+      and viewing checkpoint (10-04) covering all ten of the phase's perceptual claims was
+      approved with zero findings. Code review flagged 0 critical, 2 warnings (a test-fake
+      over-strictness in `fake-audio-context.ts`; `randomWalkFixedFrequencyHz` clamps before
+      walking for an out-of-range input, not reachable via the shipped UI) — see
+      `10-REVIEW.md`. Two tracked debt items: VIZ-01/VIZ-02 are listed in REQUIREMENTS.md's
+      body but not yet added to its Traceability table; `10-03-SUMMARY.md` has one
+      path-formatting inconsistency in a `key-files` reference (file itself exists and is
+      correct on disk).
 
 ### Active
 
-- [ ] Full 32-algorithm curriculum (remaining lesson content), visualizers, A/B snapshots
+- [ ] Full 32-algorithm curriculum (remaining lesson content)
 - [ ] Web MIDI progressive enhancement, versioned persistence, import/export
 - [ ] Accessibility and performance hardening, Playwright smoke tests, deployment
 
@@ -166,4 +188,4 @@ a parameter, and immediately understand why the sound changed.
 | Phase 5: a post-checkpoint code-review fix (WR-01, commit `fd1b018`) lowered `MASTER_GAIN` from the 05-04-listening-approved 0.18 to 1/6 (≈0.63 dB quieter) to close a mathematically-provable safety-clamp gap (0.18 × 6 carriers could exceed full scale) | The change can only make the engine quieter/safer, never louder/riskier, but the exact shipped value was never itself heard in a real browser, and 05-04-PLAN.md's own must-have requires that it be | ✓ Good — re-confirmed via 05-UAT.md Test 1 (real-browser listening, single note + Algorithm 32 six-carrier worst case), both comfortably audible; verification status canonicalized to `passed` |
 
 ---
-*Last updated: 2026-08-16 after Phase 9 (dx7-style-envelopes-and-parameter-mapping) completion*
+*Last updated: 2026-08-19 after Phase 10 (visualizers-and-comparison-tools) completion*

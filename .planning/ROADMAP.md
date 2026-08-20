@@ -20,7 +20,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 7: AudioWorklet DSP foundation** - Pure six-operator DSP kernel, worklet loading (all 4 plans executed, including 07-04 gap closure; completed 2026-08-12)
 - [x] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output (all 4 plans executed, blocking listening checkpoint approved with zero findings; completed 2026-08-13)
 - [x] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes (completed 2026-08-16)
-- [ ] **Phase 10: Visualizers and comparison tools** - Oscilloscope, spectrum, A/B, randomization
+- [x] **Phase 10: Visualizers and comparison tools** - Oscilloscope, spectrum, A/B, randomization (completed 2026-08-19)
 - [ ] **Phase 11: Curriculum across all 32 algorithms** - Lesson/experiment/preset per algorithm
 - [ ] **Phase 12: MIDI and patch persistence** - Web MIDI, versioned storage, import/export
 - [ ] **Phase 13: Accessibility and performance hardening** - Keyboard/screen-reader/mobile audit
@@ -337,7 +337,31 @@ Plans:
 
   2. A/B snapshot compare and constrained randomization work in Playground
 
-**Plans**: TBD
+**Plans**: 4/4 plans executed
+
+Plans:
+
+**Wave 1**
+
+- [x] 10-01-PLAN.md — Tracer: `AnalyserNodeLike` boundary widening, the analyser inserted between
+      the worklet engine's master gain and the destination, the `AnalysisTap` read methods, the
+      injected animation-frame and Canvas-2D seams, and a Canvas 2D oscilloscope embedded in
+      Playground — one waveform end to end (VIZ-01)
+
+- [x] 10-03-PLAN.md — The pure bounded random-walk module over an instrument patch and the
+      validated, atomic `InstrumentState.randomize()` command (VIZ-02)
+
+**Wave 2** *(blocked on 10-01)*
+
+- [x] 10-02-PLAN.md — The pure logarithmic band map, bar rendering with drawn frequency tick
+      labels, the second canvas wired into the visualizer, accessible descriptions for both
+      lanes, and the reduced-motion repaint rate (VIZ-01)
+
+**Wave 3** *(blocked on 10-02 and 10-03)*
+
+- [x] 10-04-PLAN.md — The six-control tools panel over the Phase 3 A/B facade plus Randomize,
+      the Playground integration, and the blocking real-browser listening and viewing
+      checkpoint for the whole phase (VIZ-02)
 
 ### Phase 11: Curriculum across all 32 algorithms
 
@@ -406,7 +430,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 7. AudioWorklet DSP foundation | 4/4 | Complete    | 2026-08-12 |
 | 8. Algorithm routing and feedback | 4/4 | Complete    | 2026-08-13 |
 | 9. Envelopes and parameter mapping | 4/4 | Complete    | 2026-08-16 |
-| 10. Visualizers and comparison tools | 0/TBD | Not started | - |
+| 10. Visualizers and comparison tools | 4/4 | Complete    | 2026-08-19 |
 | 11. Curriculum (all 32 algorithms) | 0/TBD | Not started | - |
 | 12. MIDI and patch persistence | 0/TBD | Not started | - |
 | 13. Accessibility and performance | 0/TBD | Not started | - |

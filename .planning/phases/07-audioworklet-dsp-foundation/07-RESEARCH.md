@@ -379,7 +379,11 @@ class Dx7WorkletProcessor extends AudioWorkletProcessor {
   }
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
-    this.operator.render(outputs[0][0]);
+    const channel = outputs[0]?.[0];
+    if (channel === undefined) {
+      return true; // keep-alive even when the graph presents no output channel
+    }
+    this.operator.render(channel);
     return true; // Chrome compatibility: keep the node alive regardless of spec default
   }
 }
@@ -429,7 +433,7 @@ export interface AudioWorkletLike {
 |---------|-------------|-------------|-----|
 | Getting one TypeScript file to become a browser-loadable, import-free script | A custom Angular builder plugin, a second `ng build` target, or a hand-written string-concatenation "bundler" | `esbuild --bundle --format=iife` via a small npm prebuild script | Already vendored in this repo (via `@angular/build`), purpose-built for exactly this (bundle N modules into one self-contained script), zero new build-graph complexity |
 | Typing `AudioWorkletProcessor`/`registerProcessor`/`sampleRate`/`currentFrame` | A hand-maintained `.d.ts` ambient-declarations shim | `@types/audioworklet` | Sourced from the same official generator (`microsoft/TypeScript-DOM-Lib-Generator`) that produces this project's own `lib.dom.d.ts` — a hand-rolled shim drifts from the spec and duplicates types (`AudioParamMap`) already declared elsewhere |
-| Waiting for the worklet module to finish loading | A polling loop or a hand-rolled `setTimeout` retry | `await context.audioWorklet.addModule(url)` | The spec-defined `Promise` resolves only once the module has been fully fetched, parsed, and evaluated (i.e. `registerProcessor` has already run) — there is nothing to poll for |
+| Waiting for the worklet module to finish loading | A polling loop or a hand-rolled `setTimeout` retry | `await context.audioWorklet.addModule(url)` | The spec-defined `Promise` resolves once the module has been fully fetched, parsed, and evaluated. That is a load completion guarantee, not a `registerProcessor(...)` guarantee: `addModule(url)` does not prove that arbitrary module code registered a processor. `registerProcessor(...)` is a separate adapter requirement; keep module-loading tests separate from processor-construction tests. |
 | Band-limiting/anti-aliasing the sine oscillator | A custom band-limited-oscillator algorithm this phase | Nothing — defer entirely | This phase's proof cases (single sine operator, additive sum of sines) never exercise phase modulation at a high index near Nyquist, so no aliasing exists to band-limit yet; band-limiting only becomes a real concern once Phase 8/9 introduce routed modulation at higher indices — revisit then, not now |
 
 **Key insight:** Every "don't hand-roll" item above exists because this project already has (or npm

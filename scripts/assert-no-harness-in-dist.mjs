@@ -12,7 +12,7 @@
 // there would be exactly the vacuous green this gate exists to eliminate.
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { basename, join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const HARNESS_FILE_NAMES = new Set(['worklet-harness.js', 'worklet-harness.html']);
 
@@ -51,8 +51,19 @@ export function assertNoHarnessInDist(distRoot) {
   }
 }
 
-const isMain = import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
-if (isMain) {
+function invokedAsCli() {
+  const entry = process.argv[1];
+  if (typeof entry !== 'string' || entry.length === 0) {
+    return false;
+  }
+  try {
+    return fileURLToPath(import.meta.url).toLowerCase() === resolve(entry).toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+if (invokedAsCli()) {
   const distRoot = process.argv[2] ?? 'dist';
   try {
     assertNoHarnessInDist(distRoot);

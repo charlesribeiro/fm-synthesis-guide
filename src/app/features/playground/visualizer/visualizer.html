@@ -1,0 +1,27 @@
+<section class="visualizer" aria-labelledby="visualizer-heading">
+  <h2 id="visualizer-heading">Oscilloscope and spectrum</h2>
+
+  <canvas
+    #oscilloscope
+    class="visualizer__canvas"
+    role="img"
+    aria-label="Oscilloscope showing the live waveform of the sounding note"
+    aria-describedby="oscilloscope-description"
+  ></canvas>
+  <p id="oscilloscope-description" class="visualizer__description">{{ description() }}</p>
+
+  <canvas
+    #spectrum
+    class="visualizer__canvas visualizer__canvas--spectrum"
+    role="img"
+    aria-label="Spectrum showing the frequency content of the sounding note"
+    aria-describedby="spectrum-description"
+  ></canvas>
+  <p id="spectrum-description" class="visualizer__description visualizer__description--spectrum">
+    {{ spectrumDescription() }}
+  </p>
+
+  <p class="visualizer__caption">
+    Live view of this app's own approximated engine output — not a bit-accurate DX7 analysis.
+  </p>
+</section>

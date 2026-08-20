@@ -19,8 +19,11 @@ import type { OperatorParameterSet } from '../../domain/dx7/models/patch';
  * output) in Node against stub `AudioWorkletProcessor` / `registerProcessor`
  * / `sampleRate` globals — the automated coverage `07-RESEARCH.md` Pitfall 2
  * assumed was impossible for anything touching `AudioWorkletGlobalScope`.
- * The `pretest` npm lifecycle hook rebuilds the bundle before this spec runs,
- * so it always reads a fresh artifact (RESEARCH.md Pitfall 6).
+ * The `pretest` npm lifecycle hook rebuilds the bundle before `npm test`.
+ * Targeted `npx ng test --include=...` skips that hook — use
+ * `npm run test:worklet-bundle` (rebuild, then the include path) so a clean
+ * checkout never reads a stale ignored `public/worklets/` artifact
+ * (RESEARCH.md Pitfall 6).
  *
  * Mechanism that actually worked (recorded per the plan's own
  * "record which mechanism worked" instruction): neither a static `node:fs`

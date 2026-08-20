@@ -72,9 +72,11 @@ live parameter/routing message design; numeric bounded-output proofs for a 32-ro
   already have today; the core value ("change a parameter, immediately understand why the sound
   changed") applies to algorithm choice, not only operator params.
 - **D-14:** The algorithm switch reaches the running worklet processor via a new worklet message
-  (extending `worklet-messages.ts`'s existing `setFrequency`/`setMode` pattern) carrying the new
-  algorithm's routing config (edges/carriers/feedback operator), translated from the canonical
-  dataset on the main thread — the processor rebuilds its internal routing table on receipt.
+  (extending `worklet-messages.ts`'s existing `setFrequency`/`setMode` pattern) carrying only
+  `connections` and `carriers`, translated from the canonical dataset on the main thread — the
+  processor rebuilds its internal routing table on receipt. `GraphRouter` derives
+  `feedbackOperatorId` from `connections[].isFeedback`; `feedbackOperatorId` is not a `setAlgorithm`
+  payload field.
 - **D-15:** The worklet engine reuses `operatorFrequencyHz` (ratio/detune/fixed-mode conversion,
   already pure domain code, already proven in Phase 5) for each operator's pitch — not naive/flat
   per-operator frequencies. Makes this phase's own listening checkpoint musically meaningful and
@@ -90,9 +92,11 @@ live parameter/routing message design; numeric bounded-output proofs for a 32-ro
 
 ### Claude's Discretion
 - Exact TypeScript shape of the new routing-config worklet message (D-14) — field names/nesting
-  for edges/carriers/feedback-operator, and whether it's one message or several — informed by
-  `worklet-messages.ts`'s existing `parseWorkletMessage` choke-point pattern (never throws, rejects
-  malformed shapes by returning `null`) and `patch-plan.ts`'s `OperatorConnection` shape.
+  for connections and carriers only (`feedbackOperatorId` is derived by `GraphRouter` from
+  `connections[].isFeedback`, not carried on the payload), and whether it's one message or several
+  — informed by `worklet-messages.ts`'s existing `parseWorkletMessage` choke-point pattern (never
+  throws, rejects malformed shapes by returning `null`) and `patch-plan.ts`'s `OperatorConnection`
+  shape.
 - Exact module/file layout for the kernel's graph-routing logic (e.g. a new
   `src/app/domain/dx7/dsp/graph-router.ts` or similar) and for the independent reference evaluator
   used by D-10's correctness proof — informed by the domain-purity ESLint gate (DOMAIN-04) and the
@@ -294,9 +298,9 @@ InstrumentState (signals: algorithm, operators, feedback)
         │ (NEW this phase — mirrors WebAudioSynthEngine's
         │  existing applyRouting()-driving effect exactly)
         ▼
-  hasAppliedRoutingState(...)? ──skip if unchanged──┐
-        │ changed                                    │
-        ▼                                            │
+  lastAppliedAlgorithm / lastAppliedOperators / lastAppliedFeedback
+        │ post only the message kind for each changed signal
+        ▼
   translate AlgorithmDefinition → routing config      │
     connections = planConnections(algorithm)          │
     carriers    = deriveCarriers(algorithm)            │
@@ -309,7 +313,7 @@ InstrumentState (signals: algorithm, operators, feedback)
   node.port.postMessage(setAlgorithmMessage(...))  ──────┼──▶ parseWorkletMessage(data)
   node.port.postMessage(setOperatorParametersMessage(...)) ──▶  (never throws, rejects malformed
   node.port.postMessage(setFeedbackMessage(level))  ──────┤    shapes by returning null — extends
-        │                                                │    the existing setFrequency/setMode
+        │  (each postMessage only when that signal changed) │    the existing setFrequency/setMode
         ▼                                                │    choke point, D-14)
   noteOn(note, velocity)                                 │
     postMessage(setNoteFrequencyMessage(fundamentalHz)) ─┘        │
@@ -553,32 +557,37 @@ live re-patch) has no trigger mechanism on the worklet engine at all.
 **Example:**
 ```typescript
 // src/app/core/audio/worklet-synth-engine.ts (excerpt) — mirrors WebAudioSynthEngine's constructor
-// effect() shape (same three signals, same "operatorNodes === null → skip" / "already applied →
-// skip" guards), swapping the Web Audio graph mutation for two postMessage calls.
+// effect() shape (same three signals, same "node === null → skip" guard). Each signal is
+// tracked independently: only the message kind for a changed value is posted, and that
+// signal's last-applied field is updated after the post. There is no all-or-nothing
+// hasAppliedRoutingState / rememberAppliedRoutingState gate.
 constructor() {
   this.destroyRef.onDestroy(() => this.destroy());
   effect(() => {
-    const algorithm = this.instrumentState.algorithm();
-    const operators = this.instrumentState.operators();
-    const feedback = this.instrumentState.feedback();
-    if (this.node === null) return;
-    if (this.hasAppliedRoutingState(algorithm, operators, feedback)) return;
-    this.applyRoutingToWorklet(algorithm, operators, feedback);
-    this.rememberAppliedRoutingState(algorithm, operators, feedback);
+    this.applyInstrumentStateToWorklet();
   });
 }
 
-private applyRoutingToWorklet(
-  algorithm: AlgorithmDefinition,
-  operators: OperatorParameterSet,
-  feedback: number,
-): void {
+private applyInstrumentStateToWorklet(): void {
+  const algorithm = this.instrumentState.algorithm();
+  const operators = this.instrumentState.operators();
+  const feedback = this.instrumentState.feedback();
   if (this.node === null) return;
-  this.node.port.postMessage(
-    setAlgorithmMessage(planConnections(algorithm), deriveCarriers(algorithm)),
-  );
-  this.node.port.postMessage(setOperatorParametersMessage(operators));
-  this.node.port.postMessage(setFeedbackMessage(feedback));
+
+  if (algorithm !== this.lastAppliedAlgorithm) {
+    this.node.port.postMessage(
+      setAlgorithmMessage(planConnections(algorithm), deriveCarriers(algorithm)),
+    );
+    this.lastAppliedAlgorithm = algorithm;
+  }
+  if (operators !== this.lastAppliedOperators) {
+    this.node.port.postMessage(setOperatorParametersMessage(operators));
+    this.lastAppliedOperators = operators;
+  }
+  if (feedback !== this.lastAppliedFeedback) {
+    this.node.port.postMessage(setFeedbackMessage(feedback));
+    this.lastAppliedFeedback = feedback;
+  }
 }
 ```
 
@@ -769,8 +778,8 @@ purpose-scoped is still the documented intent).
 about which signal changed.
 **How to avoid:** Keep the messages separate (Pattern 4's example already does this) — `setAlgorithm`
 only on algorithm change, `setOperatorParameters` only on operator-set change, `setFeedback` only on
-feedback change — mirroring `hasAppliedRoutingState`'s existing three-way equality-check precedent in
-`WebAudioSynthEngine`, just gating three `postMessage` calls instead of one.
+feedback change — using independent `lastAppliedAlgorithm` / `lastAppliedOperators` /
+`lastAppliedFeedback` checks (Pattern 4), just gating three `postMessage` calls instead of one.
 **Warning signs:** A spec asserting posted messages finds a `setAlgorithm` message re-sent every time
 an unrelated operator level changes.
 
@@ -799,7 +808,6 @@ export interface SetAlgorithmMessage {
   readonly kind: 'setAlgorithm';
   readonly connections: readonly { from: OperatorId; to: OperatorId; isFeedback: boolean }[];
   readonly carriers: readonly OperatorId[];
-  readonly feedbackOperatorId: OperatorId | null;
 }
 
 export interface OperatorParametersPayload {
