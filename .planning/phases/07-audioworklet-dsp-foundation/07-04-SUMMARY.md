@@ -226,14 +226,18 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- ENGINE-01 is now fully closed: the ROADMAP's two core success criteria stayed verified throughout
-  Phase 7, and the one failing must-have `07-VERIFICATION.md` found (harness production isolation)
-  is closed structurally, with a regression gate proven to have teeth.
-- `SYNTH_ENGINE` still resolves to `WebAudioSynthEngine` (D-01, unchanged this plan) — Phase 8
-  (routing) and Phase 9 (envelopes) can build on the worklet kernel without any live-engine cutover
-  risk carried over from this plan.
-- The dev harness remains reachable at its original URL for any future phase's listening checks via
-  `npm run start:harness`, now provably isolated from every production build path.
+- ENGINE-01's harness-isolation must-have is closed structurally for default `npm run build`
+  (relocation plus `postbuild`), with a regression gate proven to have teeth. ENGINE-01 is **not**
+  fully closed while `07-REVIEW.md` still records WR-01 (lint scope), WR-02 (`typecheck:worklet` not
+  hooked), WR-04 (`setMode` stale phase), and WR-06 (untested AdditiveOperatorBank custom-ratio
+  branches). WR-05's Windows `postbuild` no-op was addressed by comparing `fileURLToPath(import.meta.url)`
+  against `resolve(process.argv[1])` rather than concatenating `file://` onto a native path.
+- `SYNTH_ENGINE` still resolves to `WebAudioSynthEngine` (D-01, unchanged this plan) — later routing
+  and envelope work can build on the worklet kernel without any live-engine cutover risk carried
+  over from this plan.
+- The dev harness remains reachable at its original URL for later listening checks via
+  `npm run start:harness`, isolated from default production build paths subject to the remaining
+  review findings above.
 
 ## Self-Check: PASSED
 

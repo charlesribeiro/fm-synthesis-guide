@@ -1,4 +1,5 @@
 import type {
+  AnalyserNodeLike,
   AudioContextLike,
   AudioNodeLike,
   AudioParamLike,
@@ -133,6 +134,65 @@ export class FakeDelayNode extends FakeAudioNode implements DelayNodeLike {
   readonly delayTime = new FakeAudioParam(0);
 }
 
+/** The byte value `getByteTimeDomainData` means "at the zero crossing" —
+ * silence — so an unset canned time-domain array reads as silence rather
+ * than as noise. */
+const SILENT_TIME_DOMAIN_BYTE = 128;
+
+/** The byte value `getByteFrequencyData` means "no signal at this
+ * frequency" — an unset canned frequency array reads as silence too. */
+const SILENT_FREQUENCY_BYTE = 0;
+
+/**
+ * Hand-rolled `AnalyserNode` fake (Pitfall 5). Enforces the exact buffer-
+ * length contract a real browser enforces (`RangeError` on any other
+ * length) so the one mismatch that actually throws in production does not
+ * go unexercised by a fake that silently accepts any buffer.
+ */
+export class FakeAnalyserNode extends FakeAudioNode implements AnalyserNodeLike {
+  fftSize = 2048;
+
+  get frequencyBinCount(): number {
+    return this.fftSize / 2;
+  }
+
+  /** `null` until a spec sets it — reads as silence, never as real FFT math. */
+  cannedTimeDomainData: Uint8Array | null = null;
+  cannedFrequencyData: Uint8Array | null = null;
+
+  timeDomainReadCalls = 0;
+  frequencyReadCalls = 0;
+
+  getByteTimeDomainData(target: Uint8Array): void {
+    this.timeDomainReadCalls += 1;
+    if (target.length !== this.fftSize) {
+      throw new RangeError(
+        `target buffer must have length ${this.fftSize} (fftSize), received ${target.length}`,
+      );
+    }
+    fillFromCannedOrDefault(target, this.cannedTimeDomainData, SILENT_TIME_DOMAIN_BYTE);
+  }
+
+  getByteFrequencyData(target: Uint8Array): void {
+    this.frequencyReadCalls += 1;
+    if (target.length !== this.frequencyBinCount) {
+      throw new RangeError(
+        `target buffer must have length ${this.frequencyBinCount} (frequencyBinCount), received ${target.length}`,
+      );
+    }
+    fillFromCannedOrDefault(target, this.cannedFrequencyData, SILENT_FREQUENCY_BYTE);
+  }
+}
+
+/** Fills `target` from `canned` where available, and with `defaultByte`
+ * everywhere else — including the remainder when `canned` is shorter than
+ * `target`. */
+function fillFromCannedOrDefault(target: Uint8Array, canned: Uint8Array | null, defaultByte: number): void {
+  for (let i = 0; i < target.length; i++) {
+    target[i] = canned !== null && i < canned.length ? canned[i]! : defaultByte;
+  }
+}
+
 /**
  * Hand-rolled `AudioContext` fake — the only Web Audio double any spec in
  * this app touches (`05-RESEARCH.md` Pitfall 6). Keeps a created-node
@@ -153,6 +213,7 @@ export class FakeAudioContext implements AudioContextLike {
   readonly createdOscillators: FakeOscillatorNode[] = [];
   readonly createdGains: FakeGainNode[] = [];
   readonly createdDelays: FakeDelayNode[] = [];
+  readonly createdAnalysers: FakeAnalyserNode[] = [];
 
   /** Counts `close()` calls (CR-02) — lets a spec prove a context that was
    * successfully constructed but then failed later in `initialize()` was
@@ -192,14 +253,20 @@ export class FakeAudioContext implements AudioContextLike {
     return delay;
   }
 
+  createAnalyser(): FakeAnalyserNode {
+    const analyser = new FakeAnalyserNode();
+    this.createdAnalysers.push(analyser);
+    return analyser;
+  }
+
   /** Test helper: move the fake audio clock forward deterministically. */
   advanceTime(seconds: number): void {
     this.currentTime += seconds;
   }
 
   /** Every node this context has created — the cleanup-assertion registry. */
-  get createdNodes(): readonly (FakeOscillatorNode | FakeGainNode | FakeDelayNode)[] {
-    return [...this.createdOscillators, ...this.createdGains, ...this.createdDelays];
+  get createdNodes(): readonly (FakeOscillatorNode | FakeGainNode | FakeDelayNode | FakeAnalyserNode)[] {
+    return [...this.createdOscillators, ...this.createdGains, ...this.createdDelays, ...this.createdAnalysers];
   }
 }
 

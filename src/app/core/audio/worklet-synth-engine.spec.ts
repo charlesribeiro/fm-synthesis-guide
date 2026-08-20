@@ -31,7 +31,8 @@ import {
 } from '../../domain/dx7/dsp/worklet-messages';
 import { InstrumentState } from '../../state/instrument-state';
 import { AUDIO_CONTEXT_CTOR, type AudioContextConstructorLike } from './audio-context.token';
-import { FakeGainNode } from './testing/fake-audio-context';
+import { ANALYSER_FFT_SIZE, ANALYSER_FREQUENCY_BIN_COUNT } from './synth-engine';
+import { FakeAnalyserNode, FakeGainNode } from './testing/fake-audio-context';
 import {
   AUDIO_WORKLET_MODULE_URL,
   AUDIO_WORKLET_NODE_CTOR,
@@ -73,9 +74,21 @@ function setup(
   return { service: TestBed.inject(WorkletSynthEngine) };
 }
 
-/** The masterGain is the fake gain node connected to `context.destination`. */
+/** The analyser is the fake analyser node connected to `context.destination`
+ * (D-02: the analyser is now the graph's terminal node, not masterGain). */
+function findAnalyser(context: FakeAudioWorkletContext): FakeAnalyserNode {
+  const analyser = context.createdAnalysers.find((candidate) => candidate.connections.has(context.destination));
+  if (analyser === undefined) {
+    throw new Error('analyser was not created — buildAndStart did not run as expected');
+  }
+  return analyser;
+}
+
+/** The masterGain is the fake gain node connected to the analyser (D-02:
+ * masterGain no longer connects directly to `context.destination`). */
 function findMasterGain(context: FakeAudioWorkletContext): FakeGainNode {
-  const masterGain = context.createdGains.find((gain) => gain.connections.has(context.destination));
+  const analyser = findAnalyser(context);
+  const masterGain = context.createdGains.find((gain) => gain.connections.has(analyser));
   if (masterGain === undefined) {
     throw new Error('masterGain was not created — buildAndStart did not run as expected');
   }
@@ -259,6 +272,108 @@ describe('WorkletSynthEngine', () => {
     const { context } = await setupReady();
 
     expect(context.createdGains.length).toBe(1);
+  });
+
+  describe('AnalyserNode tap (10-01-PLAN.md, D-02, D-08)', () => {
+    it('inserts exactly one analyser between masterGain and context.destination, sized from ANALYSER_FFT_SIZE', async () => {
+      const { context } = await setupReady();
+
+      expect(context.createdAnalysers.length).toBe(1);
+      const analyser = context.createdAnalysers[0];
+      const masterGain = findMasterGain(context);
+
+      expect(masterGain.connections.has(analyser)).toBe(true);
+      expect(masterGain.connections.has(context.destination)).toBe(false);
+      expect(analyser.connections.has(context.destination)).toBe(true);
+
+      expect(analyser.fftSize).toBe(ANALYSER_FFT_SIZE);
+      expect(analyser.frequencyBinCount).toBe(ANALYSER_FREQUENCY_BIN_COUNT);
+    });
+
+    it('readTimeDomainInto/readFrequencyInto both return false and leave the buffer untouched before initialize()', async () => {
+      const { service } = setup();
+      const timeBuffer = new Uint8Array(ANALYSER_FFT_SIZE).fill(7);
+      const frequencyBuffer = new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT).fill(7);
+
+      expect(service.readTimeDomainInto(timeBuffer)).toBe(false);
+      expect(service.readFrequencyInto(frequencyBuffer)).toBe(false);
+      expect(timeBuffer.every((byte) => byte === 7)).toBe(true);
+      expect(frequencyBuffer.every((byte) => byte === 7)).toBe(true);
+    });
+
+    it('readTimeDomainInto/readFrequencyInto return false after initialize() until a note is held', async () => {
+      const { service } = await setupReady();
+      const timeBuffer = new Uint8Array(ANALYSER_FFT_SIZE).fill(7);
+      const frequencyBuffer = new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT).fill(7);
+
+      expect(service.readTimeDomainInto(timeBuffer)).toBe(false);
+      expect(service.readFrequencyInto(frequencyBuffer)).toBe(false);
+      expect(timeBuffer.every((byte) => byte === 7)).toBe(true);
+      expect(frequencyBuffer.every((byte) => byte === 7)).toBe(true);
+    });
+
+    it('readTimeDomainInto/readFrequencyInto return true while a note is held and copy the fake analyser\'s canned bytes', async () => {
+      const { service, context } = await setupReady();
+      const analyser = findAnalyser(context);
+      const cannedTime = new Uint8Array(ANALYSER_FFT_SIZE).fill(200);
+      const cannedFrequency = new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT).fill(50);
+      analyser.cannedTimeDomainData = cannedTime;
+      analyser.cannedFrequencyData = cannedFrequency;
+
+      service.noteOn(60, 100);
+
+      const timeBuffer = new Uint8Array(ANALYSER_FFT_SIZE);
+      const frequencyBuffer = new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT);
+
+      expect(service.readTimeDomainInto(timeBuffer)).toBe(true);
+      expect(service.readFrequencyInto(frequencyBuffer)).toBe(true);
+      expect(timeBuffer).toEqual(cannedTime);
+      expect(frequencyBuffer).toEqual(cannedFrequency);
+
+      service.noteOff(60);
+      timeBuffer.fill(7);
+      frequencyBuffer.fill(7);
+      expect(service.readTimeDomainInto(timeBuffer)).toBe(true);
+      expect(service.readFrequencyInto(frequencyBuffer)).toBe(true);
+      expect(timeBuffer).toEqual(cannedTime);
+      expect(frequencyBuffer).toEqual(cannedFrequency);
+    });
+
+    it('after noteOff, analyser reads still copy live release samples until the graph is torn down', async () => {
+      const { service, context } = await setupReady();
+      const analyser = findAnalyser(context);
+      const cannedTime = new Uint8Array(ANALYSER_FFT_SIZE).fill(180);
+      analyser.cannedTimeDomainData = cannedTime;
+      service.noteOn(60, 100);
+      service.noteOff(60);
+
+      const timeBuffer = new Uint8Array(ANALYSER_FFT_SIZE).fill(7);
+      expect(service.readTimeDomainInto(timeBuffer)).toBe(true);
+      expect(timeBuffer).toEqual(cannedTime);
+
+      service.destroy();
+      timeBuffer.fill(7);
+      expect(service.readTimeDomainInto(timeBuffer)).toBe(false);
+      expect(timeBuffer.every((byte) => byte === 7)).toBe(true);
+    });
+
+    it('FakeAnalyserNode.getByteTimeDomainData/getByteFrequencyData throw a RangeError for a mismatched buffer length', async () => {
+      const { context } = await setupReady();
+      const analyser = findAnalyser(context);
+
+      expect(() => analyser.getByteTimeDomainData(new Uint8Array(ANALYSER_FFT_SIZE - 1))).toThrow(RangeError);
+      expect(() => analyser.getByteFrequencyData(new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT + 1))).toThrow(
+        RangeError,
+      );
+    });
+
+    it('getAnalysisSampleRate returns 0 before initialize() and the context sampleRate after', async () => {
+      const { service } = setup();
+      expect(service.getAnalysisSampleRate()).toBe(0);
+
+      await service.initialize();
+      expect(service.getAnalysisSampleRate()).toBe(44100);
+    });
   });
 
   it('invokes no gain-parameter scheduling method across a full note-on/note-off lifecycle (Phase 9, D-02 — click-safety now lives entirely in the kernel\'s envelopes)', async () => {
@@ -499,16 +614,109 @@ describe('WorkletSynthEngine', () => {
     expect(node.port.postedMessages.slice(beforeRelease)).toEqual([setGateMessage(false, MIN_VELOCITY)]);
   });
 
-  it('destroy() clears the worklet port handler, empties every created node connection, closes the context exactly once, and resets status to suspended', async () => {
+  it('destroy() clears the worklet port handler, empties every created node connection — including the analyser, named explicitly so a future createdNodes-getter change cannot silently drop this coverage — closes the context exactly once, and resets status to suspended', async () => {
     const { service, context, node } = await setupReady();
     node.port.onmessage = () => undefined;
+    const analyser = findAnalyser(context);
 
     service.destroy();
 
     expect(node.port.onmessage).toBeNull();
     expect(node.connections.size).toBe(0);
+    // The full created-node registry (10-01-PLAN.md Task 2, item 1) —
+    // covers whatever node types `createdNodes` reports, oscillators/gains/
+    // delays/analysers alike, not just the ones this test names explicitly.
+    for (const created of context.createdNodes) {
+      expect(created.connections.size).toBe(0);
+    }
+    // Named explicitly, on top of the registry walk above, so a future
+    // change to `createdNodes`'s getter (e.g. one that stops including
+    // analysers) cannot silently drop analyser teardown coverage.
+    expect(analyser.connections.size).toBe(0);
     expect(context.closeCalls).toBe(1);
     expect(service.status()).toBe('suspended');
+  });
+
+  describe('AnalyserNode teardown and rebuild (10-01-PLAN.md Task 2)', () => {
+    it('readTimeDomainInto/readFrequencyInto both return false again after destroy()', async () => {
+      const { service } = await setupReady();
+
+      service.destroy();
+
+      const timeBuffer = new Uint8Array(ANALYSER_FFT_SIZE).fill(9);
+      const frequencyBuffer = new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT).fill(9);
+      expect(service.readTimeDomainInto(timeBuffer)).toBe(false);
+      expect(service.readFrequencyInto(frequencyBuffer)).toBe(false);
+      expect(timeBuffer.every((byte) => byte === 9)).toBe(true);
+      expect(frequencyBuffer.every((byte) => byte === 9)).toBe(true);
+    });
+
+    it('an error partway through graph construction — after the analyser is built but before the chain finishes connecting — still discards it disconnected, exercised through the same discard path (discardLocalGraph) the existing deferred-addModule interruption spec above uses', async () => {
+      const { service } = setup();
+      // masterGain.connect(analyser) is the connect call that runs right
+      // after the analyser has been created and committed to the local
+      // `built` graph (buildAndStart commits `built.analyser` immediately
+      // on creation — 10-01-PLAN.md Task 2's own reordering fix) but before
+      // the chain finishes wiring to context.destination. Failing exactly
+      // here proves discardLocalGraph reaches and disconnects an analyser
+      // that was successfully built, not merely one that was never created.
+      const connectSpy = vi
+        .spyOn(FakeGainNode.prototype, 'connect')
+        .mockImplementationOnce(() => {
+          throw new Error('simulated masterGain.connect(analyser) failure (test double)');
+        });
+
+      try {
+        await service.initialize();
+
+        expect(service.status()).toBe('error');
+        const builtContext = FakeAudioWorkletContext.instances[0] as FakeAudioWorkletContext;
+        expect(builtContext.createdAnalysers.length).toBe(1);
+        const analyser = builtContext.createdAnalysers[0];
+        expect(analyser.connections.size).toBe(0);
+        // The masterGain's own connect-to-analyser edge never took hold
+        // either — the throw happened before it could be added — and any
+        // edge the worklet node made to masterGain before the throw is torn
+        // down by the same discard call.
+        const masterGain = builtContext.createdGains[0];
+        expect(masterGain.connections.size).toBe(0);
+        expect(builtContext.closeCalls).toBeGreaterThanOrEqual(1);
+      } finally {
+        connectSpy.mockRestore();
+      }
+    });
+
+    it('a second initialize() after destroy() builds a second analyser and re-establishes the full masterGain -> analyser -> destination chain, leaving no stale reference', async () => {
+      const { service, context } = await setupReady();
+      const firstAnalyser = findAnalyser(context);
+
+      service.destroy();
+      await service.initialize();
+
+      // initialize() constructs a brand new AudioContext each time
+      // (`new contextCtor()` inside buildAndStart) — the second graph lives
+      // on the second context instance, not the first `context` reused.
+      expect(FakeAudioWorkletContext.instances.length).toBe(2);
+      const secondContext = FakeAudioWorkletContext.instances[1] as FakeAudioWorkletContext;
+      expect(secondContext.createdAnalysers.length).toBe(1);
+      const secondAnalyser = findAnalyser(secondContext);
+      expect(secondAnalyser).not.toBe(firstAnalyser);
+
+      const secondMasterGain = findMasterGain(secondContext);
+      expect(secondMasterGain.connections.has(secondAnalyser)).toBe(true);
+      expect(secondMasterGain.connections.has(secondContext.destination)).toBe(false);
+      expect(secondAnalyser.connections.has(secondContext.destination)).toBe(true);
+
+      // readTimeDomainInto now serves the second analyser's canned data, not
+      // a stale reference to the first (destroyed) one — only while a note
+      // is held (initialization alone is not live audio).
+      const canned = new Uint8Array(ANALYSER_FFT_SIZE).fill(77);
+      secondAnalyser.cannedTimeDomainData = canned;
+      service.noteOn(60, 100);
+      const buffer = new Uint8Array(ANALYSER_FFT_SIZE);
+      expect(service.readTimeDomainInto(buffer)).toBe(true);
+      expect(buffer).toEqual(canned);
+    });
   });
 
   it('destroy() posts a closed gate message for an in-flight note before tearing the graph down, releasing it rather than cutting it', async () => {

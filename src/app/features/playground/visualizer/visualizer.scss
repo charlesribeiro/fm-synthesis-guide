@@ -1,0 +1,41 @@
+// Embedded region, not a route — no `layout.page` mixin here (mirrors
+// play-surface.scss's posture).
+
+.visualizer {
+  margin-block: var(--space-4);
+}
+
+// Nominal box size mirrors OSCILLOSCOPE_CSS_WIDTH/OSCILLOSCOPE_CSS_HEIGHT in
+// visualizer-frame.ts — the backing-store sizing (in visualizer.ts) and this
+// CSS sizing must stay in agreement.
+.visualizer__canvas {
+  display: block;
+  width: 640px;
+  height: 160px;
+  max-width: 100%;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+// Nominal box size mirrors SPECTRUM_CSS_WIDTH/SPECTRUM_CSS_HEIGHT in
+// visualizer-frame.ts.
+.visualizer__canvas--spectrum {
+  height: 200px;
+  margin-block-start: var(--space-4);
+}
+
+.visualizer__description {
+  max-width: 60ch;
+  margin-block: var(--space-2) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+}
+
+.visualizer__caption {
+  max-width: 60ch;
+  margin-block: var(--space-4) 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-sm);
+  font-style: italic;
+}

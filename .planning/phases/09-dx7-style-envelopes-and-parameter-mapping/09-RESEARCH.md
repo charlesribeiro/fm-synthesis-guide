@@ -314,8 +314,10 @@ function rateToLevelUnitsPerSample(rate: number, sampleRate: number): number {
 ```
 
 This is deterministic and gives an exact expected sample count for any (rate, distance) pair —
-`Math.abs(target - current) / levelUnitsPerSample` — which is directly unit-testable with exact
-(not `toBeCloseTo`) sample-count assertions, and the resulting *amplitude* curve is still audibly
+`ceil(Math.abs(target - current) / levelUnitsPerSample)` — the discrete count of constant-size
+steps. The ramp reaches the target after that ceiling number of samples when the final step
+overshoots and is clamped. Unit tests should still assert that sample count with exact integer
+equality (not `toBeCloseTo`). The resulting *amplitude* curve is still audibly
 non-linear because `currentLevel` (0-99) is converted to amplitude through the existing
 `outputLevelToAmplitude` squared curve on every sample, not a linear one.
 
@@ -610,11 +612,11 @@ No new browser API, service, or CLI tool is required by this phase's scope.
 
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| ENGINE-03 | Envelope segment advances on reaching target level; holds at L3 while held; jumps to release from current level on note-off | unit | `npm test -- envelope-generator` (new spec) | ❌ Wave 0 — `envelope-generator.ts`/`.spec.ts` do not exist yet |
-| ENGINE-03 | Mid-segment retrigger/release produces no discontinuity (D-04) | unit | Same new spec — assert `currentLevel` is continuous across a `gateOn()`/`gateOff()` call mid-segment | ❌ Wave 0 |
-| ENGINE-03 | Non-linear rate→speed curve produces the documented direction (rate 99 faster than rate 0) | unit | Same new spec | ❌ Wave 0 |
-| ENGINE-03 | Ratio and fixed-frequency modes produce correct frequencies (regression only, Phase 8 D-15) | unit | `npm test -- value-conversion` / `npm test -- graph-router` (existing files, extend) | ✅ `src/app/domain/dx7/audio/value-conversion.spec.ts`, `src/app/domain/dx7/dsp/graph-router.spec.ts` |
-| ENGINE-03 | Note release and parameter smoothing never produce NaN/audible clicks | unit | Extend `worklet-messages.spec.ts`'s hostile-payload matrix for the new gate/envelope shapes; extend `graph-router.spec.ts`'s bounded-output proof (Phase 8 D-10 precedent) across a full attack→release lifecycle | ✅ both files exist, extend |
+| ENGINE-03 | Envelope segment advances on reaching target level; holds at L3 while held; jumps to release from current level on note-off | unit | `npx ng test --include="src/app/domain/dx7/dsp/envelope-generator.spec.ts" --watch=false` (new spec) | ❌ Wave 0 — `envelope-generator.ts`/`.spec.ts` do not exist yet |
+| ENGINE-03 | Mid-segment retrigger/release produces no discontinuity (D-04) | unit | Same `--include` path — assert `currentLevel` is continuous across a `gateOn()`/`gateOff()` call mid-segment | ❌ Wave 0 |
+| ENGINE-03 | Non-linear rate→speed curve produces the documented direction (rate 99 faster than rate 0) | unit | Same `--include` path | ❌ Wave 0 |
+| ENGINE-03 | Ratio and fixed-frequency modes produce correct frequencies (regression only, Phase 8 D-15) | unit | `npx ng test --include="src/app/domain/dx7/audio/value-conversion.spec.ts" --watch=false` / `npx ng test --include="src/app/domain/dx7/dsp/graph-router.spec.ts" --watch=false` (existing files, extend) | ✅ `src/app/domain/dx7/audio/value-conversion.spec.ts`, `src/app/domain/dx7/dsp/graph-router.spec.ts` |
+| ENGINE-03 | Note release and parameter smoothing never produce NaN/audible clicks | unit | Extend `worklet-messages.spec.ts`'s hostile-payload matrix via `npx ng test --include="src/app/domain/dx7/dsp/worklet-messages.spec.ts" --watch=false`; extend `graph-router.spec.ts`'s bounded-output proof (Phase 8 D-10 precedent) across a full attack→release lifecycle via the graph-router `--include` path above | ✅ both files exist, extend |
 | ENGINE-03 | Lesson 6 (Algorithm 1) regression check (D-03) | manual-only (mirrors 07-03/08-04 precedent) or integration | Blocking human-verify checkpoint recommended (see below) | N/A — checkpoint, not an automated test |
 
 ### Sampling Rate
@@ -666,7 +668,7 @@ No new browser API, service, or CLI tool is required by this phase's scope.
 | Pattern | STRIDE | Standard Mitigation |
 |---------|--------|----------------------|
 | Malformed/hostile `postMessage` payload (e.g. `{kind:'setGate', open: 'yes'}`, NaN/Infinity rate or level values, wrong-length rate/level arrays) crossing the main-thread → `AudioWorkletGlobalScope` boundary | Tampering / Denial of Service (broken audio render thread) | Extend the existing `parseWorkletMessage` single-choke-point pattern (T-07-01/T-08-01 precedent) — reject with `null`, never throw, never let an invalid shape reach `GraphRouter` |
-| Non-finite envelope level propagating into `Math.sin`'s argument or the final output buffer | Denial of Service (silence/glitch) | Mirror the existing `Number.isFinite(...) ? value : 0` treat-as-zero convention already used for `modulationInput`/`feedbackIndex` in `operator.ts` |
+| Non-finite envelope level propagating into the rendered block or final output after `Math.sin()` (envelope scaling is applied to the operator's already-rendered sample, not into `Math.sin`'s argument) | Denial of Service (silence/glitch) | Mirror the existing `Number.isFinite(...) ? value : 0` treat-as-zero convention already used for `modulationInput`/`feedbackIndex` in `operator.ts` |
 
 ## Sources
 

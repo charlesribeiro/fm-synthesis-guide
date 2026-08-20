@@ -173,6 +173,9 @@ export class PlaySurface {
     if (event.button !== 0) {
       return;
     }
+    if (this.pointerHeldNote === note) {
+      return;
+    }
     if (!this.pressKey(note)) {
       return;
     }

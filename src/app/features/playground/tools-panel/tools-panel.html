@@ -1,0 +1,28 @@
+<section class="tools-panel" aria-labelledby="tools-panel-heading">
+  <h2 id="tools-panel-heading">Comparison and randomization tools</h2>
+
+  <div class="tools-panel__group">
+    <button type="button" class="button" (click)="captureA()">Capture A</button>
+    <button type="button" class="button" (click)="captureB()">Capture B</button>
+    <button type="button" class="button" [disabled]="!hasSnapshotA()" (click)="recallA()">
+      {{ recallALabel() }}
+    </button>
+    <button type="button" class="button" [disabled]="!hasSnapshotB()" (click)="recallB()">
+      {{ recallBLabel() }}
+    </button>
+    <p class="tools-panel__slot-line">{{ slotALineText() }}</p>
+    <p class="tools-panel__slot-line">{{ slotBLineText() }}</p>
+  </div>
+
+  <button type="button" class="button" (click)="resetPatch()">Reset</button>
+
+  <div class="tools-panel__randomize">
+    <button type="button" class="button" (click)="randomizePatch()">Randomize</button>
+    <p class="tools-panel__hint">
+      Randomizing nudges the operators and feedback from the current sound and never changes the
+      selected algorithm. Capture to a slot first if you want to keep the current sound.
+    </p>
+  </div>
+
+  <p class="tools-panel__status" role="status">{{ statusMessage() }}</p>
+</section>

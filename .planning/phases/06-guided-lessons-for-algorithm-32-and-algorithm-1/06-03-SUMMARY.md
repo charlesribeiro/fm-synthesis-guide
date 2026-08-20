@@ -36,7 +36,7 @@ key-files:
 key-decisions:
   - "Completion element binds both a CSS class (.lesson-card__completion--done) and a data-state attribute for styling hooks, but the accessible text ('Completed'/'Not started') is the actual state carrier in every assertion and in the rendered DOM — neither binding is load-bearing for correctness, both are presentation-only, per the plan's non-color-only instruction"
   - "No transition on the completion element at all (plan's stated safer default) rather than a prefers-reduced-motion-guarded one — the state should appear instantly, and there is nothing to animate between since Angular's @if swaps the two branches outright"
-  - "Round-trip test in Task 2 extracts the rendered anchor's own href attribute and navigates the RouterTestingHarness to that string, rather than calling Router.navigate()/constructing the URL by hand — mirrors algorithms.spec.ts's existing browse-to-detail round trip precedent exactly, which the plan's read_first list names as the pattern to follow"
+  - "Round-trip test in Task 2 activates the first rendered lesson card via firstCard!.click(), awaits harness stability, and asserts the lesson title — it does not extract href or call navigateByUrl, so the case exercises the anchor's routerLink activation rather than a hand-built navigation"
 
 patterns-established: []
 
@@ -60,7 +60,7 @@ coverage:
         status: pass
     human_judgment: false
   - id: D3
-    description: "Following a rendered /learn card's own link (its actual href, not a hand-built URL) lands on that lesson's detail page — the browse-index-to-detail-route round trip proven in-app"
+    description: "Following a rendered /learn card's own routerLink (activated via click, not a hand-built URL or href extraction) lands on that lesson's detail page — the browse-index-to-detail-route round trip proven in-app"
     requirement: LESSON-02
     verification:
       - kind: unit

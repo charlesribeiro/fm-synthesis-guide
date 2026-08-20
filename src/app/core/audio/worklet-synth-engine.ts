@@ -25,6 +25,7 @@ import {
 import { InstrumentState } from '../../state/instrument-state';
 import {
   AUDIO_CONTEXT_CTOR,
+  type AnalyserNodeLike,
   type AudioContextConstructorLike,
   type AudioContextLike,
   type GainNodeLike,
@@ -36,12 +37,13 @@ import {
   type AudioWorkletNodeConstructorLike,
   type AudioWorkletNodeLike,
 } from './audio-worklet-node.token';
-import type { AudioEngineStatus, SynthEngine } from './synth-engine';
+import { ANALYSER_FFT_SIZE, type AnalysisTap, type AudioEngineStatus, type SynthEngine } from './synth-engine';
 
 interface BuiltWorkletGraph {
   readonly context: AudioContextLike;
   node: AudioWorkletNodeLike | null;
   masterGain: GainNodeLike | null;
+  analyser: AnalyserNodeLike | null;
 }
 
 /**
@@ -105,7 +107,7 @@ function validateVelocity(velocity: number): void {
  * fallback (D-04), neither deleted nor auto-selected.
  */
 @Injectable({ providedIn: 'root' })
-export class WorkletSynthEngine implements SynthEngine {
+export class WorkletSynthEngine implements SynthEngine, AnalysisTap {
   private readonly contextCtor = inject(AUDIO_CONTEXT_CTOR);
   private readonly nodeCtor = inject(AUDIO_WORKLET_NODE_CTOR);
   private readonly moduleUrl = inject(AUDIO_WORKLET_MODULE_URL);
@@ -122,8 +124,13 @@ export class WorkletSynthEngine implements SynthEngine {
   private context: AudioContextLike | null = null;
   private node: AudioWorkletNodeLike | null = null;
   private masterGain: GainNodeLike | null = null;
+  private analyser: AnalyserNodeLike | null = null;
 
   private heldNote: number | null = null;
+  /** True from the first `noteOn` until graph teardown. Distinct from
+   * `heldNote`: key-up (`noteOff`) starts the envelope release but the
+   * analyser still carries live samples until the graph is torn down. */
+  private voiceActive = false;
 
   /** Bumped by every `initialize()` call and by `destroy()` — mirrors
    * `WebAudioSynthEngine`'s stale-resume guard exactly (`05-RESEARCH.md`
@@ -203,6 +210,7 @@ export class WorkletSynthEngine implements SynthEngine {
         this.context = built.context;
         this.node = built.node;
         this.masterGain = built.masterGain;
+        this.analyser = built.analyser;
         this._status.set('ready');
         // The constructor effect() already ran and returned early while
         // `this.node` was still null, so nothing else delivers the initial
@@ -244,6 +252,7 @@ export class WorkletSynthEngine implements SynthEngine {
       context,
       node: null,
       masterGain: null,
+      analyser: null,
     };
 
     try {
@@ -273,6 +282,13 @@ export class WorkletSynthEngine implements SynthEngine {
       built.node = node;
 
       const masterGain = context.createGain();
+      // Committed to `built` immediately on creation — same convention as
+      // `built.node = node` just above — so a throw anywhere in the
+      // remaining wiring below still leaves `discardLocalGraph` able to
+      // disconnect every node this call actually created, not just the
+      // ones assigned before the throw (T-10-03/T-10-05: no created node
+      // may go uncleaned on a partial-failure path).
+      built.masterGain = masterGain;
       const now = context.currentTime;
       // Starts at zero rather than MASTER_GAIN — a real regression guard,
       // not cosmetics (Phase 9, D-02). The dedicated per-voice gain node
@@ -284,10 +300,17 @@ export class WorkletSynthEngine implements SynthEngine {
       // actually established.
       masterGain.gain.setValueAtTime(0, now);
 
-      node.connect(masterGain);
-      masterGain.connect(context.destination);
+      // The analyser is a read tap on the final mix and passes audio through
+      // unmodified, so inserting it changes what can be observed and nothing
+      // about what is heard (D-02).
+      const analyser = context.createAnalyser();
+      built.analyser = analyser;
+      analyser.fftSize = ANALYSER_FFT_SIZE;
 
-      built.masterGain = masterGain;
+      node.connect(masterGain);
+      masterGain.connect(analyser);
+      analyser.connect(context.destination);
+
       return built;
     } catch (error) {
       this.discardLocalGraph(built);
@@ -302,6 +325,7 @@ export class WorkletSynthEngine implements SynthEngine {
       built.node.disconnect();
     }
     built.masterGain?.disconnect();
+    built.analyser?.disconnect();
     void built.context.close();
   }
 
@@ -415,6 +439,7 @@ export class WorkletSynthEngine implements SynthEngine {
     this.node.port.postMessage(setFrequencyMessage(frequencyHz));
     this.node.port.postMessage(setGateMessage(true, velocity));
     this.heldNote = note;
+    this.voiceActive = true;
   }
 
   /** Ignores a release for a note that is not the currently held note — a
@@ -462,6 +487,7 @@ export class WorkletSynthEngine implements SynthEngine {
       this.node.port.postMessage(setGateMessage(false, MIN_VELOCITY));
     }
     this.heldNote = null;
+    this.voiceActive = false;
 
     this.teardownGraph();
 
@@ -482,11 +508,43 @@ export class WorkletSynthEngine implements SynthEngine {
       this.node.disconnect();
     }
     this.masterGain?.disconnect();
+    this.analyser?.disconnect();
 
     this.node = null;
     this.masterGain = null;
+    this.analyser = null;
     this.lastAppliedAlgorithm = undefined;
     this.lastAppliedOperators = undefined;
     this.lastAppliedFeedback = undefined;
+  }
+
+  /** Returns the context's sample rate when a context exists, `0` otherwise
+   * — used by a caller to convert a frequency-bin index into Hz. */
+  getAnalysisSampleRate(): number {
+    return this.context === null ? 0 : this.context.sampleRate;
+  }
+
+  /** `false` and untouched when there is no analyser yet (before
+   * `initialize()`), no longer (after `destroy()`), or no voice has started
+   * — initialization alone is not live audio. Key-up does not clear this:
+   * envelope release still feeds the analyser. The same null-guard-then-return
+   * convention every other method in this file already uses (T-10-02).
+   * Buffer-length validation is intentionally not duplicated here: the
+   * boundary type and the fake both enforce it, and adding a third check
+   * would be a fourth place for the size convention to drift. */
+  readTimeDomainInto(target: Uint8Array): boolean {
+    if (this.analyser === null || !this.voiceActive) {
+      return false;
+    }
+    this.analyser.getByteTimeDomainData(target);
+    return true;
+  }
+
+  readFrequencyInto(target: Uint8Array): boolean {
+    if (this.analyser === null || !this.voiceActive) {
+      return false;
+    }
+    this.analyser.getByteFrequencyData(target);
+    return true;
   }
 }

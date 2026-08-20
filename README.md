@@ -5,12 +5,13 @@ synthesis through the Yamaha DX7's 32 operator-routing algorithms — one algori
 interactive routing diagrams, guided lessons, and live sound. No affiliation with Yamaha or the
 Dexed project. See [full disclaimer](src/app/features/about/about.html).
 
-**Status:** Phase 9 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
+**Status:** Phase 10 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
 state, algorithm browser/SVG, first playable approximation, guided lessons (Alg 32 & 1),
 AudioWorklet DSP foundation, full algorithm routing/feedback with live cutover to
-[`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts), and per-operator
+[`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts), per-operator
 four-rate/four-level envelopes with a note-lifecycle gate message replacing the old global voice
-ramp. See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
+ramp, and Playground visualizers (oscilloscope and labelled spectrum) plus A/B snapshot compare and
+constrained randomization. See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
 
 ## Setup
 
@@ -51,7 +52,7 @@ jsdom implements no Web Audio API and no `AudioWorkletGlobalScope` at all. As of
 harness exercises the routed 32-algorithm path, not only the Phase 7 single-operator and additive
 proof cases: an algorithm `<select>` (labelled with each option's id, name, and teaching-taxonomy
 group), a feedback-depth slider (0–7), a "maximum operator level" checkbox for the worst-case
-loudness case, and a "Play routed" button post the exact same `setAlgorithm`/
+loudness case, and a "Play routed" button posts the exact same `setAlgorithm`/
 `setOperatorParameters`/`setFeedback` messages `WorkletSynthEngine` posts against the live app. As
 of Phase 9, the routed path also posts the same `setGate` message the live app's `noteOn`/`noteOff`
 post (frequency first, then gate) — the harness's own gain node is held at unity on this path, so

@@ -66,6 +66,12 @@ export class EnvelopeGenerator {
    * allowed to auto-advance past the held progression in {@link render}. */
   private held = false;
 
+  /** Never-gated rest. Distinct from an active release tail: `gateOn` and
+   * `gateOff` both leave this false so a note that has sounded still renders
+   * its release, while a generator that has never been gated writes zeros
+   * regardless of the envelope's release target. */
+  private idle = true;
+
   constructor(sampleRate: number, envelope: Dx7Envelope = DEFAULT_ENVELOPE) {
     validateSampleRate(sampleRate);
     this.sampleRate = sampleRate;
@@ -100,6 +106,7 @@ export class EnvelopeGenerator {
    * precisely the bug this design exists to prevent.
    */
   gateOn(): void {
+    this.idle = false;
     this.held = true;
     this.segmentIndex = 0;
   }
@@ -110,6 +117,7 @@ export class EnvelopeGenerator {
    * {@link gateOn}.
    */
   gateOff(): void {
+    this.idle = false;
     this.held = false;
     this.segmentIndex = RELEASE_SEGMENT_INDEX;
   }
@@ -143,15 +151,23 @@ export class EnvelopeGenerator {
       const step = this.stepsPerSegment[this.segmentIndex]!;
 
       // Never-gated rest must not ramp toward a non-zero release target.
-      if (!this.held && this.currentLevel === MIN_ENVELOPE_LEVEL && this.segmentIndex === RELEASE_SEGMENT_INDEX) {
+      if (this.idle) {
         output[i] = 0;
         continue;
       }
 
-      if (this.currentLevel < target) {
-        this.currentLevel = Math.min(target, this.currentLevel + step);
-      } else if (this.currentLevel > target) {
-        this.currentLevel = Math.max(target, this.currentLevel - step);
+      // After note-off, once the release level is reached, keep seeking
+      // silence at the same rate so a non-zero L4 cannot become a drone
+      // and cannot jump to zero in one sample.
+      const seekTarget =
+        !this.held && this.segmentIndex === RELEASE_SEGMENT_INDEX && this.currentLevel <= target
+          ? MIN_ENVELOPE_LEVEL
+          : target;
+
+      if (this.currentLevel < seekTarget) {
+        this.currentLevel = Math.min(seekTarget, this.currentLevel + step);
+      } else if (this.currentLevel > seekTarget) {
+        this.currentLevel = Math.max(seekTarget, this.currentLevel - step);
       }
       if (!Number.isFinite(this.currentLevel)) {
         this.currentLevel = MIN_ENVELOPE_LEVEL;
@@ -165,12 +181,7 @@ export class EnvelopeGenerator {
         this.segmentIndex++;
       }
 
-      // Once release has reached its target with no note held, mute even if
-      // that target is above zero so the engine cannot drone after note-off.
-      // Reset the stored level to silence so a later gateOn retrigger attacks
-      // from rest, not from a non-zero L4.
-      if (!this.held && this.segmentIndex === RELEASE_SEGMENT_INDEX && this.currentLevel === target) {
-        this.currentLevel = MIN_ENVELOPE_LEVEL;
+      if (!this.held && this.segmentIndex === RELEASE_SEGMENT_INDEX && this.currentLevel === MIN_ENVELOPE_LEVEL) {
         output[i] = 0;
         continue;
       }

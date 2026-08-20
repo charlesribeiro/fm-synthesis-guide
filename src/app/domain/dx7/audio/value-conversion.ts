@@ -192,6 +192,8 @@ export const ENVELOPE_MAX_FULL_SCALE_SECONDS = 6.4;
 const ENVELOPE_LEVEL_RANGE = MAX_ENVELOPE_LEVEL - MIN_ENVELOPE_LEVEL;
 const ENVELOPE_RATE_RANGE = MAX_ENVELOPE_RATE - MIN_ENVELOPE_RATE;
 
+const ENVELOPE_FALLBACK_SAMPLE_RATE_HZ = 44100;
+
 /**
  * DX7 envelope `rate` (0..99) → the per-sample amount an `EnvelopeGenerator`
  * segment's level moves toward its target, at `sampleRate`. Normalises the
@@ -214,8 +216,6 @@ const ENVELOPE_RATE_RANGE = MAX_ENVELOPE_RATE - MIN_ENVELOPE_RATE;
  * contract, which this docstring's "never emit ..." promise covers
  * unconditionally, not just for callers that happen to validate first.
  */
-const ENVELOPE_FALLBACK_SAMPLE_RATE_HZ = 44100;
-
 export function envelopeRateToLevelUnitsPerSample(rate: number, sampleRate: number): number {
   const safeRate = Number.isFinite(rate)
     ? Math.min(MAX_ENVELOPE_RATE, Math.max(MIN_ENVELOPE_RATE, rate))

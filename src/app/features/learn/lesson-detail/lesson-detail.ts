@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, untracked } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 
@@ -188,7 +188,9 @@ export class LessonDetail {
         return;
       }
       this.lastAppliedLessonId = lesson.id;
-      this.applyStartingPatch(lesson);
+      untracked(() => {
+        this.applyStartingPatch(lesson);
+      });
     });
   }
 

@@ -107,7 +107,10 @@ class Dx7WorkletProcessor extends AudioWorkletProcessor {
 
   process(_inputs: Float32Array[][], outputs: Float32Array[][]): boolean {
     const output = outputs[0];
-    const channel = output[0];
+    const channel = output?.[0];
+    if (channel === undefined) {
+      return true; // keep-alive even when the graph presents no output channel
+    }
 
     if (this.mode === 'routed') {
       if (channel.length !== RENDER_QUANTUM) {

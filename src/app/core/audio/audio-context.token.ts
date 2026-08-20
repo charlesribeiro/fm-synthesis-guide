@@ -41,6 +41,21 @@ export interface DelayNodeLike extends AudioNodeLike {
   readonly delayTime: AudioParamLike;
 }
 
+/**
+ * Deliberately a fraction of the real `AnalyserNode` surface (mirrors
+ * `GainNodeLike`/`DelayNodeLike`'s "just what the app needs" rule): the
+ * smoothing and decibel-range members (`smoothingTimeConstant`,
+ * `minDecibels`, `maxDecibels`) are omitted because nothing in this app
+ * tunes them. `frequencyBinCount` is always half of `fftSize` — read-only
+ * because the real node derives it, never sets it directly.
+ */
+export interface AnalyserNodeLike extends AudioNodeLike {
+  fftSize: number;
+  readonly frequencyBinCount: number;
+  getByteTimeDomainData(target: Uint8Array): void;
+  getByteFrequencyData(target: Uint8Array): void;
+}
+
 export interface AudioContextLike {
   readonly currentTime: number;
   readonly sampleRate: number;
@@ -51,6 +66,7 @@ export interface AudioContextLike {
   createOscillator(): OscillatorNodeLike;
   createGain(): GainNodeLike;
   createDelay(maxDelayTime?: number): DelayNodeLike;
+  createAnalyser(): AnalyserNodeLike;
 }
 
 /** A *constructor*, never an instance — nothing here is ever constructed at

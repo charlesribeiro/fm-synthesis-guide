@@ -20,7 +20,7 @@ new file has a same-repo sibling to copy shape from; no external-reference fallb
 | `src/app/core/audio/worklet-synth-engine.ts` (EXTEND) | service (Angular DI facade over Web Audio) | event-driven (signal-effect-driven) | `src/app/core/audio/web-audio-synth-engine.ts` | exact — this phase's stated job is to give `WorkletSynthEngine` the same `effect()`/`applyRouting` shape `WebAudioSynthEngine` already has |
 | `src/app/core/audio/worklet-synth-engine.spec.ts` (EXTEND) | test | event-driven | `src/app/core/audio/web-audio-synth-engine.ts`'s paired spec (not read, but same fixture/fake-node convention implied) | role-match |
 | `src/app/core/audio/synth-engine.token.ts` (EDIT) | config (DI token factory) | request-response | itself — one-line factory swap | exact |
-| `worklets/harness/harness-main.ts` (EXTEND) | component (dev-only manual harness) | event-driven | not read this session (out of budget; low risk — additive UI controls only) | role-match (unread) |
+| `worklets/harness/harness-main.ts` (EXTEND) | controller (cross-layer integration; dev-only) | event-driven | `src/app/core/audio/worklet-synth-engine.ts` (same `ALGORITHMS` / `DEFAULT_PATCH` / `buildRoutingConfig` / routed worklet-message / live held-note update path, isolated from Angular) | role-match — not additive UI-only |
 | `src/app/domain/dx7/models/patch.ts` (READ-ONLY reuse) | model | CRUD/validation | n/a — `validateFeedbackLevel` reused as-is, not modified | n/a |
 | `src/app/domain/dx7/audio/value-conversion.ts` (READ-ONLY reuse) | utility (pure conversions) | transform | n/a — `operatorFrequencyHz`/`outputLevelToAmplitude`/`outputLevelToModulationDepthHz`/`feedbackLevelToDepthHz` reused as-is | n/a |
 

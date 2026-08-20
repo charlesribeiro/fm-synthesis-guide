@@ -2,8 +2,24 @@ import { TestBed } from '@angular/core/testing';
 import { InstrumentState, SNAPSHOT_SLOTS, type SnapshotSlot } from './instrument-state';
 import { ALGORITHMS } from '../domain/dx7/models/algorithms';
 import { deriveCarriers, getFeedbackOperator, getOperatorRole } from '../domain/dx7/models/derive-role';
-import { DEFAULT_ENVELOPE, type Dx7Envelope } from '../domain/dx7/models/operator-parameters';
-import type { OperatorId } from '../domain/dx7/models/operator';
+import {
+  DEFAULT_ENVELOPE,
+  validateOperatorParameters,
+  type Dx7Envelope,
+} from '../domain/dx7/models/operator-parameters';
+import { validateFeedbackLevel } from '../domain/dx7/models/patch';
+import { OPERATOR_IDS, type OperatorId } from '../domain/dx7/models/operator';
+import type { RandomSource } from '../domain/dx7/randomization/random-walk-patch';
+
+/** A deterministic source that cycles through a fixed list of unit-interval values. */
+function cyclingSource(values: readonly number[]): RandomSource {
+  let index = 0;
+  return () => {
+    const value = values[index % values.length]!;
+    index++;
+    return value;
+  };
+}
 
 describe('InstrumentState', () => {
   function setup() {
@@ -462,6 +478,122 @@ describe('InstrumentState', () => {
       const secondRecallPatch = service.patch();
 
       expect(secondRecallPatch).toEqual(firstRecallPatch);
+    });
+  });
+
+  // VIZ-02: InstrumentState.randomize()
+  describe('randomize', () => {
+    // D-13/VIZ-02: a bounded walk from an extreme source changes every operator and the feedback.
+    it('changes at least one field on every operator and the feedback depth, relative to the prior patch', () => {
+      const { service } = setup();
+      const before = service.operators();
+      const feedbackBefore = service.feedback();
+      const source = cyclingSource([0.75, 0.9, 1, 0.8, 0.7, 0.85]);
+
+      service.randomize(source);
+
+      for (const id of OPERATOR_IDS) {
+        expect(service.operators()[id]).not.toEqual(before[id]);
+      }
+      expect(service.feedback()).not.toBe(feedbackBefore);
+    });
+
+    it('leaves the patch unchanged when the source is the midpoint identity value 0.5', () => {
+      const { service } = setup();
+      const before = service.patch();
+
+      service.randomize(() => 0.5);
+
+      expect(service.patch()).toEqual(before);
+    });
+
+    // D-12: algorithmId is never touched by randomize, across varied sources.
+    it('leaves algorithmId unchanged across 100 calls with varied sources', () => {
+      const { service } = setup();
+      const source = cyclingSource([0, 0.1, 0.25, 0.4, 0.5, 0.6, 0.75, 0.9, 1]);
+      const algorithmIdBefore = service.algorithmId();
+
+      for (let i = 0; i < 100; i++) {
+        service.randomize(source);
+      }
+
+      expect(service.algorithmId()).toBe(algorithmIdBefore);
+    });
+
+    // T-10-01: every randomize() call produces a patch that independently passes both validators.
+    it('never throws across 1000 calls, and the resulting patch always passes both validators', () => {
+      const { service } = setup();
+      const source = cyclingSource([0, 0.05, 0.2, 0.35, 0.5, 0.65, 0.8, 0.95, 1]);
+
+      for (let i = 0; i < 1000; i++) {
+        expect(() => service.randomize(source)).not.toThrow();
+        for (const id of OPERATOR_IDS) {
+          expect(() => validateOperatorParameters(service.operators()[id])).not.toThrow();
+        }
+        expect(() => validateFeedbackLevel(service.feedback())).not.toThrow();
+      }
+    });
+
+    // Regression: randomize must be exactly one write to the patch signal, not one per operator.
+    // A `computed` over the patch signal is lazy — it only recomputes on read, so it cannot by
+    // itself distinguish "one set() call" from "six set() calls, only read once afterward."
+    // Spying directly on the private `_patch` signal's own `set` method is what actually pins
+    // "exactly one write": a future refactor to a per-operator write loop fails this test even
+    // though every `computed`-based observation would look identical from the outside.
+    it('performs exactly one write to the patch signal per call', () => {
+      const { service } = setup();
+      const patchSignal = (service as unknown as { _patch: { set: (value: unknown) => void } })._patch;
+      const setSpy = vi.spyOn(patchSignal, 'set');
+
+      service.randomize(() => 0.75);
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+    });
+
+    // T-10-13 / D-14: randomize does not mutate the pre-call patch, and a snapshot captured
+    // into slot A before randomize still deep-equals the pre-randomize patch afterward.
+    it('does not mutate the pre-call patch, and leaves a captured slot A snapshot untouched', () => {
+      const { service } = setup();
+      service.captureSnapshot('a');
+      const capturedPatch = service.snapshots().a;
+      const prePatch = service.patch();
+      const prePatchClone = structuredClone(prePatch);
+      const hasSnapshotABefore = service.hasSnapshot('a');
+      const hasSnapshotBBefore = service.hasSnapshot('b');
+
+      service.randomize(() => 0.9);
+
+      expect(prePatch).toEqual(prePatchClone);
+      expect(service.snapshots().a).toEqual(capturedPatch);
+      expect(service.hasSnapshot('a')).toBe(hasSnapshotABefore);
+      expect(service.hasSnapshot('b')).toBe(hasSnapshotBBefore);
+
+      expect(service.recallSnapshot('a')).toBe(true);
+      expect(service.patch()).toEqual(capturedPatch);
+    });
+
+    // D-14: randomize does not change the snapshots signal contents at all.
+    it('does not change hasSnapshot results across a randomize call', () => {
+      const { service } = setup();
+
+      expect(service.hasSnapshot('a')).toBe(false);
+      expect(service.hasSnapshot('b')).toBe(false);
+
+      service.randomize(() => 0.2);
+
+      expect(service.hasSnapshot('a')).toBe(false);
+      expect(service.hasSnapshot('b')).toBe(false);
+    });
+
+    // No-argument call uses the platform randomness source.
+    it('with no argument uses the platform randomness source, producing an in-range, non-throwing patch', () => {
+      const { service } = setup();
+
+      expect(() => service.randomize()).not.toThrow();
+      for (const id of OPERATOR_IDS) {
+        expect(() => validateOperatorParameters(service.operators()[id])).not.toThrow();
+      }
+      expect(() => validateFeedbackLevel(service.feedback())).not.toThrow();
     });
   });
 });

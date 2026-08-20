@@ -209,7 +209,7 @@ setFeedbackLevel(level: number): void {
   this.recomputeDerivedValues();
 }
 ```
-Add `setGate(open: boolean, velocityAmplitude: number): void` following this same one-line-body, single-responsibility setter shape — but it broadcasts to all six `envelopesById[id].gateOn()`/`.gateOff()` calls (and stores `velocityAmplitude` as a new instance field applied as a final output-stage multiplier in `render()`, mirroring `MASTER_GAIN`'s existing per-sample multiply at line 287 — see Pitfall 2 in RESEARCH.md).
+Add `setGate(open: boolean, velocity: number): void` on the same one-responsibility setter shape, with a single integer MIDI velocity contract from `MIN_VELOCITY` through `MAX_VELOCITY`. Validate and convert that velocity once (`velocityToAmplitude`) before applying the amplitude to every `envelopesById` entry; store the converted amplitude as the output-stage multiplier (mirroring `MASTER_GAIN`'s existing per-sample multiply at line 287 — see Pitfall 2 in RESEARCH.md). Preserve the stored amplitude when closing the gate — `gateOff()` does not overwrite it. Close-gate messages use `setGateMessage(false, MIN_VELOCITY)`, never a raw `0`. Do not take a pre-converted `velocityAmplitude` argument or offer a raw-versus-converted alternative at this boundary.
 
 ---
 

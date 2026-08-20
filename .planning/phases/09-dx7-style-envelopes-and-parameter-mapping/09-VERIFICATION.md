@@ -56,7 +56,7 @@ overrides_applied: 0
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |-------------|-------------|-------------|--------|----------|
-| ENGINE-03 | 09-01, 09-02, 09-03, 09-04 | DX7-style four-rate/four-level envelopes and ratio/fixed frequency modes | ✓ SATISFIED | All four plans declare `requirements: [ENGINE-03]`; implementation, hardening, pedagogical demonstration, and human-verified listening checkpoint all present and independently confirmed in this verification. **Note:** `.planning/REQUIREMENTS.md` line 85 still shows the ENGINE-03 checkbox unchecked (`- [ ]`), and `.planning/STATE.md` still reads `status: executing` / `Plan 1 of 4` — both are stale orchestrator housekeeping fields, not evidence the phase itself is incomplete (all four plans' own SUMMARY.md files close with `status: complete`, and every commit through `e10a206` is present in git log). This is flagged for the orchestrator to update post-verification, not a phase-goal gap. |
+| ENGINE-03 | 09-01, 09-02, 09-03, 09-04 | DX7-style four-rate/four-level envelopes and ratio/fixed frequency modes | ✓ SATISFIED | All four plans declare `requirements: [ENGINE-03]`; implementation, hardening, pedagogical demonstration, and human-verified listening checkpoint all present and independently confirmed in this verification. `.planning/REQUIREMENTS.md` marks ENGINE-03 complete (`[x]`, Traceability "Complete"). Project-level `current_phase` and Phase 10 completion metadata remain pending until Phase 10 human verification is recorded. |
 
 No orphaned requirements found — REQUIREMENTS.md maps only ENGINE-03 to this phase, and all four plans declare it.
 
@@ -90,7 +90,7 @@ None. The phase's one perceptual/human-judgment truth (click-safety, silence at 
 
 No blocking gaps. The phase goal — four-rate/four-level envelopes and ratio/fixed frequency modes driving the DSP engine — is achieved and independently confirmed against the codebase: the envelope state machine is real, allocation-free, per-sample-correct, and proven with both unit tests and a human listening pass; the frequency-mode math is Phase 8's already-shipped code with new explicit regression coverage; velocity, silence-at-rest, and modulator-reachability are each protected by a mechanically-proven guard (with break-then-restore probes demonstrating the guards have teeth); the Algorithm 1 lesson demonstrates the capability audibly; and documentation is truthfully updated without overclaiming DX7 emulation.
 
-Two non-blocking housekeeping items are flagged for the orchestrator, not as phase-goal gaps: (1) `.planning/REQUIREMENTS.md`'s ENGINE-03 checkbox is still unchecked, and (2) `.planning/STATE.md` still reflects an in-progress state (`Plan 1 of 4`) despite all four plans being complete. Both should be updated when the phase is formally closed out.
+`REQUIREMENTS.md` marks ENGINE-03 complete. Project-level `current_phase` and Phase 10 completion metadata remain pending until Phase 10 human verification is recorded.
 
 ---
 

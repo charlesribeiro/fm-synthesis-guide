@@ -199,7 +199,7 @@ passed: 20
 issues: 0
 pending: 7
 skipped: 0
-blocked: 0
+blocked: 1
 must_haves: 14/15 (truth 15 open pending auditable D-12 re-run)
 
 ## Gaps

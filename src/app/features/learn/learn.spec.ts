@@ -84,9 +84,9 @@ describe('Learn browse-to-lesson round trip (in-app navigation into a lesson, an
   beforeEach(() => {
     FakeAudioContext.instances.length = 0;
     TestBed.configureTestingModule({
-      // The destination lesson page embeds PlaySurface, which injects the
-      // synth engine — the fake must be provided even though this round
-      // trip plays no note (mirrors lesson-detail.spec.ts's setup).
+      // Destination LessonDetail embeds PlaySurface, which injects the synth
+      // engine. Only FakeAudioContext is provided so construction succeeds;
+      // the heading assertion below does not exercise audio playback.
       providers: [provideRouter(routes), { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioContext }],
     });
   });
@@ -101,14 +101,8 @@ describe('Learn browse-to-lesson round trip (in-app navigation into a lesson, an
     const firstCard = cards[0];
     expect(firstCard).toBeDefined();
 
-    // Read the anchor's own rendered href (never construct the target URL
-    // by hand) — proves the link the learner would actually click resolves
-    // to the right place, mirroring algorithms.spec.ts's browse-to-detail
-    // round trip.
-    const href = firstCard!.getAttribute('href');
-    expect(href).not.toBeNull();
-
-    await harness.navigateByUrl(href!);
+    firstCard!.click();
+    await harness.fixture.whenStable();
 
     const detailRoot = harness.routeNativeElement as HTMLElement;
     expect(detailRoot.querySelector('h1')?.textContent).toContain(firstLesson.title);

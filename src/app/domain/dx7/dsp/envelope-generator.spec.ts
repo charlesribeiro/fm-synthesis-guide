@@ -44,7 +44,20 @@ describe('EnvelopeGenerator', () => {
     }
   });
 
-  it('after gateOn(), rises from zero and advances through all three held segments to the sustain plateau, then holds there while gated', () => {
+    it('a freshly constructed, never-gated generator writes all-zero amplitude even when the release target is non-zero', () => {
+      const envelope: Dx7Envelope = {
+        rates: [74, 74, 74, 55],
+        levels: [99, 99, 99, 40],
+      };
+      const generator = new EnvelopeGenerator(SAMPLE_RATE, envelope);
+      const output = new Float32Array(RENDER_QUANTUM_FRAMES);
+      generator.render(output);
+      for (const sample of output) {
+        expect(sample).toBe(0);
+      }
+    });
+
+    it('after gateOn(), rises from zero and advances through all three held segments to the sustain plateau, then holds there while gated', () => {
     const envelope: Dx7Envelope = {
       rates: [99, 99, 99, 50],
       levels: [20, 60, 95, 0],
@@ -388,9 +401,16 @@ describe('EnvelopeGenerator state-machine invariants (Task 2)', () => {
 
       const releaseStep = envelopeRateToLevelUnitsPerSample(MAX_ENVELOPE_RATE, SAMPLE_RATE);
       const samplesToRelease = Math.ceil((MAX_ENVELOPE_LEVEL - releaseTarget) / releaseStep);
-      const output = new Float32Array(samplesToRelease + 10);
+      const samplesToSilence = Math.ceil(releaseTarget / releaseStep);
+      const output = new Float32Array(samplesToRelease + samplesToSilence + 10);
       generator.render(output);
-      for (let i = samplesToRelease; i < output.length; i++) {
+
+      const amplitudeBound = maxAmplitudeStepBound(releaseStep);
+      for (let i = 1; i < output.length; i++) {
+        expect(Math.abs(output[i]! - output[i - 1]!)).toBeLessThanOrEqual(amplitudeBound);
+      }
+
+      for (let i = output.length - 8; i < output.length; i++) {
         expect(output[i]).toBe(0);
       }
 

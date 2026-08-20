@@ -3,7 +3,7 @@ phase: 08-algorithm-routing-and-feedback
 verified: 2026-08-14T01:56:16Z
 status: gaps_found
 score: 14/15 must-haves verified
-behavior_unverified: 0
+behavior_unverified: 1
 overrides_applied: 0
 ---
 

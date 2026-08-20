@@ -86,8 +86,8 @@ current roadmap.
 
 ### Visualizers and Comparison
 
-- **VIZ-01**: Oscilloscope and labelled spectrum display, off the Angular change-detection path
-- **VIZ-02**: A/B comparison and constrained randomization in Playground mode
+- [x] **VIZ-01**: Oscilloscope and labelled spectrum display, off the Angular change-detection path
+- [x] **VIZ-02**: A/B comparison and constrained randomization in Playground mode
 
 ### Full Curriculum and Platform
 
@@ -133,17 +133,22 @@ current roadmap.
 | ENGINE-01 | Phase 7 | Complete |
 | ENGINE-02 | Phase 8 | Complete |
 | ENGINE-03 | Phase 9 | Complete |
+| VIZ-01 | Phase 10 | Complete |
+| VIZ-02 | Phase 10 | Complete |
 
 **Coverage:**
 
 - v1 requirements: 21 total
 - Mapped to phases: 21
 - Unmapped: 0 ✓
-- v2 requirements mapped so far: 3 (ENGINE-01 → Phase 7, ENGINE-02 → Phase 8, ENGINE-03 → Phase 9)
+- v2 requirements mapped so far: 5 (ENGINE-01 → Phase 7, ENGINE-02 → Phase 8, ENGINE-03 → Phase 9, VIZ-01 → Phase 10, VIZ-02 → Phase 10)
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-16 — Phase 9 / ENGINE-03 is fully closed (all four plans executed;
-six independent per-operator DX7-style envelopes replace the global voice-gain ramp; the
+*Last updated: 2026-08-19 — Phase 10 / VIZ-01 and VIZ-02 are fully closed (all four plans executed;
+oscilloscope and labelled spectrum off the Angular change-detection path; A/B compare and
+constrained randomization in Playground; blocking human-verify checkpoint in 10-04 approved with
+all ten checks passing and zero findings). Phase 9 / ENGINE-03 remains fully closed (all four plans
+executed; six independent per-operator DX7-style envelopes replace the global voice-gain ramp; the
 blocking human listening checkpoint in 09-04 was approved with a complete auditable payload,
 zero findings; 3/3 must-haves verified).*

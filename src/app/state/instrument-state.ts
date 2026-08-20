@@ -20,6 +20,7 @@ import {
   getOperatorRole,
   type OperatorRole,
 } from '../domain/dx7/models/derive-role';
+import { randomWalkPatch, type RandomSource } from '../domain/dx7/randomization/random-walk-patch';
 
 /**
  * D-03: the two named, independent A/B snapshot slots — not an undo stack
@@ -195,6 +196,42 @@ export class InstrumentState {
     validateFeedbackLevel(level);
     const previous = this._patch();
     this._patch.set({ ...previous, feedback: level });
+  }
+
+  /**
+   * VIZ-02 (D-12/D-13/D-14/D-16): randomizes the current patch via a bounded
+   * random walk from its current value (`randomWalkPatch`) and writes the
+   * result in a single atomic write. Every one of the candidate's six
+   * operators' parameter objects goes through `validateOperatorParameters`,
+   * iterating the fixed `OPERATOR_IDS` list rather than object keys, and its
+   * feedback depth goes through `validateFeedbackLevel`, before this method
+   * performs its one `_patch.set` call. This validation is deliberately
+   * redundant with the walk function's own clamping: the walk clamping to a
+   * bound is a design intent, while this validation is the gate that catches
+   * the day the walk's bounds and the domain's bounds drift apart — exactly
+   * as `updateOperator` and `setFeedback` already do for externally-supplied
+   * values.
+   *
+   * `algorithmId` reaches the written patch only through the spread of
+   * `previous` below — this method's body contains no expression that
+   * assigns it, so D-12's exclusion of routing is structural here rather
+   * than a rule a future edit could quietly drop.
+   *
+   * No auto-capture and no undo stack by design (D-14): capturing to an A or
+   * B slot before calling this is the intended way to keep the prior sound;
+   * `captureSnapshot`/`recallSnapshot`/`hasSnapshot` are deliberately
+   * untouched by this method.
+   */
+  randomize(rng: RandomSource = Math.random): void {
+    const previous = this._patch();
+    const candidate = randomWalkPatch(previous, rng);
+
+    for (const operatorId of OPERATOR_IDS) {
+      validateOperatorParameters(candidate.operators[operatorId]);
+    }
+    validateFeedbackLevel(candidate.feedback);
+
+    this._patch.set({ ...previous, operators: candidate.operators, feedback: candidate.feedback });
   }
 
   /**

@@ -73,6 +73,7 @@ import {
   midiNoteToFrequency,
   velocityToAmplitude,
 } from '../../src/app/domain/dx7/audio/value-conversion';
+import { cancelAndHoldOrPin } from '../../src/app/core/audio/cancel-and-hold-or-pin';
 
 /** Mirrors `audio-worklet-node.token.ts`'s `DEFAULT_WORKLET_MODULE_URL` — see file header. */
 const WORKLET_MODULE_URL = '/worklets/dx7-worklet-processor.js';
@@ -442,7 +443,7 @@ class Harness {
     const targetLevel = velocityToAmplitude(FIXED_VELOCITY);
     // Scheduled automation only, never a direct gain assignment (CLAUDE.md:
     // "smooth gain changes to avoid clicks").
-    this.voiceGain.gain.cancelAndHoldAtTime(now);
+    cancelAndHoldOrPin(this.voiceGain.gain, now);
     this.voiceGain.gain.linearRampToValueAtTime(targetLevel, now + ATTACK_SECONDS);
 
     this.lastVoiceMode = 'oscillator';
@@ -505,7 +506,7 @@ class Harness {
 
     if (this.lastVoiceMode === 'oscillator') {
       const now = this.context.currentTime;
-      this.voiceGain.gain.cancelAndHoldAtTime(now);
+      cancelAndHoldOrPin(this.voiceGain.gain, now);
       this.voiceGain.gain.setTargetAtTime(0, now, RELEASE_TIME_CONSTANT);
       this.voiceGain.gain.setValueAtTime(0, now + RELEASE_SECONDS);
       await new Promise<void>((resolve) => {
@@ -605,13 +606,13 @@ class Harness {
       const gateMessage = setGateMessage(false, MIN_VELOCITY);
       this.node.port.postMessage(gateMessage);
       this.lastMessage = JSON.stringify(gateMessage);
+      this.lastVoiceMode = 'idle';
     } else {
-      this.voiceGain.gain.cancelAndHoldAtTime(now);
+      cancelAndHoldOrPin(this.voiceGain.gain, now);
       this.voiceGain.gain.setTargetAtTime(0, now, RELEASE_TIME_CONSTANT);
       this.voiceGain.gain.setValueAtTime(0, now + RELEASE_SECONDS);
     }
     this.routedNoteActive = false;
-    this.lastVoiceMode = 'idle';
     this.report('stopped');
   }
 }
