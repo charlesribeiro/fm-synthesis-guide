@@ -77,6 +77,14 @@ export class AdditiveOperatorBank {
     }
   }
 
+  /** Clears every operator's phase accumulator so a mode switch back into
+   * additive cannot resume from a stale idle phase. */
+  resetPhase(): void {
+    for (const operator of this.operators) {
+      operator.resetPhase();
+    }
+  }
+
   /**
    * Writes the ascending-index sum of every operator's rendered block into
    * `output` — `output.fill(0)` then, per operator in ascending index

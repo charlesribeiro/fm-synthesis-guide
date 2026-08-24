@@ -38,7 +38,7 @@ requirements-completed: [LESSON-01, LESSON-02]
 coverage:
   - id: D1
     description: "A human confirmed extraction parity by ear: /playground and both lesson pages sound and behave identically (mouse and keyboard notes, right-click, Tab-mid-press, window-blur mid-note) with no stuck note, click, or unresponsive key anywhere"
-    requirement: LESSON-01
+    requirement: [LESSON-01, LESSON-02]
     verification:
       - kind: manual_procedural
         ref: "06-04-PLAN.md Task 1, checkpoint check 1 — reported 'approved'"
@@ -47,7 +47,7 @@ coverage:
     rationale: "06-VALIDATION.md's Manual-Only Verifications table names this explicitly as unreachable by automated tests — only listening confirms no perceptible behavior change reached the ear from the PlaySurface extraction."
   - id: D2
     description: "A human walked both lessons as a first-time learner and confirmed the completion check fires exactly when the try-this step describes: not on arrival, not on a note alone, not on a parameter change alone, and only after both in sequence"
-    requirement: LESSON-01
+    requirement: [LESSON-01, LESSON-02]
     verification:
       - kind: manual_procedural
         ref: "06-04-PLAN.md Task 1, checkpoint check 2 — reported 'approved'"
@@ -56,7 +56,7 @@ coverage:
     rationale: "Confirms the full behavior-verified loop (parameter move + note played) feels correct end-to-end from a learner's perspective, not just unit-correct — the same manual-only justification as D1."
   - id: D3
     description: "A human confirmed each lesson's audible effect matches its stated 'what you should hear' text — Algorithm 32's operator-3 output-level thinning and Algorithm 1's tower-voice brightening with the pair voice unchanged"
-    requirement: LESSON-02
+    requirement: [LESSON-01, LESSON-02]
     verification:
       - kind: manual_procedural
         ref: "06-04-PLAN.md Task 1, checkpoint check 3 — reported 'approved'"
@@ -74,7 +74,7 @@ coverage:
     rationale: "docs/ACCEPTANCE_CRITERIA.md requires keyboard-only reachability with visible focus; this is a real-browser, real-keyboard judgment, not a jsdom-testable property."
   - id: D5
     description: "A human confirmed completion state is legible as words (not colour-only) on both the lesson page and /learn cards, and that state changes appear instantly (no animation) under reduced motion"
-    requirement: LESSON-02
+    requirement: [LESSON-01, LESSON-02]
     verification:
       - kind: manual_procedural
         ref: "06-04-PLAN.md Task 1, checkpoint check 5 — reported 'approved'"
@@ -105,7 +105,7 @@ status: complete
 ## Performance
 
 - **Duration:** ~18 min total (Task 1's checkpoint was answered in a prior agent session; this session resumed at Task 2 and closed the plan)
-- **Started:** 2026-08-10T~02:16:00Z (approx., first checkpoint presentation)
+- **Started:** 2026-08-10T02:16:00Z (approximate; first checkpoint presentation)
 - **Completed:** 2026-08-10T02:34:22Z
 - **Tasks:** 2
 - **Files modified:** 1 (`06-VALIDATION.md`)

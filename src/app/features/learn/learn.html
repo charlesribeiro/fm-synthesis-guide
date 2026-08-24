@@ -1,29 +1,43 @@
 <h1>Learn</h1>
 <p class="intro">
   Guided lessons teach one FM synthesis concept at a time: an objective, a short explanation, a "try
-  this" experiment, and a completion check. The curriculum starts simple and adds complexity
-  gradually — you never have to memorize all 32 algorithms up front.
+  this" experiment, and a completion check. All 32 algorithms are covered below, grouped into four
+  recurring routing shapes so you learn patterns, not a list of 32 things to memorize.
 </p>
 
-<ul class="lesson-list">
-  @for (lesson of lessons; track lesson.id) {
-    <li>
-      <a class="lesson-card" [routerLink]="['/learn', lesson.id]">
-        <span class="lesson-card__algorithm">Algorithm {{ lesson.algorithmId }}</span>
-        <h2>{{ lesson.title }}</h2>
-        <p>{{ lesson.objective }}</p>
-        <span
-          class="lesson-card__completion"
-          [class.lesson-card__completion--done]="lessonProgress.isComplete(lesson.id)"
-          [attr.data-state]="lessonProgress.isComplete(lesson.id) ? 'complete' : 'not-started'"
-        >
-          @if (lessonProgress.isComplete(lesson.id)) {
-            <span aria-hidden="true">&check;</span> Completed
-          } @else {
-            Not started
-          }
-        </span>
-      </a>
-    </li>
-  }
-</ul>
+<p class="progress-summary">
+  {{ completedLessonCount() }} of {{ totalLessonCount() }} lessons complete.
+</p>
+
+@for (group of groupedLessons(); track group.tag) {
+  <section class="lesson-group" [attr.aria-labelledby]="'group-' + group.tag">
+    <h2 [id]="'group-' + group.tag">{{ group.label }}</h2>
+    <p class="lesson-group__description">{{ group.description }}</p>
+    <p class="lesson-group__progress">
+      {{ completedCountFor(group) }} of {{ group.lessons.length }} complete.
+    </p>
+
+    <ul class="lesson-list">
+      @for (lesson of group.lessons; track lesson.id) {
+        <li>
+          <a class="lesson-card" [routerLink]="['/learn', lesson.id]">
+            <span class="lesson-card__algorithm">Algorithm {{ lesson.algorithmId }}</span>
+            <h3>{{ lesson.title }}</h3>
+            <p>{{ lesson.objective }}</p>
+            <span
+              class="lesson-card__completion"
+              [class.lesson-card__completion--done]="lessonProgress.isComplete(lesson.id)"
+              [attr.data-state]="lessonProgress.isComplete(lesson.id) ? 'complete' : 'not-started'"
+            >
+              @if (lessonProgress.isComplete(lesson.id)) {
+                <span aria-hidden="true">&check;</span> Completed
+              } @else {
+                Not started
+              }
+            </span>
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}

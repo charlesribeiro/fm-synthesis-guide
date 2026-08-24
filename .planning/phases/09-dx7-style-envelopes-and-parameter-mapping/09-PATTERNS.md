@@ -231,7 +231,7 @@ export type WorkletMessage =
   | SetOperatorParametersMessage
   | SetFeedbackMessage;
 ```
-Add `SetGateMessage { readonly kind: 'setGate'; readonly open: boolean; readonly velocity: number }` (or velocity pre-converted to amplitude — planner's discretion per A6) to this union, plus a `setGateMessage(open, velocity)` constructor function mirroring `setFeedbackMessage` (line 115-117):
+Add `SetGateMessage { readonly kind: 'setGate'; readonly open: boolean; readonly velocity: number }` with integer MIDI velocity on the wire (not a pre-converted amplitude) to this union, plus a `setGateMessage(open, velocity)` constructor function mirroring `setFeedbackMessage` (line 115-117):
 ```typescript
 export function setFeedbackMessage(level: number): SetFeedbackMessage {
   return { kind: 'setFeedback', level };
@@ -301,7 +301,7 @@ noteOn(note: number, velocity: number): void {
   this.heldNote = note;
 }
 ```
-`releaseVoice()` becomes a `this.node.port.postMessage(setGateMessage(false, 0))` call — no `AudioParam` scheduling at all, since click-safety now lives entirely inside the kernel's per-operator EG release segment (D-04). Also remove the `voiceGain: GainNodeLike | null` field, its construction in `buildAndStart` (lines ~281-296), and its disconnect calls in `teardownGraph`/`destroy` (lines 310, 460-464, 485, 489) — all in-scope per RESEARCH.md's "blast radius" list.
+`releaseVoice()` becomes a `this.node.port.postMessage(setGateMessage(false, MIN_VELOCITY))` call — no `AudioParam` scheduling at all, since click-safety now lives entirely inside the kernel's per-operator EG release segment (D-04). Also remove the `voiceGain: GainNodeLike | null` field, its construction in `buildAndStart` (lines ~281-296), and its disconnect calls in `teardownGraph`/`destroy` (lines 310, 460-464, 485, 489) — all in-scope per RESEARCH.md's "blast radius" list.
 
 ---
 

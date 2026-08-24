@@ -435,7 +435,6 @@ must never re-derive carrier/feedback roles locally, only consume the already-tr
 | File | Role | Data Flow | Reason |
 |------|------|-----------|--------|
 | `src/app/domain/dx7/dsp/algorithm-routing.spec.ts` | test | batch (32-row cross-check) | No existing test in the repo cross-checks two independent implementations across a full dataset sweep; RESEARCH.md's own Pattern 5 code example is the closest available template — follow `operator.spec.ts`'s finite/NaN assertion idiom (per RESEARCH "Don't Hand-Roll" table) for the per-sample assertions, but the 32-row×D-11-feedback-sweep loop structure itself is new. |
-| `worklets/harness/harness-main.ts` | component (dev harness) | event-driven | Not read this session (existing Phase 7 file, low structural risk — only additive algorithm-select/feedback-depth controls needed); read this file directly before extending rather than relying on this pattern map. |
 
 ## Metadata
 

@@ -76,7 +76,13 @@ import { InjectionToken } from '@angular/core';
 ```typescript
 export type AudioContextConstructorLike = new () => AudioContextLike;
 ```
-No equivalent needed for AudioWorkletNode (constructed via `new AudioWorkletNode(context, name, options)` off an already-live context) — but the "never construct at module eval time" doc-comment convention (lines 61-66) should be mirrored on whatever factory resolves the worklet boundary.
+The selected AudioWorklet design mirrors this exactly rather than constructing `AudioWorkletNode` at
+module evaluation time. `audio-worklet-node.token.ts` exports `AudioWorkletNodeConstructorLike` and a
+root-provided `AUDIO_WORKLET_NODE_CTOR` token whose factory feature-detects `window.AudioWorkletNode`
+and returns `null` when it is absent — the same `InjectionToken` + `providedIn: 'root'` + `factory`
+shape as `AUDIO_CONTEXT_CTOR`. Never construct an `AudioWorkletNode` (or an `AudioContext`) at module
+evaluation time; resolve the constructor through the token and instantiate only after an explicit
+user gesture.
 
 **Feature-detection factory + null-safe token pattern** (lines 67-91):
 ```typescript
@@ -88,7 +94,8 @@ export const AUDIO_CONTEXT_CTOR = new InjectionToken<AudioContextConstructorLike
   },
 );
 ```
-If a new token is needed (e.g. for the worklet module URL string), follow this exact `InjectionToken` + `providedIn: 'root'` + `factory` shape.
+`AUDIO_WORKLET_NODE_CTOR` follows this exact shape with `AudioWorkletNodeConstructorLike | null`. If a
+new token is needed (e.g. for the worklet module URL string), use the same pattern.
 
 ---
 
@@ -96,7 +103,7 @@ If a new token is needed (e.g. for the worklet module URL string), follow this e
 
 **Analog:** `src/app/core/audio/web-audio-synth-engine.ts`
 
-**Imports pattern** (lines 1-32): destructure Angular core (`DestroyRef, Injectable, Signal, effect, inject, signal`), domain types as `type`-only imports, then the DI tokens (`AUDIO_CONTEXT_CTOR`), then `SynthEngine`/`AudioEngineStatus` types last.
+**Imports pattern** (lines 1-32): destructure Angular core (`DestroyRef, Injectable, Signal, effect, inject, signal`) from the analog; `WorkletSynthEngine` also injects `AUDIO_WORKLET_NODE_CTOR` / `AUDIO_WORKLET_MODULE_URL` and uses `effect` only for imperative sync with `InstrumentState` (Phase 8). Preserve the private writable signal and public `asReadonly` status pattern below.
 
 **Signal-facade / status pattern** (lines 119-122):
 ```typescript
@@ -126,7 +133,18 @@ function validateNote(note: number): void {
 ```
 Mirror for any `noteOn`/`noteOff` validation in the new engine before forwarding a `postMessage`.
 
-**postMessage-forwarding note lifecycle** — new pattern this phase (no existing analog uses `port.postMessage`); model directly on RESEARCH.md Pattern 2/3 — `noteOn`/`noteOff` should validate then `this.node?.port.postMessage({ kind: 'noteOn', ... })`.
+**postMessage-forwarding note lifecycle** — new pattern this phase (no existing analog uses `port.postMessage`); model directly on RESEARCH.md Pattern 2/3 and the selected worklet message contract — `noteOn`/`noteOff` must `validateNote`/`validateVelocity` first, then forward through the shared builders. `noteOn` posts `setFrequencyMessage(frequencyHz)` with the calculated frequency (not a `{ kind: 'noteOn', ... }` payload):
+```typescript
+noteOn(note: number, velocity: number): void {
+  validateNote(note);
+  validateVelocity(velocity);
+  if (this.node === null) {
+    return;
+  }
+  const frequencyHz = midiNoteToFrequency(note);
+  this.node.port.postMessage(setFrequencyMessage(frequencyHz));
+}
+```
 
 ---
 

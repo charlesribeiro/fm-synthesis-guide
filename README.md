@@ -5,13 +5,14 @@ synthesis through the Yamaha DX7's 32 operator-routing algorithms — one algori
 interactive routing diagrams, guided lessons, and live sound. No affiliation with Yamaha or the
 Dexed project. See [full disclaimer](src/app/features/about/about.html).
 
-**Status:** Phase 10 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
+**Status:** Phase 11 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
 state, algorithm browser/SVG, first playable approximation, guided lessons (Alg 32 & 1),
 AudioWorklet DSP foundation, full algorithm routing/feedback with live cutover to
 [`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts), per-operator
 four-rate/four-level envelopes with a note-lifecycle gate message replacing the old global voice
-ramp, and Playground visualizers (oscilloscope and labelled spectrum) plus A/B snapshot compare and
-constrained randomization. See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
+ramp, Playground visualizers (oscilloscope and labelled spectrum) plus A/B snapshot compare and
+constrained randomization, and the full 32-algorithm curriculum with a grouped `/learn` index.
+See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
 
 ## Setup
 

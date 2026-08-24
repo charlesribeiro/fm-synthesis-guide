@@ -333,6 +333,267 @@ describe('LessonDetail route — Algorithm 1 lesson (LESSON-02)', () => {
 });
 
 /**
+ * Algorithm 26 end-to-end coverage (Phase 11, 11-01-PLAN.md Task 1) — proves
+ * the first structurally-generated lesson renders through the same
+ * `LessonDetail` page shape as the two hand-authored lessons, with no
+ * per-lesson branching added anywhere in the component.
+ */
+describe('LessonDetail route — Algorithm 26 lesson (Phase 11 structural lesson)', () => {
+  beforeEach(() => {
+    FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
+    });
+  });
+
+  const algorithm26Lesson = getLesson('algorithm-26');
+
+  it.each([
+    ['algorithm-26', 26] as const,
+    ['algorithm-27', 27] as const,
+    ['algorithm-28', 28] as const,
+    ['algorithm-29', 29] as const,
+    ['algorithm-30', 30] as const,
+    ['algorithm-31', 31] as const,
+  ])(
+    'renders the title, objective, every explanation paragraph, the routing diagram, the try-this control, and the embedded play surface for a cold deep link to /learn/%s',
+    async (slug, algorithmId) => {
+      const lesson = getLesson(slug);
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(`/learn/${slug}`, LessonDetail);
+
+      const root = harness.routeNativeElement as HTMLElement;
+      expect(root.querySelector('h1')?.textContent).toContain(lesson.title);
+      expect(root.textContent).toContain(lesson.objective);
+      for (const paragraph of lesson.explanation) {
+        expect(root.textContent).toContain(paragraph);
+      }
+      expect(root.querySelector('svg')).not.toBeNull();
+      expect(root.querySelector('input[type="range"]')).not.toBeNull();
+      expect(root.querySelectorAll('.key').length).toBe(12);
+
+      const instrumentState = TestBed.inject(InstrumentState);
+      expect(instrumentState.algorithmId()).toBe(algorithmId);
+    },
+  );
+
+  it('applies the generated starting patch to InstrumentState on a cold deep link', async () => {
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/learn/algorithm-26', LessonDetail);
+
+    const instrumentState = TestBed.inject(InstrumentState);
+    expect(instrumentState.algorithmId()).toBe(26);
+    for (const operatorId of [1, 2, 3, 4, 5, 6] as const) {
+      expect(instrumentState.operators()[operatorId]).toEqual(algorithm26Lesson.startingPatch.operators[operatorId]);
+    }
+    expect(instrumentState.feedback()).toBe(algorithm26Lesson.startingPatch.feedback);
+  });
+});
+
+/**
+ * Cold-deep-link coverage for every Additive Stacks lesson 11-03-PLAN.md
+ * Task 1 adds (Algorithms 2 through 6). Algorithm 4 is one of this plan's
+ * duplicate-topology rows (identical routing to Algorithm 3), so this also
+ * proves a duplicate-cluster lesson renders its own honest prose rather than
+ * silently reusing another lesson's page. `LessonDetail` has no per-lesson
+ * branching, so completion still flows through the shared try-this /
+ * `LessonProgress` path already covered by Algorithm 1's route suite.
+ */
+describe('LessonDetail route — Algorithms 2 through 6 (11-03-PLAN.md Task 1)', () => {
+  beforeEach(() => {
+    FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
+    });
+  });
+
+  it.each([
+    ['algorithm-2', 2] as const,
+    ['algorithm-3', 3] as const,
+    ['algorithm-4', 4] as const,
+    ['algorithm-5', 5] as const,
+    ['algorithm-6', 6] as const,
+  ])(
+    'renders the title, objective, every explanation paragraph, the routing diagram, the try-this control, and the embedded play surface for a cold deep link to /learn/%s',
+    async (slug, algorithmId) => {
+      const lesson = getLesson(slug);
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(`/learn/${slug}`, LessonDetail);
+
+      const root = harness.routeNativeElement as HTMLElement;
+      expect(root.querySelector('h1')?.textContent).toContain(lesson.title);
+      expect(root.textContent).toContain(lesson.objective);
+      for (const paragraph of lesson.explanation) {
+        expect(root.textContent).toContain(paragraph);
+      }
+      expect(root.querySelector('svg')).not.toBeNull();
+      expect(root.querySelector('input[type="range"]')).not.toBeNull();
+      expect(root.querySelectorAll('.key').length).toBe(12);
+
+      const instrumentState = TestBed.inject(InstrumentState);
+      expect(instrumentState.algorithmId()).toBe(algorithmId);
+    },
+  );
+});
+
+/**
+ * Cold-deep-link coverage for every Tree/Branch lesson 11-03-PLAN.md Task 2
+ * adds (Algorithms 7 through 12). Algorithm 7 is the group's deepest-chain
+ * outlier; Algorithm 9 is a feedback-relocated sibling of Algorithm 8
+ * sharing identical non-feedback edges — both prove their own honest prose
+ * renders on their own route, and the remaining ids share the same
+ * `LessonDetail` contract with no per-id branching.
+ */
+describe('LessonDetail route — Algorithms 7 through 12 (11-03-PLAN.md Task 2)', () => {
+  beforeEach(() => {
+    FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
+    });
+  });
+
+  it.each([
+    ['algorithm-7', 7] as const,
+    ['algorithm-8', 8] as const,
+    ['algorithm-9', 9] as const,
+    ['algorithm-10', 10] as const,
+    ['algorithm-11', 11] as const,
+    ['algorithm-12', 12] as const,
+  ])(
+    'renders the title, objective, every explanation paragraph, the routing diagram, the try-this control, and the embedded play surface for a cold deep link to /learn/%s',
+    async (slug, algorithmId) => {
+      const lesson = getLesson(slug);
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(`/learn/${slug}`, LessonDetail);
+
+      const root = harness.routeNativeElement as HTMLElement;
+      expect(root.querySelector('h1')?.textContent).toContain(lesson.title);
+      expect(root.textContent).toContain(lesson.objective);
+      for (const paragraph of lesson.explanation) {
+        expect(root.textContent).toContain(paragraph);
+      }
+      expect(root.querySelector('svg')).not.toBeNull();
+      expect(root.querySelector('input[type="range"]')).not.toBeNull();
+      expect(root.querySelectorAll('.key').length).toBe(12);
+
+      const instrumentState = TestBed.inject(InstrumentState);
+      expect(instrumentState.algorithmId()).toBe(algorithmId);
+    },
+  );
+});
+
+/**
+ * Cold-deep-link coverage for two of Task 1's six new lessons (11-04-PLAN.md
+ * Task 1's own acceptance criteria names Algorithms 15 and 17 as the
+ * required minimum). Algorithm 15 is the row whose role derivation departs
+ * from the dataset's loose free-text name (operator 2 is a modulator, not
+ * the "carrier" its name calls it); Algorithm 17 is a feedback-relocated
+ * sibling of Algorithm 16 sharing identical non-feedback edges — both prove
+ * their own honest prose renders on their own route.
+ */
+describe('LessonDetail route — Algorithms 15 and 17 (11-04-PLAN.md Task 1)', () => {
+  beforeEach(() => {
+    FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
+    });
+  });
+
+  it.each([
+    ['algorithm-15', 15] as const,
+    ['algorithm-17', 17] as const,
+  ])(
+    'renders the title, objective, every explanation paragraph, the routing diagram, the try-this control, and the embedded play surface for a cold deep link to /learn/%s',
+    async (slug, algorithmId) => {
+      const lesson = getLesson(slug);
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(`/learn/${slug}`, LessonDetail);
+
+      const root = harness.routeNativeElement as HTMLElement;
+      expect(root.querySelector('h1')?.textContent).toContain(lesson.title);
+      expect(root.textContent).toContain(lesson.objective);
+      for (const paragraph of lesson.explanation) {
+        expect(root.textContent).toContain(paragraph);
+      }
+      expect(root.querySelector('svg')).not.toBeNull();
+      expect(root.querySelector('input[type="range"]')).not.toBeNull();
+      expect(root.querySelectorAll('.key').length).toBe(12);
+
+      const instrumentState = TestBed.inject(InstrumentState);
+      expect(instrumentState.algorithmId()).toBe(algorithmId);
+    },
+  );
+});
+
+/**
+ * Cold-deep-link coverage for two of Task 2's seven new lessons (11-04-PLAN.md
+ * Task 2's own acceptance criteria names Algorithms 19 and 24 as the
+ * required minimum). Algorithm 19 carries the dataset's `unresolved`
+ * provenance flag and renders exactly like every other row, with no
+ * caveat/badge; Algorithm 24 is one of the three-way duplicate-topology
+ * cluster (24/25/31) — both prove their own honest prose renders on their
+ * own route.
+ */
+describe('LessonDetail route — Algorithms 19 and 24 (11-04-PLAN.md Task 2)', () => {
+  beforeEach(() => {
+    FakeAudioContext.instances.length = 0;
+    FakeAudioWorkletNode.instances.length = 0;
+    TestBed.configureTestingModule({
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+        { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+      ],
+    });
+  });
+
+  it.each([
+    ['algorithm-19', 19] as const,
+    ['algorithm-24', 24] as const,
+  ])(
+    'renders the title, objective, every explanation paragraph, the routing diagram, the try-this control, and the embedded play surface for a cold deep link to /learn/%s',
+    async (slug, algorithmId) => {
+      const lesson = getLesson(slug);
+      const harness = await RouterTestingHarness.create();
+      await harness.navigateByUrl(`/learn/${slug}`, LessonDetail);
+
+      const root = harness.routeNativeElement as HTMLElement;
+      expect(root.querySelector('h1')?.textContent).toContain(lesson.title);
+      expect(root.textContent).toContain(lesson.objective);
+      for (const paragraph of lesson.explanation) {
+        expect(root.textContent).toContain(paragraph);
+      }
+      expect(root.querySelector('svg')).not.toBeNull();
+      expect(root.querySelector('input[type="range"]')).not.toBeNull();
+      expect(root.querySelectorAll('.key').length).toBe(12);
+
+      const instrumentState = TestBed.inject(InstrumentState);
+      expect(instrumentState.algorithmId()).toBe(algorithmId);
+    },
+  );
+});
+
+/**
  * Rejected lesson-address matrix (T-06-01), modelled on
  * `algorithm-detail.spec.ts`'s not-found matrix precedent. Each address is
  * driven through its own navigation and asserted to render the not-found
@@ -352,11 +613,14 @@ describe('LessonDetail not-found matrix (T-06-01)', () => {
     });
   });
 
-  // 'algorithm-2' is an unknown slug (no such lesson exists); 'algorithm-32x'
-  // is a near-miss of a real slug (trailing junk); 'Algorithm-32' is a
+  // 'algorithm-33' is an unknown slug outside the dataset's 1..32 range
+  // entirely (deliberately not 'algorithm-2': plan 11-03 promotes that slug
+  // to a legal lesson id later in this phase, which would silently turn this
+  // rejection case into a proof of acceptance); 'algorithm-32x' is a
+  // near-miss of a real slug (trailing junk); 'Algorithm-32' is a
   // differently-cased near-miss of a real slug; '32' is a bare numeric
   // segment; '!!!' is a segment of punctuation.
-  const rejectedSegments = ['algorithm-2', 'algorithm-32x', 'Algorithm-32', '32', '!!!'];
+  const rejectedSegments = ['algorithm-33', 'algorithm-32x', 'Algorithm-32', '32', '!!!'];
 
   it('renders the not-found branch, no svg, and throws nothing for every rejected address', async () => {
     const harness = await RouterTestingHarness.create();

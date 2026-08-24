@@ -226,12 +226,15 @@ None - no external service configuration required.
 
 ## Next Phase Readiness
 
-- ENGINE-01's harness-isolation must-have is closed structurally for default `npm run build`
-  (relocation plus `postbuild`), with a regression gate proven to have teeth. ENGINE-01 is **not**
-  fully closed while `07-REVIEW.md` still records WR-01 (lint scope), WR-02 (`typecheck:worklet` not
-  hooked), WR-04 (`setMode` stale phase), and WR-06 (untested AdditiveOperatorBank custom-ratio
-  branches). WR-05's Windows `postbuild` no-op was addressed by comparing `fileURLToPath(import.meta.url)`
-  against `resolve(process.argv[1])` rather than concatenating `file://` onto a native path.
+- ENGINE-01 is complete for this plan's must-haves: the worklet kernel loads and the
+  harness-isolation guarantee holds structurally for default `npm run build` (relocation plus
+  `postbuild`), with a regression gate proven to have teeth. Remaining `07-REVIEW.md` items WR-01
+  (lint scope), WR-02 (`typecheck:worklet` not hooked), WR-04 (`setMode` stale phase), and WR-06
+  (untested AdditiveOperatorBank custom-ratio branches) are **non-blocking** for ENGINE-01 — they
+  are adjacent quality/coverage gaps, not failures of the ROADMAP success criteria or of the
+  isolation must-have this plan closed. WR-05's Windows `postbuild` no-op was addressed by comparing
+  `fileURLToPath(import.meta.url)` against `resolve(process.argv[1])` rather than concatenating
+  `file://` onto a native path.
 - `SYNTH_ENGINE` still resolves to `WebAudioSynthEngine` (D-01, unchanged this plan) — later routing
   and envelope work can build on the worklet kernel without any live-engine cutover risk carried
   over from this plan.

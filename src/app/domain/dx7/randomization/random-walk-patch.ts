@@ -16,9 +16,9 @@
  * draw across the field's full range — the latter has a well-known failure
  * mode (several fields landing near zero together produces silence), which
  * is exactly what a bounded walk from the sound already playing avoids.
- * Exception: {@link randomWalkFixedFrequencyHz} clamp-then-walks values
- * outside the practical randomization range (see that function's docs);
- * every other walker always starts from the true current value.
+ * Exception: {@link randomWalkFixedFrequencyHz} leaves a valid current
+ * outside the practical randomization range unchanged (see that function's
+ * docs); every other walker always starts from the true current value.
  *
  * D-12/D-16: `algorithmId`, every operator's `mode`, and every operator's
  * `enabled` flag are never walked by anything in this module. A structural
@@ -136,28 +136,36 @@ export function randomWalkRatio(current: number, rng: RandomSource): number {
  * other field in this module: frequency is perceived logarithmically, so a
  * fixed proportion of the current value is the musically meaningful step,
  * and there is in any case no declared domain upper bound on this field from
- * which a linear fraction could be taken. Clamps `current` into {@link
- * MIN_RANDOM_FIXED_FREQUENCY_HZ}..{@link MAX_RANDOM_FIXED_FREQUENCY_HZ}
- * first (substituting the floor when it is not a positive finite number),
- * multiplies by a factor of one plus the symmetric scaled source value times
- * {@link RANDOM_WALK_DELTA_FRACTION}, clamps the product back into the
- * range, and rounds to two decimal places.
+ * which a linear fraction could be taken.
  *
- * This clamp-then-walk order is an intentional exception to the module's
- * "always walks from current" D-13 rule: `fixedFrequencyHz` has no domain
- * upper bound, so an out-of-practical-range current value (e.g. 20000 Hz)
- * is brought into 20..8000 Hz *before* the proportional step. The walk is
- * then bounded relative to that clamped starting point, not the raw current
- * value. Other walkers in this module do not clamp-then-walk.
+ * A current that is already valid (`Number.isFinite` and `> 0`) but outside
+ * {@link MIN_RANDOM_FIXED_FREQUENCY_HZ}..{@link MAX_RANDOM_FIXED_FREQUENCY_HZ}
+ * is preserved — 20–8000 Hz is a randomization-usability range, not a
+ * domain bound, so a midpoint source must leave e.g. 12000 Hz at 12000 Hz.
+ * Only non-positive or non-finite currents substitute the floor and then
+ * walk inside the practical range. In-range currents are multiplied by a
+ * factor of one plus the symmetric scaled source value times {@link
+ * RANDOM_WALK_DELTA_FRACTION}, clamped back into the range, and rounded to
+ * two decimal places.
  */
 export function randomWalkFixedFrequencyHz(current: number, rng: RandomSource): number {
-  const clampedCurrent =
-    Number.isFinite(current) && current > 0
-      ? Math.min(MAX_RANDOM_FIXED_FREQUENCY_HZ, Math.max(MIN_RANDOM_FIXED_FREQUENCY_HZ, current))
-      : MIN_RANDOM_FIXED_FREQUENCY_HZ;
+  if (Number.isFinite(current) && current > 0) {
+    if (current < MIN_RANDOM_FIXED_FREQUENCY_HZ || current > MAX_RANDOM_FIXED_FREQUENCY_HZ) {
+      // Rounding to 2 decimal places can itself produce an invalid value at
+      // the extremes: Number.MIN_VALUE * 100 rounds to 0 (non-positive) and
+      // Number.MAX_VALUE * 100 overflows to Infinity (non-finite). Either
+      // would break this branch's own "a valid current is preserved"
+      // contract, so fall back to the unrounded current rather than ship an
+      // invalid frequency.
+      const rounded = Math.round(current * 100) / 100;
+      return Number.isFinite(rounded) && rounded > 0 ? rounded : current;
+    }
+  } else {
+    current = MIN_RANDOM_FIXED_FREQUENCY_HZ;
+  }
   const source = readUnitSourceOrMidpoint(rng);
   const factor = 1 + (source * 2 - 1) * RANDOM_WALK_DELTA_FRACTION;
-  const product = clampedCurrent * factor;
+  const product = current * factor;
   const clamped = Math.min(MAX_RANDOM_FIXED_FREQUENCY_HZ, Math.max(MIN_RANDOM_FIXED_FREQUENCY_HZ, product));
   return Math.round(clamped * 100) / 100;
 }

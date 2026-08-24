@@ -248,6 +248,30 @@ describe('worklet-processor-bundle', () => {
     expect(additiveModeOutput).toEqual(expectedAdditive);
   });
 
+  it('round-trips single → additive → single while rendering and resets the inactive kernel phase on each mode change', async () => {
+    const { ctor } = expectSingleRegistration(await evaluateBundle());
+
+    const processor = new ctor({ processorOptions: { frequencyHz: 440 } });
+    const firstSingle = new Float32Array(BLOCK_SIZE);
+    processor.process([], [[firstSingle]]);
+
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setMode', mode: 'additive' }));
+    const additiveOutput = new Float32Array(BLOCK_SIZE);
+    processor.process([], [[additiveOutput]]);
+    expect(additiveOutput).not.toEqual(firstSingle);
+
+    processor.port.onmessage?.(toMessageEvent({ kind: 'setMode', mode: 'single' }));
+    const secondSingle = new Float32Array(BLOCK_SIZE);
+    processor.process([], [[secondSingle]]);
+
+    const reference = new PhaseModulatedOperator(TEST_SAMPLE_RATE, 440);
+    const expectedSingle = new Float32Array(BLOCK_SIZE);
+    reference.render(expectedSingle);
+
+    expect(secondSingle).toEqual(expectedSingle);
+    expect(secondSingle).toEqual(firstSingle);
+  });
+
   it('leaves rendered output unchanged and throws nothing for a malformed message', async () => {
     const { ctor } = expectSingleRegistration(await evaluateBundle());
 

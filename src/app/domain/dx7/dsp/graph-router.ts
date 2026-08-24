@@ -174,10 +174,18 @@ export class GraphRouter {
   setRouting(config: RoutingConfig): void {
     this.routingConfig = config;
     this.feedbackOperatorId = findFeedbackOperatorId(config);
+    this.resetPhase();
+    this.recomputeDerivedValues();
+  }
+
+  /** Clears oscillator phase and one-sample feedback history on every
+   * operator. Used on topology change and when the worklet processor
+   * switches render mode so an idle kernel cannot resume with a stale
+   * accumulator. Does not touch envelope state. */
+  resetPhase(): void {
     for (const id of OPERATOR_IDS) {
       this.operatorsById[id]!.resetPhase();
     }
-    this.recomputeDerivedValues();
   }
 
   setOperatorParameters(operators: OperatorParameterSet): void {

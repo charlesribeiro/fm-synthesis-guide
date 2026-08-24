@@ -12,9 +12,11 @@ number: —
 name: —
 expected: |
   Phase UAT blocked on D-12 checkpoint re-run: auditable resume payload must name Additive,
-  Tree/Branch, Rooting, Parallel, and maximum-feedback sample algorithm ids (08-04-PLAN resume-signal).
-  Historical bare "approved" is not retained as validated.
-awaiting: human D-12 checkpoint re-run with five sample algorithm ids
+  Tree/Branch, Rooting, Parallel, and maximum-feedback sample algorithm ids, and must record an
+  explicit pass/fail for every blocking check, Checks 1–9, including held-note switching, the live
+  app, Lesson 6, and honesty-copy evidence (08-04-PLAN resume-signal). Historical bare "approved"
+  is not retained as validated.
+awaiting: human D-12 checkpoint re-run with five sample algorithm ids and Checks 1–9 outcomes
 
 ## Tests
 
@@ -203,4 +205,4 @@ blocked: 1
 must_haves: 14/15 (truth 15 open pending auditable D-12 re-run)
 
 ## Gaps
-- D-12 blocking listening checkpoint must be re-run with an auditable resume payload naming Additive, Tree/Branch, Rooting, Parallel, and maximum-feedback sample algorithm ids before restoring `08-VALIDATION.md` to `status: validated`.
+- D-12 blocking listening checkpoint must be re-run with an auditable resume payload naming Additive, Tree/Branch, Rooting, Parallel, and maximum-feedback sample algorithm ids, plus an explicit pass/fail for Checks 1–9 (held-note switching, live app, Lesson 6, honesty copy included), before restoring `08-VALIDATION.md` to `status: validated`. Historical bare `approved` is rejected.

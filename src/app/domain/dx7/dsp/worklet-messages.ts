@@ -169,6 +169,15 @@ function isRoutingConnectionsArray(value: unknown): value is readonly OperatorCo
   if (!value.every(isStructurallyValidConnection)) {
     return false;
   }
+  let feedbackCount = 0;
+  for (const connection of value) {
+    if (connection.isFeedback) {
+      feedbackCount += 1;
+    }
+  }
+  if (feedbackCount > 1) {
+    return false;
+  }
   const keys = value.map((connection) => `${connection.from}:${connection.to}:${connection.isFeedback}`);
   return new Set(keys).size === keys.length;
 }

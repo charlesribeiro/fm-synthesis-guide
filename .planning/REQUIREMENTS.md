@@ -91,7 +91,7 @@ current roadmap.
 
 ### Full Curriculum and Platform
 
-- **CURR-01**: Every algorithm has a concise lesson, experiment, and original preset
+- [x] **CURR-01**: Every algorithm has a concise lesson, experiment, and original preset
 - **PERSIST-01**: Versioned local persistence with JSON import/export and malformed-data recovery
 - **MIDI-01**: Progressive Web MIDI note on/off, velocity, device connect/disconnect
 - **HARDEN-01**: Keyboard-only and screen-reader audit, reduced motion, mobile/tablet refinement
@@ -135,20 +135,22 @@ current roadmap.
 | ENGINE-03 | Phase 9 | Complete |
 | VIZ-01 | Phase 10 | Complete |
 | VIZ-02 | Phase 10 | Complete |
+| CURR-01 | Phase 11 | Complete |
 
 **Coverage:**
 
 - v1 requirements: 21 total
 - Mapped to phases: 21
 - Unmapped: 0 ✓
-- v2 requirements mapped so far: 5 (ENGINE-01 → Phase 7, ENGINE-02 → Phase 8, ENGINE-03 → Phase 9, VIZ-01 → Phase 10, VIZ-02 → Phase 10)
+- v2 requirements mapped so far: 6 (ENGINE-01 → Phase 7, ENGINE-02 → Phase 8, ENGINE-03 → Phase 9, VIZ-01 → Phase 10, VIZ-02 → Phase 10, CURR-01 → Phase 11)
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-19 — Phase 10 / VIZ-01 and VIZ-02 are fully closed (all four plans executed;
-oscilloscope and labelled spectrum off the Angular change-detection path; A/B compare and
-constrained randomization in Playground; blocking human-verify checkpoint in 10-04 approved with
-all ten checks passing and zero findings). Phase 9 / ENGINE-03 remains fully closed (all four plans
-executed; six independent per-operator DX7-style envelopes replace the global voice-gain ramp; the
-blocking human listening checkpoint in 09-04 was approved with a complete auditable payload,
-zero findings; 3/3 must-haves verified).*
+*Last updated: 2026-08-24 — Phase 11 / CURR-01 is fully closed (all five plans executed; all 32
+canonical algorithms have a structurally-generated lesson, preset and try-this experiment; the
+grouped, counted `/learn` index makes progress visible; the blocking human-verify checkpoint in
+11-05 approved all six checks with zero findings, including Algorithm 19's `unresolved`-provenance
+treatment; 9/9 must-haves verified in 11-VERIFICATION.md). Phase 10 / VIZ-01 and VIZ-02 remain fully
+closed (all four plans executed; oscilloscope and labelled spectrum off the Angular
+change-detection path; A/B compare and constrained randomization in Playground; blocking
+human-verify checkpoint in 10-04 approved with all ten checks passing and zero findings).*

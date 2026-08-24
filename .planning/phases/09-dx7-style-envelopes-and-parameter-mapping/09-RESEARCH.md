@@ -189,7 +189,7 @@ AudioWorkletGlobalScope: Dx7WorkletProcessor.handleMessage    [worklet adapter, 
         ▼
 GraphRouter (persistent kernel instance, one per worklet)     [pure domain, dsp/graph-router.ts]
         │
-        ├─ setGate(open, velocityAmplitude) ─────────► broadcasts open/close to all 6 EnvelopeGenerators
+        ├─ setGate(open, velocity) ─────────► converts MIDI velocity once, then broadcasts open/close to all 6 EnvelopeGenerators
         │
         └─ render(output) — runs once per 128-sample process() call:
              for id in DESCENDING_OPERATOR_IDS:
@@ -694,7 +694,7 @@ No new browser API, service, or CLI tool is required by this phase's scope.
 
 ### Tertiary (LOW confidence)
 - [righto.com "The Yamaha DX7 synthesizer's clever exponential circuit, reverse-engineered"](http://www.righto.com/2021/11/reverse-engineering-yamaha-dx7_28.html) — fetched this session for chip-level log/exponential-domain context only; not used for any specific numeric constant in this document
-- WebSearch-only summaries not independently fetched/confirmed (e.g. a "0.2819 * 2^(rate*0.16) dB/s" formula variant that appeared only in aggregated search-result text, not in a directly fetched page) were deliberately excluded from this document's recommendations
+- WebSearch-only summaries not independently fetched/confirmed (e.g. a `0.2819 * 2^(rate*0.16)` dB/s formula variant that appeared only in aggregated search-result text, not in a directly fetched page) were deliberately excluded from this document's recommendations
 
 ## Metadata
 

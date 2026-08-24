@@ -117,14 +117,36 @@ describe('randomWalkFixedFrequencyHz', () => {
     }
   });
 
-  it('handles a current value below the floor, above the ceiling, zero, negative, or non-finite', () => {
-    const badCurrents = [0, -100, 1, 100000, NaN, Infinity, -Infinity];
-    for (const current of badCurrents) {
+  it('falls back into the randomization-local range for zero, negative, or non-finite currents', () => {
+    const invalidCurrents = [0, -100, NaN, Infinity, -Infinity];
+    for (const current of invalidCurrents) {
       const result = randomWalkFixedFrequencyHz(current, () => 0.5);
       expect(Number.isFinite(result)).toBe(true);
       expect(result).toBeGreaterThanOrEqual(MIN_RANDOM_FIXED_FREQUENCY_HZ);
       expect(result).toBeLessThanOrEqual(MAX_RANDOM_FIXED_FREQUENCY_HZ);
     }
+  });
+
+  it('preserves a valid current outside the randomization-local range, including under a midpoint source', () => {
+    expect(randomWalkFixedFrequencyHz(12000, () => 0.5)).toBe(12000);
+    expect(randomWalkFixedFrequencyHz(1, () => 0.5)).toBe(1);
+    expect(randomWalkFixedFrequencyHz(100000, () => 0.5)).toBe(100000);
+  });
+
+  it('preserves an extreme valid current even when rounding to 2 decimal places would itself produce an invalid value', () => {
+    // Number.MIN_VALUE * 100 rounds to 0 (non-positive); Number.MAX_VALUE * 100
+    // overflows to Infinity (non-finite). The preservation branch must fall back
+    // to the unrounded current rather than let its own rounding step manufacture
+    // an invalid frequency out of a valid one.
+    const tinyResult = randomWalkFixedFrequencyHz(Number.MIN_VALUE, () => 0.5);
+    expect(Number.isFinite(tinyResult)).toBe(true);
+    expect(tinyResult).toBeGreaterThan(0);
+    expect(tinyResult).toBe(Number.MIN_VALUE);
+
+    const hugeResult = randomWalkFixedFrequencyHz(Number.MAX_VALUE, () => 0.5);
+    expect(Number.isFinite(hugeResult)).toBe(true);
+    expect(hugeResult).toBeGreaterThan(0);
+    expect(hugeResult).toBe(Number.MAX_VALUE);
   });
 
   it('returns a mid-range current value unchanged for a midpoint source', () => {

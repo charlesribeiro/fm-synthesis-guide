@@ -148,7 +148,9 @@ had the four-group-plus-repeat reasoning available at verification time, not sup
 
 **Review reconciliation:** `08-REVIEW.md` recorded 1 critical + 2 warnings (+ 1 info). Post-review
 disposition (docs/code reconciliation): CR-01 resolved via mode-aware `MASTER_GAIN` in
-`WorkletSynthEngine.setRenderMode`/`buildAndStart`; WR structural routing validation (out-of-order
+`WorkletSynthEngine.setRenderMode`/`buildAndStart`, pinned by `worklet-synth-engine.spec.ts`
+(routed stays at unity; single and additive stage `MASTER_GAIN`; `buildAndStart` starts the
+gain at 0 before the routed-mode assignment); WR structural routing validation (out-of-order
 edges, inconsistent self-loops, duplicate carriers → `null`) enforced in `parseWorkletMessage`;
 stale README status line corrected. Phase validation status is `draft` pending a D-12
 checkpoint re-run that records the five sample algorithm ids required by the updated

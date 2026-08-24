@@ -11,12 +11,90 @@ import type { InstrumentPatch } from '../models/patch';
  * `/learn/:lessonId` this type backs is costly to reverse once Phase 11's
  * thirty further lessons and any deep links depend on it.
  */
-export type LessonId = 'algorithm-32' | 'algorithm-1';
+export type LessonId =
+  | 'algorithm-32'
+  | 'algorithm-26'
+  | 'algorithm-27'
+  | 'algorithm-28'
+  | 'algorithm-29'
+  | 'algorithm-30'
+  | 'algorithm-31'
+  | 'algorithm-1'
+  | 'algorithm-2'
+  | 'algorithm-3'
+  | 'algorithm-4'
+  | 'algorithm-5'
+  | 'algorithm-6'
+  | 'algorithm-7'
+  | 'algorithm-8'
+  | 'algorithm-9'
+  | 'algorithm-10'
+  | 'algorithm-11'
+  | 'algorithm-12'
+  | 'algorithm-13'
+  | 'algorithm-14'
+  | 'algorithm-15'
+  | 'algorithm-16'
+  | 'algorithm-17'
+  | 'algorithm-18'
+  | 'algorithm-19'
+  | 'algorithm-20'
+  | 'algorithm-21'
+  | 'algorithm-22'
+  | 'algorithm-23'
+  | 'algorithm-24'
+  | 'algorithm-25';
 
-/** Frozen, in curriculum order (D-01: Algorithm 32's lesson is the simplest
- * and comes first) — mirrors `OPERATOR_IDS`'s restricted-literal + frozen
- * array convention (`operator.ts`). */
-export const LESSON_IDS: readonly LessonId[] = Object.freeze(['algorithm-32', 'algorithm-1']);
+/**
+ * Frozen, in curriculum order — mirrors `OPERATOR_IDS`'s
+ * restricted-literal + frozen array convention (`operator.ts`).
+ *
+ * The ordering rule this list (and its one remaining Phase 11 extension,
+ * 11-04) follows: the four `teachingTags` groups in the order Parallel,
+ * Additive Stacks, Tree/Branch, Rooting (D-01, D-02 — `teachingTags`' own
+ * additive-stacks-first ordering is reordered so the curriculum opens with
+ * Algorithm 32, matching the two lessons already built); within each group,
+ * its pinned opener comes first — Algorithm 32 within Parallel, Algorithm 1
+ * within Additive Stacks (D-03) — then every other member of the group
+ * ascending by algorithm id. As of 11-04-PLAN.md this list is complete at
+ * thirty-two members: all four `teachingTags` groups (Parallel, Additive
+ * Stacks, Tree/Branch, Rooting) are fully represented, one row per canonical
+ * algorithm.
+ */
+export const LESSON_IDS: readonly LessonId[] = Object.freeze([
+  'algorithm-32',
+  'algorithm-26',
+  'algorithm-27',
+  'algorithm-28',
+  'algorithm-29',
+  'algorithm-30',
+  'algorithm-31',
+  'algorithm-1',
+  'algorithm-2',
+  'algorithm-3',
+  'algorithm-4',
+  'algorithm-5',
+  'algorithm-6',
+  'algorithm-7',
+  'algorithm-8',
+  'algorithm-9',
+  'algorithm-10',
+  'algorithm-11',
+  'algorithm-12',
+  'algorithm-13',
+  'algorithm-14',
+  'algorithm-15',
+  'algorithm-16',
+  'algorithm-17',
+  'algorithm-18',
+  'algorithm-19',
+  'algorithm-20',
+  'algorithm-21',
+  'algorithm-22',
+  'algorithm-23',
+  'algorithm-24',
+  'algorithm-25',
+]);
 
 /** Runtime membership guard for `LessonId`, mirroring `isOperatorId`. Every
  * untrusted `:lessonId` route segment must pass through this before any

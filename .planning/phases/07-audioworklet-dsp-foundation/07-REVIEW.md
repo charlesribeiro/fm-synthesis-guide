@@ -61,20 +61,21 @@ it stands now rather than carried forward blind.
   instead of falling back to `?? 1`. (This surfaces a new, narrower gap — see WR-06 below: the new
   logic itself is untested.)
 
-**Three prior findings are still open, unchanged:** lint scope excludes `worklets/**`/`scripts/**`
-(WR-01), `typecheck:worklet` is still wired into no hook (WR-02), and `setMode` still leaves the
-inactive kernel's phase stale across a mode switch (WR-04). The stale README status line (IN-02),
+**Two prior findings are still open, unchanged:** lint scope excludes `worklets/**`/`scripts/**`
+(WR-01) and `typecheck:worklet` is still wired into no hook (WR-02). The stale README status line (IN-02),
 the now-genuinely-unused `eslint-disable` comment (IN-03), and the un-line-reviewed lockfile
 (IN-04) are also all still present, confirmed against the current file contents rather than
-assumed.
+assumed. WR-04 (stale phase across `setMode`) was open at review time and is now resolved in
+code: `handleMessage`'s `setMode` branch calls `resetPhase()` on the operator, additive bank,
+and router whenever the mode actually changes.
 
 New to this review: the 07-04 gap-closure scripts (`assert-no-harness-in-dist.mjs`,
 `verify-harness-isolation.mjs`) and `build-worklet.mjs`'s relocation logic are well-designed and
-match their own documentation, but `assert-no-harness-in-dist.mjs`'s `isMain` self-invocation
-check breaks on Windows, silently turning `postbuild` into a no-op on that platform (WR-05) — a
-real gap in exactly the "fail closed" guarantee the surrounding README section advertises at
-length. The new `AdditiveOperatorBank` custom-frequency-ratio logic (the fix for the old IN-01) is
-itself untested on its two new branches (WR-06).
+match their own documentation. WR-05 (Windows `isMain` / `postbuild` no-op) is **resolved**:
+`assert-no-harness-in-dist.mjs` now compares `fileURLToPath(import.meta.url)` against
+`resolve(process.argv[1])`, which is Windows-safe; 07-VERIFICATION.md records passing fail-first
+and fail-closed checks. The new `AdditiveOperatorBank` custom-frequency-ratio logic (the fix for
+the old IN-01) is itself untested on its two new branches (WR-06).
 
 No critical/blocker-level defects were found. The DSP kernel, message-validation choke point, and
 `WorkletSynthEngine` lifecycle/concurrency guard are all careful, correctly reasoned, and matched
@@ -106,47 +107,33 @@ complete.
 **Fix:** Wire `typecheck:worklet` into `prebuild`/`pretest` (e.g.
 `"prebuild": "npm run build:worklet && npm run typecheck:worklet"`).
 
-### WR-04: `setMode` still leaves the inactive kernel's phase accumulator frozen, risking a click on resume
+### WR-04: `setMode` still leaves the inactive kernel's phase accumulator frozen, risking a click on resume — **RESOLVED**
 
-**File:** `worklets/dx7-worklet-processor.ts:56-70`, `PhaseModulatedOperator.phase` in
-`src/app/domain/dx7/dsp/operator.ts:55`
-**Issue:** `process()` renders only `this.operator` (single mode) or `this.bank` (additive mode),
-never both, so the inactive kernel's phase accumulator does not advance while it is not selected.
-Toggling `setMode` back to a previously-active kernel mid-note resumes it from a stale phase
-relative to elapsed real time, producing an audible phase discontinuity/click — unchanged from the
-prior review. `setRenderMode` remains a concrete-class-only method not on `SynthEngine`, and
-`worklet-processor-bundle.spec.ts`'s mode-switch test (`worklet-processor-bundle.spec.ts:136-156`)
-only exercises a single-then-additive transition where the additive bank had never rendered
-before, so it cannot observe the discontinuity — the gap is still real and still untested for the
-mid-note ping-pong case.
-**Fix:** Call `resetPhase()` (or an equivalent re-sync) on the kernel being switched into inside
-`handleMessage`'s `setMode` branch, or explicitly document that a mid-note mode switch is expected
-to click and is out of scope until Phase 8 supersedes `setRenderMode`.
+**File:** `worklets/dx7-worklet-processor.ts` `setMode` branch
+**Issue (as reviewed):** `process()` rendered only the selected kernel, so the inactive accumulator
+froze; toggling `setMode` mid-note resumed from a stale phase.
+**Resolution:** On an actual mode change, `handleMessage` calls `resetPhase()` on the operator,
+additive bank, and router (no allocation). `worklet-processor-bundle.spec.ts` includes a
+single→additive→single round-trip that asserts the returned single-mode block matches a freshly
+constructed operator.
 
-### WR-05: `assert-no-harness-in-dist.mjs`'s CLI self-check silently never runs on Windows, defeating the `postbuild` fail-closed guarantee there
+### WR-05: `assert-no-harness-in-dist.mjs`'s CLI self-check silently never runs on Windows, defeating the `postbuild` fail-closed guarantee there — **RESOLVED**
 
-**File:** `scripts/assert-no-harness-in-dist.mjs:53`
-**Issue:**
+**File:** `scripts/assert-no-harness-in-dist.mjs` (`invokedAsCli`)
+**Issue (as reviewed):**
 ```js
 const isMain = import.meta.url === `file://${process.argv[1]}`;
 ```
 On Windows, `process.argv[1]` is a native path such as `C:\repo\scripts\assert-no-harness-in-dist.mjs`,
 while `import.meta.url` is a correctly-formed URL such as
 `file:///C:/repo/scripts/assert-no-harness-in-dist.mjs`. String-concatenating `file://` onto the
-raw Windows path (`file://C:\repo\...`, wrong slash direction, missing the third slash) can never
-equal the real `import.meta.url`, so `isMain` evaluates to `false` and the entire CLI block —
-including the call to `assertNoHarnessInDist` and the `process.exit(1)` on failure — never
-executes. `"postbuild": "node scripts/assert-no-harness-in-dist.mjs"` would then exit `0`
-unconditionally on Windows without ever inspecting `dist/` for a leaked harness artifact, which is
-precisely the regression this gate exists to catch (the README's "Worklet build and dev harness"
-section describes this as turning "a leak" into "a failed build, not a silent shipped file" — a
-guarantee that silently does not hold on this platform). The project shows deliberate Windows
-awareness elsewhere (`verify-harness-isolation.mjs`'s `isWindows = process.platform === 'win32'`
-/ `shell: isWindows` handling for `execFileSync`), which makes this a live cross-platform gap
-rather than an out-of-scope concern.
-**Fix:** Use a URL-safe comparison, e.g. `import { pathToFileURL } from 'node:url';` then
-`const isMain = import.meta.url === pathToFileURL(process.argv[1]).href;`, which is correct on
-every platform.
+raw Windows path would never equal `import.meta.url`, so `isMain` stayed `false` and the CLI block
+never ran.
+**Resolution:** The shipped guard compares native paths instead:
+`fileURLToPath(import.meta.url).toLowerCase() === resolve(process.argv[1]).toLowerCase()`.
+That is the same Windows-safe intent as `pathToFileURL(process.argv[1]).href`. 07-VERIFICATION.md
+records fail-first and fail-closed proofs against this script. This warning is closed; it is
+kept here so the original diagnosis remains searchable.
 
 ### WR-06: `AdditiveOperatorBank`'s new custom-frequency-ratio logic (the fix for the old IN-01) has zero test coverage
 

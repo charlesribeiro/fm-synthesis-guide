@@ -301,8 +301,26 @@ class Harness {
    * routed path so Play routed can silence the prior mode before restoring
    * unity — not a same-instant cross-mode step. */
   private lastVoiceMode: 'idle' | 'oscillator' | 'routed' = 'idle';
+  /** Bumped on every play, stop, and dispose so a delayed oscillator-release
+   * continuation cannot start playback on a newer context or node. */
+  private playbackGeneration = 0;
+  private oscillatorReleaseTimer: ReturnType<typeof window.setTimeout> | null = null;
+  private oscillatorReleaseResolve: (() => void) | null = null;
 
   constructor(private readonly elements: HarnessElements) {}
+
+  private cancelPendingOscillatorRelease(): void {
+    this.playbackGeneration += 1;
+    if (this.oscillatorReleaseTimer !== null) {
+      window.clearTimeout(this.oscillatorReleaseTimer);
+      this.oscillatorReleaseTimer = null;
+    }
+    if (this.oscillatorReleaseResolve !== null) {
+      const resolve = this.oscillatorReleaseResolve;
+      this.oscillatorReleaseResolve = null;
+      resolve();
+    }
+  }
 
   private report(note: string): void {
     const stateText = this.context === null ? 'no context' : this.context.state;
@@ -397,6 +415,7 @@ class Harness {
   /** Disconnects the worklet node and gain stages, then closes the context.
    * Graph teardown only — Stop keeps its scheduled release. */
   dispose(): void {
+    this.cancelPendingOscillatorRelease();
     try {
       this.node?.disconnect();
     } catch {
@@ -424,6 +443,7 @@ class Harness {
   }
 
   private play(mode: WorkletRenderMode, midiNote: number): void {
+    this.cancelPendingOscillatorRelease();
     if (this.context === null || this.node === null || this.voiceGain === null) {
       this.report('play ignored: click "Enable audio" first');
       return;
@@ -499,6 +519,8 @@ class Harness {
    * never an `ATTACK_SECONDS` ramp on this path.
    */
   private async startRoutedPlayback(): Promise<void> {
+    this.cancelPendingOscillatorRelease();
+    const generation = this.playbackGeneration;
     if (this.context === null || this.node === null || this.voiceGain === null) {
       this.report('play ignored: click "Enable audio" first');
       return;
@@ -510,8 +532,16 @@ class Harness {
       this.voiceGain.gain.setTargetAtTime(0, now, RELEASE_TIME_CONSTANT);
       this.voiceGain.gain.setValueAtTime(0, now + RELEASE_SECONDS);
       await new Promise<void>((resolve) => {
-        window.setTimeout(resolve, RELEASE_SECONDS * 1000);
+        this.oscillatorReleaseResolve = resolve;
+        this.oscillatorReleaseTimer = window.setTimeout(() => {
+          this.oscillatorReleaseTimer = null;
+          this.oscillatorReleaseResolve = null;
+          resolve();
+        }, RELEASE_SECONDS * 1000);
       });
+      if (generation !== this.playbackGeneration) {
+        return;
+      }
       if (this.context === null || this.node === null || this.voiceGain === null) {
         return;
       }
@@ -592,6 +622,7 @@ class Harness {
   }
 
   stop(): void {
+    this.cancelPendingOscillatorRelease();
     if (this.context === null || this.node === null || this.voiceGain === null) {
       this.report('stop ignored: click "Enable audio" first');
       return;
