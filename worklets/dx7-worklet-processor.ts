@@ -82,6 +82,15 @@ class Dx7WorkletProcessor extends AudioWorkletProcessor {
     }
 
     if (message.kind === 'setMode') {
+      if (message.mode !== this.mode) {
+        // Reset every kernel on a mode change so the renderer being
+        // switched into (and the ones left idle) cannot resume from a
+        // stale phase accumulator. No allocation — `resetPhase` only
+        // writes existing fields.
+        this.operator.resetPhase();
+        this.bank.resetPhase();
+        this.router.resetPhase();
+      }
       this.mode = message.mode;
       return;
     }

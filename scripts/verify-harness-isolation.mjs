@@ -43,9 +43,13 @@ function cleanup() {
 
 try {
   // Stage 1 — the realistic harness-then-build sequence 07-VERIFICATION.md
-  // reproduced as a failure. No cleanup between the two commands: that
-  // absence is the entire point of this stage.
+  // reproduced as a failure. Remove any known leftover harness files first
+  // so the existence checks below prove *this* `npm run harness` wrote them.
+  // Do not clean between harness and build: that absence is the entire
+  // point of this stage.
   console.log('verify-harness-isolation: stage 1 — harness build, then plain build, no cleanup');
+  rmSync(DEV_DIST_JS, { force: true });
+  rmSync(DEV_DIST_HTML, { force: true });
   run('npm', ['run', 'harness']);
   if (!existsSync(DEV_DIST_JS) || !existsSync(DEV_DIST_HTML)) {
     fail('stage 1', 'npm run harness did not produce dev-dist/worklet-harness.{js,html}');

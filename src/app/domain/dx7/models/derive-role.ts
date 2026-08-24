@@ -39,6 +39,27 @@ export function deriveCarriers(algorithm: AlgorithmDefinition): readonly Operato
   return OPERATOR_IDS.filter((id) => getOperatorRole(algorithm, id) === 'carrier');
 }
 
+/**
+ * The carriers with no incoming modulation edge from another operator — a
+ * bare, unmodulated partial, structurally identical to one of Algorithm 32's
+ * six operators. Always a subset of `deriveCarriers`'s result (D-04's
+ * additive-like predicate and D-11's try-this selection rule both rely on
+ * this).
+ *
+ * The `edge.from !== operatorId` conjunct is load-bearing for the same
+ * reason `getOperatorRole`'s mirror-image `edge.to !== operatorId` conjunct
+ * is: a feedback self-loop must not count as incoming modulation, or every
+ * feedback-carrying isolated carrier (e.g. Algorithm 32's operator 6) would
+ * be misclassified as non-isolated.
+ */
+export function deriveIsolatedCarriers(algorithm: AlgorithmDefinition): readonly OperatorId[] {
+  return OPERATOR_IDS.filter(
+    (id) =>
+      getOperatorRole(algorithm, id) === 'carrier' &&
+      !algorithm.edges.some((edge) => edge.to === id && edge.from !== id),
+  );
+}
+
 export function hasFeedbackLoop(algorithm: AlgorithmDefinition, operatorId: OperatorId): boolean {
   return algorithm.edges.some((edge) => edge.from === operatorId && edge.to === operatorId);
 }

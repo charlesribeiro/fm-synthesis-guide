@@ -221,9 +221,10 @@ assumed from the decisions' prose, drive nearly every recommendation below:
 `PhaseModulatedOperator` instances plus one new feedback-capable render path, driven by a routing
 config translated from `AlgorithmDefinition` via the *already-tested* `planConnections`/
 `deriveCarriers`/`getFeedbackOperator` functions (never re-derived). Extend `worklet-messages.ts` with
-two new messages — a routing-config message (D-14) and an operator-parameters message (needed for
-D-15/D-16, not separately named in CONTEXT.md but structurally required per fact 3 above) — both
-following `parseWorkletMessage`'s narrow-and-reject-`null` convention. Give `WorkletSynthEngine` the
+three compact state messages: a routing-config message (D-14), an operator-parameters message (needed
+for D-15/D-16, not separately named in CONTEXT.md but structurally required per fact 3 above), and a
+feedback message (`setFeedbackMessage`) — all following `parseWorkletMessage`'s narrow-and-reject-`null`
+convention. Give `WorkletSynthEngine` the
 same constructor `effect()` shape `WebAudioSynthEngine` already has, translating the full
 `InstrumentState` snapshot into these compact messages. Write a genuinely independent, recursive
 reference evaluator (re-deriving carrier/feedback/modulation-input logic from `algorithm.edges`

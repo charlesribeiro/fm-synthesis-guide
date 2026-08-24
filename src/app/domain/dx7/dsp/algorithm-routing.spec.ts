@@ -164,8 +164,8 @@ function buildCrossCheckFixture(
   algorithm: Parameters<typeof buildRoutingConfig>[0],
   feedbackLevel: number,
   noteFrequencyHz: number,
+  routingConfig: RoutingConfig = buildRoutingConfig(algorithm),
 ): { router: GraphRouter; referenceInput: ReferenceEvaluationInput } {
-  const routingConfig = buildRoutingConfig(algorithm);
 
   const router = new GraphRouter(SAMPLE_RATE, BLOCK_SIZE);
   router.setRouting(routingConfig);
@@ -259,6 +259,54 @@ describe.each(ALGORITHMS)('Algorithm $id ($name)', (algorithm) => {
         expect(Number.isFinite(sample)).toBe(true);
         expect(sample).toBeGreaterThanOrEqual(-1);
         expect(sample).toBeLessThanOrEqual(1);
+      }
+    }
+  });
+});
+
+/**
+ * The cross-check's teeth: mutate only the RoutingConfig consumed by
+ * GraphRouter, leaving evaluateAlgorithmReference on the original
+ * ALGORITHMS row. Exactly one targeted row must then fail; the other 31
+ * must still match.
+ */
+describe('router-side routing corruption probe', () => {
+  it('fails the targeted row and leaves the other 31 matching when only GraphRouter routing is mutated', () => {
+    const target = ALGORITHMS.find((algorithm) => algorithm.id === 1);
+    if (target === undefined) {
+      throw new Error('expected Algorithm 1 in ALGORITHMS');
+    }
+
+    const originalTargetRouting = buildRoutingConfig(target);
+    const nonFeedback = originalTargetRouting.connections.filter((connection) => !connection.isFeedback);
+    const feedback = originalTargetRouting.connections.filter((connection) => connection.isFeedback);
+    const mutatedTargetRouting: RoutingConfig = {
+      connections: Object.freeze([...nonFeedback.slice(1), ...feedback]),
+      carriers: originalTargetRouting.carriers,
+    };
+
+    for (const algorithm of ALGORITHMS) {
+      const routingConfig = algorithm.id === target.id ? mutatedTargetRouting : buildRoutingConfig(algorithm);
+      const { router, referenceInput } = buildCrossCheckFixture(algorithm, 0, NOTE_FREQUENCY_HZ, routingConfig);
+
+      const actual = new Float32Array(BLOCK_SIZE);
+      router.render(actual);
+      const expected = evaluateAlgorithmReference(algorithm, referenceInput);
+      const expectedTail = expected.slice(expected.length - BLOCK_SIZE);
+
+      let matches = true;
+      for (let i = 0; i < BLOCK_SIZE; i++) {
+        const delta = Math.abs((actual[i] ?? 0) - (expectedTail[i] ?? 0));
+        if (delta > Math.pow(10, -CROSS_CHECK_DECIMAL_PLACES)) {
+          matches = false;
+          break;
+        }
+      }
+
+      if (algorithm.id === target.id) {
+        expect(matches).toBe(false);
+      } else {
+        expect(matches).toBe(true);
       }
     }
   });

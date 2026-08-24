@@ -8,7 +8,18 @@ describe('isLessonId', () => {
   });
 
   it('rejects a non-member string', () => {
-    expect(isLessonId('algorithm-2')).toBe(false);
+    // 'algorithm-2' is deliberately NOT used here: plan 11-03 promotes it to
+    // a legal lesson id later in this phase, which would silently turn this
+    // rejection case into a proof of acceptance. 'algorithm-33' names an id
+    // outside the dataset's 1..32 range entirely, so it stays illegal under
+    // the eventual 32-member union too.
+    expect(isLessonId('algorithm-33')).toBe(false);
+  });
+
+  it('accepts every one of the six new Parallel-group lesson ids', () => {
+    for (const id of ['algorithm-26', 'algorithm-27', 'algorithm-28', 'algorithm-29', 'algorithm-30', 'algorithm-31']) {
+      expect(isLessonId(id)).toBe(true);
+    }
   });
 
   it('rejects an empty string', () => {
@@ -31,6 +42,16 @@ describe('LESSON_IDS', () => {
 
   it("lists Algorithm 32's lesson before Algorithm 1's", () => {
     expect(LESSON_IDS.indexOf('algorithm-32')).toBeLessThan(LESSON_IDS.indexOf('algorithm-1'));
+  });
+
+  it('has no duplicate members', () => {
+    expect(new Set(LESSON_IDS).size).toBe(LESSON_IDS.length);
+  });
+
+  it('has every member matching the algorithm-<digits> naming convention', () => {
+    for (const id of LESSON_IDS) {
+      expect(id).toMatch(/^algorithm-\d+$/);
+    }
   });
 });
 

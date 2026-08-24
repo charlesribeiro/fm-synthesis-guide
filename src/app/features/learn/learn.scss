@@ -10,6 +10,51 @@
   color: var(--color-text-muted);
 }
 
+// Overall completed-of-total readout (D-14) — plain text, not an ARIA live
+// region: a learner reaches /learn by navigating to it, so the count is read
+// on arrival rather than changing under a stationary reader (11-05-PLAN.md
+// flagged assumption).
+.progress-summary {
+  margin: var(--space-2) 0 var(--space-6);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+// Four sections read as four distinct bands rather than one undifferentiated
+// wall of thirty-two cards — a top border plus generous top margin separates
+// each band without relying on color alone.
+.lesson-group {
+  margin-top: var(--space-8);
+  padding-top: var(--space-6);
+  border-top: 1px solid var(--color-border);
+
+  &:first-of-type {
+    margin-top: var(--space-4);
+    padding-top: 0;
+    border-top: none;
+  }
+
+  h2 {
+    margin: 0 0 var(--space-1);
+    font-size: var(--font-size-xl);
+  }
+}
+
+.lesson-group__description {
+  max-width: 60ch;
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+// Per-section completed-of-total readout (D-14) — text, same non-color-only
+// discipline as the overall summary above and the card completion badge
+// below.
+.lesson-group__progress {
+  margin: var(--space-1) 0 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-text-muted);
+}
+
 .lesson-list {
   list-style: none;
   margin: var(--space-4) 0 0;
@@ -37,7 +82,7 @@
     outline-offset: 2px;
   }
 
-  h2 {
+  h3 {
     margin: var(--space-1) 0 var(--space-2);
     font-size: var(--font-size-lg);
   }
@@ -63,7 +108,9 @@
 // transition: the state appears instantly, the safer default under
 // prefers-reduced-motion (the global override in _tokens.scss already zeroes
 // any transition duration that were added here, so omitting one entirely
-// keeps this rule trivially reduced-motion-safe).
+// keeps this rule trivially reduced-motion-safe). The same reasoning
+// applies to the progress-summary and lesson-group__progress counts above:
+// no transition or animation is added to either.
 .lesson-card__completion {
   display: inline-block;
   margin-top: var(--space-3);

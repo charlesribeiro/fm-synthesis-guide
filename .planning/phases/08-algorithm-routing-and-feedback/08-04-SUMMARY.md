@@ -10,7 +10,7 @@ requires:
     provides: "Plan 08-01's GraphRouter/WorkletSynthEngine cutover, plan 08-02's 32-row cross-check, plan 08-03's hostile-payload hardening, bundle parity, and live held-note re-patch — the fully-proven routed kernel this plan puts in front of a human's ears"
 provides:
   - "Extended dev harness (algorithm select over all 32 ALGORITHMS rows, feedback-depth 0-7 slider, a maximum-operator-level checkbox, routed playback posting the same three messages the Angular engine posts) — closes the phase's only remaining gap no automated test could reach"
-  - "A draft 08-VALIDATION.md pending D-12 re-run: every Per-Task Verification Map row traced to a real task id/plan/wave and a spec file that exists on disk; status remains draft and nyquist_compliant remains false until the auditable five-id resume payload is recorded"
+  - "A draft 08-VALIDATION.md pending D-12 re-run: every Per-Task Verification Map automated unit row traced to a spec file that exists on disk; the harness build/isolation row traced to `npm run harness` / `npm run verify:harness-isolation`; manual checkpoint rows traced to their checkpoint procedures; status remains draft and nyquist_compliant remains false until the auditable five-id resume payload with Checks 1–9 outcomes is recorded"
   - "The phase's D-02/D-12 blocking listening checkpoint: historical zero-finding approval is incomplete audit evidence (bare 'approved', no sample algorithm ids) and is not treated as sign-off; re-run must record Additive, Tree/Branch, Rooting, Parallel, and maximum-feedback sample ids before validation may be marked signed off"
 affects: [09-envelope-shaping]
 
@@ -43,7 +43,7 @@ key-decisions:
 patterns-established:
   - "Zero-finding checkpoint closure: when a blocking human-verify checkpoint returns approved with no findings, the follow-up task makes no source change and moves straight to completing the validation record, verified by git diff --stat showing no change under src/ or worklets/ — same pattern as plan 06-04's Task 2."
 
-requirements-completed: [ENGINE-02]
+requirements-completed: []
 
 coverage:
   - id: D1

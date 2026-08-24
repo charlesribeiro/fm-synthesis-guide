@@ -21,7 +21,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 8: Algorithm routing and feedback** - All topologies in DSP, bounded/stable output (all 4 plans executed, blocking listening checkpoint approved with zero findings; completed 2026-08-13)
 - [x] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes (completed 2026-08-16)
 - [x] **Phase 10: Visualizers and comparison tools** - Oscilloscope, spectrum, A/B, randomization (completed 2026-08-19)
-- [ ] **Phase 11: Curriculum across all 32 algorithms** - Lesson/experiment/preset per algorithm
+- [x] **Phase 11: Curriculum across all 32 algorithms** - Lesson/experiment/preset per algorithm (completed 2026-08-24)
 - [ ] **Phase 12: MIDI and patch persistence** - Web MIDI, versioned storage, import/export
 - [ ] **Phase 13: Accessibility and performance hardening** - Keyboard/screen-reader/mobile audit
 - [ ] **Phase 14: Browser tests and release** - Playwright smoke suite, CI, deployment, docs
@@ -373,7 +373,35 @@ Plans:
   1. All 32 algorithms have a concise lesson grouped by recurring structure, not rote memorization
   2. Lesson completion/progress is tracked per algorithm
 
-**Plans**: TBD
+**Plans**: 5/5 plans executed
+
+Plans:
+
+**Wave 1**
+
+- [x] 11-01-PLAN.md — Tracer: the hop-distance and isolated-carrier helpers, the shared structural
+      preset builder, the Algorithm-32-like ratio predicate and the try-this selection rule, proven end
+      to end by Algorithm 26's lesson, then the Parallel group's remaining five rows (CURR-01)
+
+- [x] 11-02-PLAN.md — The pure curriculum-grouping transform over `teachingTags` in D-02's group order,
+      with labels, descriptions and the taxonomy-fidelity guards (CURR-01)
+
+**Wave 2** *(blocked on 11-01)*
+
+- [x] 11-03-PLAN.md — Algorithms 2 through 12: the Additive Stacks group's five remaining lessons and
+      the Tree-and-Branch group's first six, plus the try-this cross-check tables and the prose-shape
+      invariants (CURR-01)
+
+**Wave 3** *(blocked on 11-03)*
+
+- [x] 11-04-PLAN.md — Algorithms 13 through 25 completing all 32 lessons, then the whole-curriculum
+      bijection, ordering, grouping, additive-like-membership and duplicate-cluster invariants (CURR-01)
+
+**Wave 4** *(blocked on 11-02 and 11-04)*
+
+- [x] 11-05-PLAN.md — The grouped, counted `/learn` index (D-13, D-14, D-16), then the blocking human
+      verification of prose honesty, legibility, accessibility and provenance, and the phase validation
+      record (CURR-01)
 
 ### Phase 12: MIDI and patch persistence
 
@@ -431,7 +459,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 8. Algorithm routing and feedback | 4/4 | Complete    | 2026-08-13 |
 | 9. Envelopes and parameter mapping | 4/4 | Complete    | 2026-08-16 |
 | 10. Visualizers and comparison tools | 4/4 | Complete    | 2026-08-19 |
-| 11. Curriculum (all 32 algorithms) | 0/TBD | Not started | - |
+| 11. Curriculum (all 32 algorithms) | 5/5 | Complete    | 2026-08-24 |
 | 12. MIDI and patch persistence | 0/TBD | Not started | - |
 | 13. Accessibility and performance | 0/TBD | Not started | - |
 | 14. Browser tests and release | 0/TBD | Not started | - |

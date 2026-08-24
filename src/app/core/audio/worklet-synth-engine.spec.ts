@@ -466,6 +466,32 @@ describe('WorkletSynthEngine', () => {
     });
   });
 
+  it('buildAndStart starts masterGain at 0; initialize then setRenderMode uses unity for routed and MASTER_GAIN for single and additive', async () => {
+    const { service, context } = await setupReady();
+    const masterGain = findMasterGain(context);
+    const gainValues = masterGain.gain.automationEntries
+      .filter((entry) => entry.method === 'setValueAtTime')
+      .map((entry) => entry.value);
+
+    expect(gainValues[0]).toBe(0);
+    expect(gainValues.at(-1)).toBe(1);
+
+    service.setRenderMode('single');
+    expect(
+      masterGain.gain.automationEntries.filter((entry) => entry.method === 'setValueAtTime').at(-1)?.value,
+    ).toBe(MASTER_GAIN);
+
+    service.setRenderMode('additive');
+    expect(
+      masterGain.gain.automationEntries.filter((entry) => entry.method === 'setValueAtTime').at(-1)?.value,
+    ).toBe(MASTER_GAIN);
+
+    service.setRenderMode('routed');
+    expect(
+      masterGain.gain.automationEntries.filter((entry) => entry.method === 'setValueAtTime').at(-1)?.value,
+    ).toBe(1);
+  });
+
   it("setRenderMode('additive') posts exactly one further setMode message and stages MASTER_GAIN on masterGain", async () => {
     const { service, node, context } = await setupReady();
     const before = node.port.postedMessages.length;

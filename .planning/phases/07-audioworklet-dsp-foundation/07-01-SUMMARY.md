@@ -165,7 +165,7 @@ Each task was committed atomically:
 - `tsconfig.worklet.json` - worklet-only TypeScript program (`@types/audioworklet`, no DOM app types)
 - `scripts/build-worklet.mjs` - esbuild prebuild script
 - `src/app/core/audio/worklet-processor-bundle.spec.ts` - Node evaluation of the built bundle
-- `package.json` - new devDependencies (`esbuild`, `@types/audioworklet`) and scripts (`build:worklet`, `typecheck:worklet`, `prebuild`, `prestart`, `pretest`)
+- `package.json` - new devDependencies (`esbuild`, `@types/audioworklet`) and scripts (`build:worklet`, `typecheck:worklet`, `test:worklet-bundle`, `prebuild`, `prestart`, `pretest`)
 - `package-lock.json` - dependency lockfile update from the above install
 - `.gitignore` - `/public/worklets/` (build output)
 

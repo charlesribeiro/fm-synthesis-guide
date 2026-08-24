@@ -1,7 +1,22 @@
-import { getOperatorRole, deriveCarriers, hasFeedbackLoop, getFeedbackOperator } from './derive-role';
+import {
+  getOperatorRole,
+  deriveCarriers,
+  deriveIsolatedCarriers,
+  hasFeedbackLoop,
+  getFeedbackOperator,
+} from './derive-role';
 import { validateAlgorithm } from './validate-algorithm';
+import { ALGORITHMS } from './algorithms';
 import { OPERATOR_IDS } from './operator';
 import type { AlgorithmDefinition } from './algorithm-definition';
+
+function algorithmById(id: number): AlgorithmDefinition {
+  const algorithm = ALGORITHMS.find((entry) => entry.id === id);
+  if (!algorithm) {
+    throw new Error(`no fixture algorithm with id ${id}`);
+  }
+  return algorithm;
+}
 
 /** Algorithm-32-like: a single self-loop and no other edges at all. */
 const allCarriersWithFeedback: AlgorithmDefinition = {
@@ -88,6 +103,52 @@ describe('hasFeedbackLoop', () => {
     for (const operatorId of OPERATOR_IDS) {
       expect(hasFeedbackLoop(stackAndTowerWithFeedback, operatorId)).toBe(operatorId === 6);
     }
+  });
+});
+
+describe('deriveIsolatedCarriers', () => {
+  it('returns the empty array for Algorithm 1 — both carriers receive an incoming edge', () => {
+    expect(deriveIsolatedCarriers(algorithmById(1))).toEqual([]);
+  });
+
+  it('returns all six operators for Algorithm 32 — no edges at all besides the self-loop', () => {
+    expect(deriveIsolatedCarriers(algorithmById(32))).toEqual([1, 2, 3, 4, 5, 6]);
+  });
+
+  it('returns [3] for Algorithm 7 — the one carrier with no incoming edge', () => {
+    expect(deriveIsolatedCarriers(algorithmById(7))).toEqual([3]);
+  });
+
+  it('returns [1, 2, 3, 4] for Algorithm 24', () => {
+    expect(deriveIsolatedCarriers(algorithmById(24))).toEqual([1, 2, 3, 4]);
+  });
+
+  it('returns [6] for Algorithm 28', () => {
+    expect(deriveIsolatedCarriers(algorithmById(28))).toEqual([6]);
+  });
+
+  it("is always a subset of deriveCarriers's result, on every one of the 32 dataset rows", () => {
+    for (const algorithm of ALGORITHMS) {
+      const carriers = deriveCarriers(algorithm);
+      const isolatedCarriers = deriveIsolatedCarriers(algorithm);
+      for (const operatorId of isolatedCarriers) {
+        expect(carriers).toContain(operatorId);
+      }
+    }
+  });
+
+  it('regression: never misclassifies a feedback-carrying carrier as non-isolated because of its own self-loop', () => {
+    // Mirrors getOperatorRole's Pitfall-1 regression fixture: without the
+    // `edge.from !== operatorId` conjunct, operator 6's own self-loop
+    // (`from === to === 6`) would satisfy `edge.to === operatorId` and wrongly
+    // exclude it from the isolated-carrier set.
+    const allCarriersWithFeedback: AlgorithmDefinition = {
+      id: 32,
+      name: 'All-carriers-with-feedback fixture',
+      edges: [{ from: 6, to: 6 }],
+      teachingTags: ['parallel'],
+    };
+    expect(deriveIsolatedCarriers(allCarriersWithFeedback)).toContain(6);
   });
 });
 

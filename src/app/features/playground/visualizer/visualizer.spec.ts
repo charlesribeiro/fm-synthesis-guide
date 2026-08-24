@@ -297,7 +297,7 @@ describe('Visualizer', () => {
   });
 
   describe('loop lifecycle and the no-change-detection assertion (10-01-PLAN.md Task 2)', () => {
-    it('driving 500 scheduler ticks against a live tap produces exactly 500 repaints, leaves the fixture markup byte-identical, and settles with no pending work — proving the loop schedules no Angular work in this environment (it does not simulate real browser frame timing; see the plan 10-04 human-verify checkpoint for that)', async () => {
+    it('driving 500 scheduler ticks against a live tap produces exactly 500 repaints, leaves the fixture markup byte-identical, and settles with no pending work — proving no DOM mutation and no pending test work in this environment (it does not instrument Angular change-detection scheduling, and it does not simulate real browser frame timing; see the plan 10-04 human-verify checkpoint for that)', async () => {
       const { fixture, scheduler, ctx } = await setup();
       const engine = TestBed.inject(SYNTH_ENGINE);
       await engine.initialize();
@@ -322,11 +322,12 @@ describe('Visualizer', () => {
 
       expect(ctx.callCount('fillRect') - fillRectBefore).toBe(TICK_COUNT);
       expect(compiled.innerHTML).toBe(markupBefore);
-      // "Settles with no pending work" — awaiting whenStable() resolves
-      // promptly rather than hanging on outstanding change-detection work
-      // the 500 ticks might otherwise have queued; a genuinely stuck
-      // pending-work state would leave this await unresolved and the test
-      // itself would time out.
+      // Identical innerHTML and a resolving whenStable() prove no DOM
+      // mutation and no pending test work in this environment. They do not
+      // instrument Angular change-detection scheduling, so they must not be
+      // described as proving change detection did not run. A genuinely
+      // stuck pending-work state would leave this await unresolved and the
+      // test itself would time out.
       await fixture.whenStable();
       expect(compiled.innerHTML).toBe(markupBefore);
     });
