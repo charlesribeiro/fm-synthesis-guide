@@ -30,13 +30,25 @@ describe('FakeStorage', () => {
 });
 
 describe('STORAGE factory', () => {
+  let mockStorage: { getItem: ReturnType<typeof vi.fn>, setItem: ReturnType<typeof vi.fn>, removeItem: ReturnType<typeof vi.fn> };
+
+  beforeEach(() => {
+    mockStorage = {
+      getItem: vi.fn(),
+      setItem: vi.fn(),
+      removeItem: vi.fn(),
+    };
+    vi.stubGlobal('localStorage', mockStorage as unknown as Storage);
+  });
+
   afterEach(() => {
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
 
   it('returns a no-op Like when the probe setItem throws and never returns null', () => {
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+    mockStorage.setItem.mockImplementation(() => {
       throw new Error('quota');
     });
 
@@ -50,17 +62,14 @@ describe('STORAGE factory', () => {
   });
 
   it('probes storage with a unique key so a pre-existing origin value is not overwritten', () => {
-    const setItem = vi.spyOn(Storage.prototype, 'setItem');
-    const removeItem = vi.spyOn(Storage.prototype, 'removeItem');
-
     TestBed.configureTestingModule({});
     TestBed.inject(STORAGE);
 
-    const probeCall = setItem.mock.calls.find(([key]) => String(key).startsWith('__dx7_storage_probe__'));
+    const probeCall = mockStorage.setItem.mock.calls.find(([key]: string[]) => String(key).startsWith('__dx7_storage_probe__'));
     expect(probeCall).toBeDefined();
     const probeKey = probeCall![0];
     expect(probeKey).not.toBe('__dx7_storage_probe__');
-    expect(removeItem).toHaveBeenCalledWith(probeKey);
+    expect(mockStorage.removeItem).toHaveBeenCalledWith(probeKey);
   });
 });
 

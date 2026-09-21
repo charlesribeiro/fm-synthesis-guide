@@ -55,6 +55,8 @@
       (click)="selectNode(node.id)"
       (keydown)="onNodeKeydown($event, node.id)"
     >
+      <!-- Invisible expanded touch target (44x44 min) -->
+      <rect x="-22" y="-22" width="44" height="44" class="operator__touch-target" />
       @if (node.role === 'carrier') {
         <circle r="18" class="operator__shape" />
         <circle r="12" class="operator__shape-ring" />

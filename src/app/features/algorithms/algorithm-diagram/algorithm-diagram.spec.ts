@@ -177,7 +177,7 @@ describe('AlgorithmDiagram', () => {
       expect(carrierGroups.length).toBe(2);
       for (const group of Array.from(carrierGroups)) {
         expect(group.querySelectorAll('circle').length).toBe(2);
-        expect(group.querySelectorAll('rect').length).toBe(0);
+        expect(group.querySelectorAll('rect:not(.operator__touch-target)').length).toBe(0);
       }
     });
 
@@ -185,7 +185,7 @@ describe('AlgorithmDiagram', () => {
       const modulatorGroups = root.querySelectorAll('[data-role="modulator"]');
       expect(modulatorGroups.length).toBe(4);
       for (const group of Array.from(modulatorGroups)) {
-        expect(group.querySelectorAll('rect').length).toBe(1);
+        expect(group.querySelectorAll('rect:not(.operator__touch-target)').length).toBe(1);
         expect(group.querySelectorAll('circle').length).toBe(0);
       }
     });
