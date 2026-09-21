@@ -2,17 +2,17 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 13
-current_phase_name: Accessibility and performance hardening
-status: completed
-stopped_at: Completed 13-03-PLAN.md
-last_updated: "2026-09-21T19:41:39.912Z"
+current_phase: 14
+current_phase_name: Browser tests and release
+status: in_progress
+stopped_at: 14-01 implementation verified; awaiting PR review and post-merge Pages publication
+last_updated: "2026-09-21T20:35:27Z"
 last_activity: 2026-09-21
-last_activity_desc: Phase 13 complete
+last_activity_desc: Phase 14 Pages implementation verified locally; live deployment pending
 progress:
   total_phases: 14
   completed_phases: 13
-  total_plans: 48
+  total_plans: 49
   completed_plans: 48
 ---
 
@@ -24,20 +24,24 @@ See: .planning/PROJECT.md (updated 2026-08-07)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 13 — Accessibility and performance hardening
+**Current focus:** Phase 14 — Browser tests and release
 
 ## Current Position
 
-Phase: 13 — Accessibility and performance hardening
-Plan: Completed
-Status: Completed
-Last activity: 2026-09-21 — Phase 13 complete
+Phase: 14 — Browser tests and release
+Plan: 14-01 (implementation complete; live Pages verification pending)
+Status: In progress — RELEASE-01 not yet complete
+Last activity: 2026-09-21 — Eight Chromium tests, Pages build/workflow and release docs verified
 
-**To resume:** discuss Phase 13 (accessibility and performance hardening) from `ROADMAP.md`.
+**To resume:** Review the single-commit Phase 14 PR with CodeRabbit. Do not merge as agent.
+After maintainer merge, verify main CI/Pages deployment and run the live HTTPS tests
+specified in `phases/14-playwright-release/14-VERIFICATION.md` and `docs/RELEASE.md`.
+Remain on `feature/phase-14-playwright-release`. Canonical production URL:
+https://charlesribeiro.github.io/fm-synthesis-guide/ (not yet published/verified).
+LAN preview: http://192.168.31.36:4200/ (verify IP on resume).
 
-Progress: [█████████░] 93% — 13/14 phases complete (1–13). Plan counters are the
-repository's 48 `*PLAN.md` files (all complete). Phase 1's `01-01` is listed in ROADMAP
-but is not a `*PLAN.md` file and is excluded from those totals.
+Progress: 13/14 phases complete; 48/49 repository plan files complete. The Phase 14
+summary is explicitly partial. Phase 1's roadmap-only 01-01 remains excluded.
 
 ## Performance Metrics
 
@@ -188,7 +192,10 @@ None yet.
 
 ### Blockers/Concerns
 
-None currently open. Phase 07 plan 03 Task 2's blocking human-verify real-browser listening
+Phase 14: Pages configured for Actions/HTTPS; public root still HTTP 404 before merge.
+User authorizes review-ready PR now; keep RELEASE-01 open until live verification.
+
+Historical resolved concern: Phase 07 plan 03 Task 2's blocking human-verify real-browser listening
 checkpoint was approved with zero findings on 2026-08-11. 07-VERIFICATION.md (2026-08-12) then
 found one failing must-have — the dev harness could reach a production `dist/` under the realistic
 harness-then-build sequence — scored 15/16. Plan 07-04 closed that gap on 2026-08-12 by relocating
@@ -207,6 +214,6 @@ checkpoint has been stopped.
 
 ## Session Continuity
 
-Last session: 2026-09-09T13:59:34.168Z
-Stopped at: Completed 12-04-PLAN.md
-Resume file: None
+Last session: 2026-09-21T20:38:33.269495+00:00
+Stopped at: Phase 14 review-ready; live publication verification follows maintainer merge
+Resume file: .planning/phases/14-playwright-release/14-01-SUMMARY.md

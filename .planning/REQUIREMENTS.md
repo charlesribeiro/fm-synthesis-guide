@@ -96,7 +96,8 @@ unmapped v2 requirements — HARDEN-01 and RELEASE-01 — are deferred to later 
 - [x] **PERSIST-01**: Versioned local persistence with JSON import/export and malformed-data recovery
 - [x] **MIDI-01**: Progressive Web MIDI note on/off, velocity, device connect/disconnect
 - **HARDEN-01**: Keyboard-only and screen-reader audit, reduced motion, mobile/tablet refinement
-- **RELEASE-01**: Playwright smoke suite, CI, static hosting deployment, documentation
+- [ ] **RELEASE-01**: Playwright smoke suite, CI, static hosting deployment, documentation
+  - Phase 14 in progress: local browser/quality gates pass; public deployment remains unverified.
 
 ## Out of Scope
 
@@ -139,6 +140,7 @@ unmapped v2 requirements — HARDEN-01 and RELEASE-01 — are deferred to later 
 | CURR-01 | Phase 11 | Complete |
 | PERSIST-01 | Phase 12 | Complete |
 | MIDI-01 | Phase 12 | Complete |
+| RELEASE-01 | Phase 14 | In progress — static deployment pending |
 
 **Coverage:**
 

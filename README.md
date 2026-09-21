@@ -5,30 +5,35 @@ synthesis through the Yamaha DX7's 32 operator-routing algorithms — one algori
 interactive routing diagrams, guided lessons, and live sound. No affiliation with Yamaha or the
 Dexed project. See [full disclaimer](src/app/features/about/about.html).
 
-**Status:** Phase 11 of 14 complete — Angular scaffold, canonical 32-algorithm domain, instrument
-state, algorithm browser/SVG, first playable approximation, guided lessons (Alg 32 & 1),
-AudioWorklet DSP foundation, full algorithm routing/feedback with live cutover to
-[`WorkletSynthEngine`](src/app/core/audio/worklet-synth-engine.ts), per-operator
-four-rate/four-level envelopes with a note-lifecycle gate message replacing the old global voice
-ramp, Playground visualizers (oscilloscope and labelled spectrum) plus A/B snapshot compare and
-constrained randomization, and the full 32-algorithm curriculum with a grouped `/learn` index.
-See [`.planning/ROADMAP.md`](.planning/ROADMAP.md) for what's next.
+**Status:** Phases 1–13 complete; Phase 14 / RELEASE-01 is in progress.
+The app includes all 32 algorithm lessons, a routed six-operator AudioWorklet engine,
+per-operator envelopes, Playground visualizers and A/B tools, versioned local persistence,
+optional MIDI, and accessibility/performance hardening. Playwright smoke coverage and CI
+are implemented; public GitHub Pages publication awaits merge and successful CI.
+Production URL: https://charlesribeiro.github.io/fm-synthesis-guide/ The Playground's full algorithm
+selector and six operator strips are still placeholders, not shipped features.
+See [release verification and deployment notes](docs/RELEASE.md) and
+[the roadmap](.planning/ROADMAP.md).
 
 ## Setup
 
 ```bash
 npm install
 npm start          # dev server at http://localhost:4200
+# LAN UI preview: npm start -- --host 0.0.0.0
+npm run build:pages # production artifact for /fm-synthesis-guide/
 ```
 
 ## Verification commands
 
-Run all three before considering any change complete:
+Install the browser once, then run all four gates before considering a change complete:
 
 ```bash
+npx playwright install --with-deps chromium  # one-time browser + OS dependencies
 npm run build      # strict production build
 npm test           # Vitest, headless — non-watch by default outside a TTY
-npm run lint       # ESLint + Angular template/accessibility rules
+npm run lint       # Angular/template/accessibility + E2E/config ESLint
+npm run e2e        # strict E2E typecheck + real Chromium smoke tests
 ```
 
 > **Note on `npm test`:** Angular 22's `ng test` unit-test builder (Vitest-backed) has its own CLI
@@ -106,7 +111,7 @@ lifecycle hook, so run it on demand rather than on every commit.
 
 - **Angular 22, standalone, zoneless** — no `NgModule`s, no `zone.js`; change detection is
   signal-driven (`provideZonelessChangeDetection()` in [`app.config.ts`](src/app/app.config.ts)).
-- **Lazy-loaded feature routes** — `/`, `/learn`, `/algorithms`, `/playground`, `/about`, each its
+- **Lazy-loaded feature routes** — `/`, `/learn`, `/algorithms`, `/playground`, `/settings`, `/about`, each its
   own chunk (see [`app.routes.ts`](src/app/app.routes.ts)).
 - **Layered source tree**, per `GSD_NEW_PROJECT_PROMPT.md`:
   ```
@@ -133,7 +138,8 @@ lifecycle hook, so run it on demand rather than on every commit.
   selected algorithm, the six operators' parameters, and the feedback level. Writable signals stay
   private behind read-only selectors and explicit commands; updates are immutable; operator role
   and the carrier set are derived on demand from the algorithm dataset rather than stored. A/B
-  snapshots and reset are in-memory only, with versioned persistence deferred to a later phase.
+  snapshots remain in-memory; the dedicated Playground slot, lesson progress and settings
+  persist through the versioned saved-document store.
 - **Accessibility baseline** — skip link, landmark regions, visible focus rings, reduced-motion
   respected both in CSS (`prefers-reduced-motion` media query) and via a signal
   ([`MotionPreference`](src/app/core/browser/motion-preference.ts)) components can read to skip
