@@ -452,7 +452,9 @@ Plans:
   2. CI runs build/test/lint/Playwright on every change
   3. App is deployed to static hosting with architecture/methodology docs published
 
-**Plans**: TBD
+**Plans**: 0/1 complete (implementation verified locally; deployment pending)
+
+- [ ] 14-01-PLAN.md — Browser smoke coverage, preserved CI gates, static deployment and docs
 
 ## Progress
 
@@ -474,4 +476,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 11. Curriculum (all 32 algorithms) | 5/5 | Complete    | 2026-08-24 |
 | 12. MIDI and patch persistence | 4/4 | Complete    | 2026-09-09 |
 | 13. Accessibility and performance | 0/TBD | Not started | - |
-| 14. Browser tests and release | 0/TBD | Not started | - |
+| 14. Browser tests and release | 0/1 | In progress — deployment pending | - |

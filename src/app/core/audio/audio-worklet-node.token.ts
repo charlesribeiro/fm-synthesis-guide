@@ -1,4 +1,5 @@
-import { InjectionToken } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { InjectionToken, inject } from '@angular/core';
 import type { AudioContextLike, AudioNodeLike } from './audio-context.token';
 
 /**
@@ -88,14 +89,15 @@ export const AUDIO_WORKLET_NODE_CTOR = new InjectionToken<AudioWorkletNodeConstr
 
 /** The same-origin path Angular's existing `public/` asset rule serves the
  * 07-01 bundle from (`scripts/build-worklet.mjs` writes here). */
-export const DEFAULT_WORKLET_MODULE_URL = '/worklets/dx7-worklet-processor.js';
+export const DEFAULT_WORKLET_MODULE_URL = 'worklets/dx7-worklet-processor.js';
 
 /**
- * DI seam for the worklet module URL. Build-time fixed and must never
+ * DI seam for the fixed worklet filename, resolved against the deployed document base.
+ * The build controls the base href; the filename must never
  * become runtime- or user-configurable (threat `T-07-06`) — a configurable
  * worklet URL would be arbitrary code execution in the render thread.
  */
 export const AUDIO_WORKLET_MODULE_URL = new InjectionToken<string>('AUDIO_WORKLET_MODULE_URL', {
   providedIn: 'root',
-  factory: () => DEFAULT_WORKLET_MODULE_URL,
+  factory: () => new URL(DEFAULT_WORKLET_MODULE_URL, inject(DOCUMENT).baseURI).href,
 });

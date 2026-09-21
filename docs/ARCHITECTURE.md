@@ -1,6 +1,11 @@
-# Architecture seed
+# Architecture
 
-This is a starting hypothesis for GSD discussion and planning, not a frozen design.
+Release documentation for the implementation through Phase 13, with Phase 14 browser
+verification. This application is an educational approximation, not bit-accurate DX7 emulation.
+
+Angular 22 standalone components use zoneless change detection and lazy feature routes.
+The canonical algorithm dataset drives both SVG view models and the routed DSP engine.
+See [release methodology](RELEASE.md) for verification boundaries and hosting status.
 
 ## Layers
 
@@ -17,7 +22,7 @@ Framework-independent TypeScript:
   source.
 - Lesson definitions and completion rules.
 - Patch serialization/migrations.
-- Optional pure DSP kernel.
+- Pure six-operator DSP kernel, bundled separately for AudioWorklet.
 
 ### 2. Application state
 
@@ -46,28 +51,26 @@ Dependency-injected boundaries:
 - Learn.
 - Algorithms.
 - Playground.
-- Glossary.
 - Settings/About.
 
-## Proposed audio interfaces
+## Audio interface and implementation
 
-```ts
-export interface SynthEngine {
-  readonly status: Signal<AudioEngineStatus>;
+[`SynthEngine`](../src/app/core/audio/synth-engine.ts) exposes a read-only status function,
+`initialize`, `setAlgorithm`, `updateOperatorLevel`, `setFeedback`, `noteOn`, `noteOff`,
+`allNotesOff`, and `destroy`. The injected live implementation is
+[`WorkletSynthEngine`](../src/app/core/audio/worklet-synth-engine.ts).
+`WebAudioSynthEngine` remains a reference implementation, not an automatic fallback.
 
-  initialize(): Promise<void>;
-  setPatch(patch: SynthPatch): void;
-  setAlgorithm(algorithm: AlgorithmDefinition): void;
-  updateOperator(id: OperatorId, params: OperatorParameters): void;
-  setFeedback(level: number): void;
-  noteOn(note: number, velocity: number): void;
-  noteOff(note: number): void;
-  allNotesOff(): void;
-  destroy(): void;
-}
-```
+The browser adapters construct AudioContext/AudioWorkletNode only after a user gesture.
+Main-thread patch state is sent as validated worklet messages; the processor runs the
+Angular-independent graph router and six envelope generators. Components never own audio
+nodes in signal state. The visualizer polls the read-only `AnalysisTap` outside Angular's
+change-detection path, and releases its frame callback when destroyed.
 
-Do not require the pure domain package to know Angular's `Signal`; an Angular-facing facade can expose engine status while the low-level engine uses callbacks/events.
+Versioned local storage is owned by `SavedDocumentStore`; `LessonProgress` and
+`PlaygroundPatchSlot` expose narrower facades. Lesson starting patches do not overwrite the
+saved Playground slot. MIDI is optional, with browser permissions/device events behind the
+injected MIDI boundary. The app remains navigable without audio or MIDI support.
 
 ## Algorithm graph model
 
@@ -96,15 +99,15 @@ Use SVG for operator diagrams:
 
 The SVG component should receive a view model; it must not query the audio engine directly.
 
-## Audio roadmap
+## Audio engine and future boundaries
 
 ### Approximation engine
 
-Useful for early UI/lesson development and browser lifecycle work. Keep behind the same engine interface.
+Retained as a reference for the original MVP. The live application uses the worklet engine.
 
 ### AudioWorklet engine
 
-One processor can own a single voice initially:
+One processor owns a monophonic voice:
 
 - Six phase accumulators.
 - Per-operator frequency increment.
@@ -135,7 +138,7 @@ After deterministic monophony:
 - Do not push oscilloscope samples into Angular signals every animation frame.
 - Use an imperative canvas/SVG drawing loop for high-frequency visualization.
 - Use signals for human-scale parameter and selection state.
-- Use `@defer` for noncritical visualizers and secondary educational panels.
+- Keep visualizers outside Angular change detection; defer noncritical work where appropriate.
 - Profile before introducing workers beyond AudioWorklet.
 
 ## Error handling
@@ -150,3 +153,14 @@ Expose actionable states:
 - Storage migration failure.
 
 The application must retain a useful read-only learning experience when audio is unavailable.
+
+## Static deployment
+
+Production: https://charlesribeiro.github.io/fm-synthesis-guide/ (publication pending
+first merged main deployment). Angular's build-time base href is `/fm-synthesis-guide/`;
+the fixed AudioWorklet filename resolves against the document base. A custom 404 shell
+preserves SPA deep links on GitHub Pages, including its initial HTTP 404 limitation.
+CI gates the reusable Pages deployment workflow and uploads only the tested production
+artifact. See [release methodology](RELEASE.md) for exact activation/live verification.
+Local development remains `npm start` at the root base path; LAN HTTP is not the canonical
+audio environment. Manual audio validation belongs on the deployed HTTPS site.
