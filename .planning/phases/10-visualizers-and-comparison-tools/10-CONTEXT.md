@@ -21,9 +21,9 @@ and feedback depth are in scope for the random walk.
 
 </domain>
 
-<decisions>
 ## Implementation Decisions
 
+<decisions>
 ### Visualizer Rendering & Audio Tap
 - **D-01:** Canvas 2D for both the oscilloscope and spectrum, not SVG or WebGL — imperative
   per-frame redraw is the right fit for continuously-updating waveform/spectrum data; SVG's DOM

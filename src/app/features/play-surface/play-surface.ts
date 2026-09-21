@@ -5,16 +5,19 @@ import {
   DestroyRef,
   ElementRef,
   computed,
+  effect,
   inject,
   output,
   signal,
+  untracked,
 } from '@angular/core';
 import { SYNTH_ENGINE } from '../../core/audio/synth-engine.token';
+import { MidiSession } from '../../core/midi/midi-session';
+import type { ParsedMidiNote } from '../../domain/dx7/midi/parse-midi-note-message';
 import { PLAYABLE_KEYS, noteForKeyCode, type PlayableKey } from './keyboard-note-map';
 
-/** D-07/AUDIO-02: a fixed nominal velocity for both input surfaces — this
- * phase has no velocity-sensitive input (pointer pressure, MIDI velocity),
- * so every note-on uses the same mid-range value. */
+/** Default velocity for pointer and computer-keyboard presses. MIDI passes
+ * 1–127 through {@link PlaySurface.pressKey}'s optional second argument. */
 const PLAYABLE_VELOCITY = 100;
 
 /** The physical `KeyboardEvent.code`s treated as "activate this focused key
@@ -42,6 +45,7 @@ function isEditableTarget(target: EventTarget | null): boolean {
 })
 export class PlaySurface {
   private readonly engine = inject(SYNTH_ENGINE);
+  private readonly midiSession = inject(MidiSession);
   private readonly host = inject(ElementRef<HTMLElement>);
   private readonly changeDetector = inject(ChangeDetectorRef);
 
@@ -70,6 +74,38 @@ export class PlaySurface {
     }
   });
 
+  protected readonly midiStatus = this.midiSession.status;
+
+  protected readonly midiToggleLabel = computed(() =>
+    this.midiStatus() === 'ready' ? 'Disable MIDI' : 'Enable MIDI',
+  );
+
+  protected readonly midiStatusMessage = computed(() => {
+    switch (this.midiStatus()) {
+      case 'unsupported':
+        return 'MIDI is not supported in this browser.';
+      case 'permission-denied':
+        return 'MIDI permission was denied.';
+      case 'no-devices':
+        return 'No MIDI devices are connected.';
+      case 'disconnected': {
+        const name = this.midiSession.selectedPortName();
+        return name === null ? 'The selected MIDI device is disconnected.' : `${name} is disconnected.`;
+      }
+      case 'ready': {
+        const name = this.midiSession.selectedPortName();
+        return name === null ? 'MIDI is ready.' : `MIDI is ready. Using ${name}.`;
+      }
+      default:
+        return 'MIDI is off.';
+    }
+  });
+
+  protected readonly midiStatusWarning = computed(() => {
+    const status = this.midiStatus();
+    return status === 'unsupported' || status === 'permission-denied' || status === 'disconnected';
+  });
+
   /** The currently sounding notes (plain numbers, never `AudioNode`s —
    * CLAUDE.md forbids audio nodes in signal state). A Set so every input
    * path can represent its own held keys independently. */
@@ -95,6 +131,11 @@ export class PlaySurface {
    * note a primary-button press actually started. */
   private pointerHeldNote: number | null = null;
 
+  /** MIDI-owned note numbers. A third hold-count owner alongside pointer
+   * and computer keyboard (D-17). Repeat note-on for a note already in this
+   * set retriggers the engine without incrementing `noteHoldCount`. */
+  private readonly midiHeldNotes = new Set<number>();
+
   /** The note currently held via a Space/Enter activation on a focused
    * on-screen key button (`onKeyButtonKeydown`), or `null`. Mirrors
    * `pointerHeldNote` / `keyboardHeldByCode`'s role: a key button's keyup is
@@ -117,12 +158,25 @@ export class PlaySurface {
   readonly notePlayed = output<number>();
 
   constructor() {
+    const unsubscribeNotes = this.midiSession.subscribeNotes((parsed) => {
+      this.handleMidiNote(parsed);
+    });
+    // Imperative sync with MIDIAccess via MidiSession: dropping ready must
+    // release MIDI ownership so on-screen keys cannot stick after disconnect
+    // or disable (D-09). untracked so hold-set writes are not effect deps.
+    effect(() => {
+      if (this.midiSession.status() !== 'ready') {
+        untracked(() => this.releaseMidiHeldNotes());
+      }
+    });
     inject(DestroyRef).onDestroy(() => {
       this.destroyed = true;
+      unsubscribeNotes();
       this.engine.allNotesOff();
       this._heldNotes.set(new Set());
       this.keyboardHeldByCode.clear();
       this.noteHoldCount.clear();
+      this.midiHeldNotes.clear();
       this.pointerHeldNote = null;
       this.buttonHeldNote = null;
     });
@@ -130,7 +184,9 @@ export class PlaySurface {
 
   private destroyed = false;
 
-  async enableAudio(): Promise<void> {
+  /** Gesture + `engine.initialize()` with no focus move (D-10). Enable MIDI
+   * uses this so a Settings/PlaySurface MIDI click cannot land on C4. */
+  async initializeAudio(): Promise<void> {
     this.enabling.set(true);
     try {
       await this.engine.initialize();
@@ -140,6 +196,10 @@ export class PlaySurface {
     } finally {
       this.enabling.set(false);
     }
+  }
+
+  async enableAudio(): Promise<void> {
+    await this.initializeAudio();
 
     if (this.destroyed) {
       return;
@@ -150,6 +210,19 @@ export class PlaySurface {
       const firstKey = this.host.nativeElement.querySelector('.key') as HTMLButtonElement | null;
       firstKey?.focus();
     }
+  }
+
+  async toggleMidi(): Promise<void> {
+    if (this.midiSession.status() === 'ready') {
+      this.midiSession.disable();
+      this.releaseMidiHeldNotes();
+      return;
+    }
+    await this.initializeAudio();
+    if (this.destroyed) {
+      return;
+    }
+    await this.midiSession.enable();
   }
 
   /** Ignores non-primary pointer buttons (right/middle click): `pointerdown`
@@ -200,18 +273,18 @@ export class PlaySurface {
   }
 
   /** Returns `true` when the note started. Returns immediately (and
-   * `false`) unless the engine is ready. Never called with an out-of-table
-   * note — every caller resolves through `PLAYABLE_KEYS` or
-   * `noteForKeyCode` first. Always posts a fresh `noteOn` (existing
-   * retrigger-on-repeated-press behavior, unchanged by `noteHoldCount` —
-   * that count only gates the *release* side) and increments this note's
-   * hold count so a second source pressing the same note becomes a second
-   * owner rather than silently colliding with the first. */
-  protected pressKey(note: number): boolean {
+   * `false`) unless the engine is ready. Pointer/keyboard callers resolve
+   * through `PLAYABLE_KEYS` / `noteForKeyCode`; MIDI may pass 0–127 (D-12).
+   * Always posts a fresh `noteOn` (existing retrigger-on-repeated-press
+   * behavior, unchanged by `noteHoldCount` — that count only gates the
+   * *release* side) and increments this note's hold count so a second
+   * source pressing the same note becomes a second owner rather than
+   * silently colliding with the first. */
+  protected pressKey(note: number, velocity: number = PLAYABLE_VELOCITY): boolean {
     if (!this.isReady()) {
       return false;
     }
-    this.engine.noteOn(note, PLAYABLE_VELOCITY);
+    this.engine.noteOn(note, velocity);
     this.noteHoldCount.set(note, (this.noteHoldCount.get(note) ?? 0) + 1);
     this.markHeld(note);
     this.notePlayed.emit(note);
@@ -347,7 +420,43 @@ export class PlaySurface {
     this._heldNotes.set(new Set());
     this.keyboardHeldByCode.clear();
     this.noteHoldCount.clear();
+    this.midiHeldNotes.clear();
     this.pointerHeldNote = null;
     this.buttonHeldNote = null;
+  }
+
+  private handleMidiNote(parsed: ParsedMidiNote): void {
+    if (!this.isReady()) {
+      return;
+    }
+    if (parsed.kind === 'on') {
+      if (!this.midiHeldNotes.has(parsed.note)) {
+        this.midiHeldNotes.add(parsed.note);
+        this.pressKey(parsed.note, parsed.velocity);
+        return;
+      }
+      this.engine.noteOn(parsed.note, parsed.velocity);
+      this.markHeld(parsed.note);
+      this.notePlayed.emit(parsed.note);
+      return;
+    }
+    if (!this.midiHeldNotes.has(parsed.note)) {
+      return;
+    }
+    this.midiHeldNotes.delete(parsed.note);
+    this.releaseKey(parsed.note);
+  }
+
+  private releaseMidiHeldNotes(): void {
+    for (const note of [...this.midiHeldNotes]) {
+      this.midiHeldNotes.delete(note);
+      this.releaseKey(note);
+      // Session already rang allNotesOff(). Remaining pointer / computer-key
+      // owners must retrigger through the non-MIDI path so the engine sounds
+      // while the UI stays held — without incrementing noteHoldCount again.
+      if ((this.noteHoldCount.get(note) ?? 0) > 0) {
+        this.engine.noteOn(note, PLAYABLE_VELOCITY);
+      }
+    }
   }
 }

@@ -128,10 +128,17 @@ a parameter, and immediately understand why the sound changed.
       blocking human-verify checkpoint (11-05) covering prose honesty, index legibility,
       preset audibility, accessibility, and Algorithm 19's provenance treatment was
       approved with zero findings.
+- [x] Progressive Web MIDI and versioned persistence with JSON import/export —
+      Validated in Phase 12: MIDI and patch persistence (2026-09-09). PERSIST-01 and
+      MIDI-01 complete: schema-version-1 local persistence for lesson progress, a
+      dedicated Playground patch slot, and last MIDI device id; Enable MIDI on
+      PlaySurface and Settings routes notes through `pressKey`/`releaseKey`; malformed
+      storage and Dexed-shaped imports fail closed. 26/26 must-haves verified in
+      `12-VERIFICATION.md`; 2096 tests passing. Code review found issues (see
+      `12-REVIEW.md`) — advisory, not blocking phase completion.
 
 ### Active
 
-- [ ] Phase 12: Web MIDI progressive enhancement, versioned persistence, import/export
 - [ ] Accessibility and performance hardening, Playwright smoke tests, deployment
 
 ### Out of Scope
@@ -196,4 +203,4 @@ a parameter, and immediately understand why the sound changed.
 | Phase 5: a post-checkpoint code-review fix (WR-01, commit `fd1b018`) lowered `MASTER_GAIN` from the 05-04-listening-approved 0.18 to 1/6 (≈0.63 dB quieter) to close a mathematically-provable safety-clamp gap (0.18 × 6 carriers could exceed full scale) | The change can only make the engine quieter/safer, never louder/riskier, but the exact shipped value was never itself heard in a real browser, and 05-04-PLAN.md's own must-have requires that it be | ✓ Good — re-confirmed via 05-UAT.md Test 1 (real-browser listening, single note + Algorithm 32 six-carrier worst case), both comfortably audible; verification status canonicalized to `passed` |
 
 ---
-*Last updated: 2026-08-24 after Phase 11 (curriculum-across-all-32-algorithms) completion*
+*Last updated: 2026-09-09 after Phase 12 (MIDI and patch persistence) completion*

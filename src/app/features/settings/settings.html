@@ -1,0 +1,59 @@
+<h1>Settings</h1>
+
+<section aria-labelledby="midi-heading">
+  <h2 id="midi-heading">MIDI</h2>
+  <p>
+    MIDI keyboards work on Playground and in lessons after you enable them here or on a play
+    surface. This app never requests MIDI access on its own after a reload.
+  </p>
+  <button type="button" class="button" (click)="toggleMidi()">
+    {{ midiToggleLabel() }}
+  </button>
+  <div class="device-field">
+    <label for="midi-device">MIDI device</label>
+    <select
+      id="midi-device"
+      [disabled]="deviceSelectDisabled()"
+      (change)="onDeviceChange($event)"
+    >
+      @for (port of midiSession.ports(); track port.id) {
+        <option [value]="port.id" [selected]="port.id === midiSession.selectedPortId()">
+          {{ deviceOptionLabel(port) }}
+        </option>
+      }
+    </select>
+  </div>
+  <p class="status" [class.status--warning]="midiStatusWarning()" role="status">
+    {{ midiExplanation() }}
+  </p>
+</section>
+
+<section aria-labelledby="saved-heading">
+  <h2 id="saved-heading">Saved data</h2>
+  <p>
+    Lesson progress, the Playground patch, and the last MIDI device are saved in this browser.
+    Export a backup file to keep a copy. Import replaces all saved data after you confirm.
+  </p>
+  <div class="saved-actions">
+    <button type="button" class="button" (click)="exportBackup()">Export backup</button>
+    <div class="device-field">
+      <label for="import-backup">Import backup</label>
+      <input
+        id="import-backup"
+        type="file"
+        accept=".json,application/json"
+        (change)="onImportSelected($event)"
+      />
+    </div>
+    <button type="button" class="button" (click)="clearSavedData()">Clear saved data</button>
+  </div>
+  @if (store.recoveryMessage(); as recovery) {
+    <p class="status status--warning" role="status">{{ recovery }}</p>
+  }
+  @if (store.writeError(); as writeError) {
+    <p class="status status--warning" role="status">{{ writeError }}</p>
+  }
+  @if (importError(); as error) {
+    <p class="status status--warning" role="status">{{ error }}</p>
+  }
+</section>

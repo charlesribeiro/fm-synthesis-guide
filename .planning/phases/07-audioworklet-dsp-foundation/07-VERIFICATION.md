@@ -1,16 +1,17 @@
 ---
 phase: 07-audioworklet-dsp-foundation
 verified: 2026-08-12T17:12:42Z
-status: passed
-score: 16/16 must-haves verified
-behavior_unverified: 0
+status: gaps_found
+score: 15/16 must-haves verified
+behavior_unverified: 1
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
   previous_score: 15/16
   gaps_closed:
     - "The dev listening harness ships nothing to production (07-03-PLAN.md must-have + prohibition: 'MUST NOT become a shipped product surface') — the realistic harness-then-build sequence with no manual cleanup, previously reproduced as a failure, now leaves no harness artifact anywhere under dist/."
-  gaps_remaining: []
+  gaps_remaining:
+    - "D-06/D-07 human-listening checkpoint is still pending: it must be run with npm run start:harness. npm start does not serve /dev/worklet-harness.html and cannot validate the harness or worklet."
   regressions: []
 ---
 
@@ -19,7 +20,7 @@ re_verification:
 **Phase Goal:** Pure, offline-testable six-operator phase-modulation DSP kernel running in a
 worklet.
 **Verified:** 2026-08-12T17:12:42Z
-**Status:** passed
+**Status:** gaps_found
 **Re-verification:** Yes — after gap closure (07-04-PLAN.md / 07-04-SUMMARY.md, wave 4)
 
 ## Goal Achievement
@@ -115,10 +116,10 @@ No regression found. This commit is a legitimate, in-scope hardening of Phase 7'
 | 12 | `WorkletSynthEngine` implements the full `SynthEngine` interface | ✓ VERIFIED | Confirmed present and unchanged in shape; the `2004eea` hardening is additive (in-flight-build caching), does not remove or alter any interface member, and adds its own named regression test. |
 | 13 | `SYNTH_ENGINE` still resolves to `WebAudioSynthEngine` — the shipped MVP engine is untouched (D-01 isolation) | ✓ VERIFIED | Read `synth-engine.token.ts` directly this session: factory is still `() => inject(WebAudioSynthEngine)`, unmodified. |
 | 14 | The dev harness is gesture-gated, encodes against the same message contract, and is accessible | ✓ VERIFIED | `worklets/harness/harness-main.ts` and `index.html` unchanged (confirmed by `git diff --exit-code` across the full 07-04 range, and 07-04's plan explicitly declares these files NOT modified). |
-| 15 | The phase-closing blocking human-listening checkpoint (D-06/D-07) actually ran and was approved | ✓ VERIFIED | `07-VALIDATION.md` and `07-03-SUMMARY.md` unchanged in their existing content (07-04 only appended new rows; `git diff` on `07-VALIDATION.md` shows additions only, confirmed by the file's own note and by 07-04's acceptance criteria). Still corroborated by two independent tracking documents with the human's own quoted words. Because the harness's runtime behavior and its `/dev/worklet-harness.html` URL are provably unchanged by 07-04 (boundary check above), this checkpoint's approval still describes exactly what a human would encounter today. |
+| 15 | The phase-closing blocking human-listening checkpoint (D-06/D-07) actually ran and was approved | ⏳ PENDING | Open until a human runs `npm run start:harness` and listens at `http://localhost:4200/dev/worklet-harness.html`. `npm start` does not serve that URL and cannot validate the harness or worklet. After 07-04 relocated harness output to `dev-dist/` and the named `harness` serve configuration, the 07-03 Task 2 approval must not be treated as current. |
 | 16 | The dev harness ships nothing to production / is not a shipped product surface | ✓ **VERIFIED (gap closed)** | Reproduced the exact previously-failing sequence myself this session — see "Gap Closure Verification" above. Harness output now lands in `dev-dist/`, structurally outside the only directory (`public/`) the production asset configuration reads; `postbuild` self-asserts every build via `scripts/assert-no-harness-in-dist.mjs` (CLI self-invocation uses `pathToFileURL` for a Windows-safe `isMain` guard); `npm run verify:harness-isolation` passed all 3 stages including a positive control proving the harness itself still resolves at its original URL. |
 
-**Score:** 16/16 truths verified (0 present-but-behavior-unverified)
+**Score:** 15/16 truths verified (1 pending — D-06/D-07 listening checkpoint)
 
 ### Required Artifacts
 
@@ -174,7 +175,7 @@ No regression found. This commit is a legitimate, in-scope hardening of Phase 7'
 
 | Requirement | Source Plan | Description | Status | Evidence |
 |--------------|------------|--------------|--------|----------|
-| ENGINE-01 | 07-01, 07-02, 07-03, 07-04 | Six-operator AudioWorklet phase-modulation DSP kernel, testable offline | ✓ SATISFIED (fully — no unmet must-have remains) | `REQUIREMENTS.md` marks ENGINE-01 Complete, mapped to Phase 7, with a dated note confirming 07-04 closed the harness leak. Both ROADMAP success criteria independently reconfirmed. The one previously-FAILED truth (harness production isolation) is now VERIFIED, reproduced independently in this session. |
+| ENGINE-01 | 07-01, 07-02, 07-03, 07-04 | Six-operator AudioWorklet phase-modulation DSP kernel, testable offline | ✓ SATISFIED (automated surface; D-06/D-07 listening checkpoint pending) | `REQUIREMENTS.md` marks ENGINE-01 Complete, mapped to Phase 7, with a dated note confirming 07-04 closed the harness leak. Isolation is independently reconfirmed. The blocking human-listening checkpoint remains open until `npm run start:harness`. |
 
 No orphaned requirements found for Phase 7 — only ENGINE-01 is mapped to this phase in
 `REQUIREMENTS.md`, and 07-04 also declares it (`requirements: [ENGINE-01]` in its frontmatter).
@@ -186,27 +187,30 @@ No orphaned requirements found for Phase 7 — only ENGINE-01 is mapped to this 
 | — | — | `TBD`/`FIXME`/`XXX`/`TODO`/`HACK`/`PLACEHOLDER` scan across all files touched by 07-04 and `2004eea` | ℹ️ None found | No debt markers introduced by the gap-closure plan or the standalone hardening commit. |
 | `angular.json` (root cause, pre-existing) / `worklets/harness/harness-main.ts` | — | `worklets/**` and `scripts/**` remain outside `lint`'s `lintFilePatterns` | ⚠️ Warning (pre-existing, `07-REVIEW.md` WR-01) | Unchanged by 07-04; not this phase's stated goal but noted for completeness — not a blocker to ENGINE-01. |
 | `package.json` | — | `typecheck:worklet` still not wired into any lifecycle hook | ⚠️ Warning (pre-existing, `07-REVIEW.md` WR-02) | Unchanged by 07-04; runnable directly and passes, simply not automated. Not a blocker. |
-| — | — | 07-REVIEW.md (fresh code review, advisory only) | ℹ️ 0 critical / 5 warning / 7 info (12 total) | Referenced for context per this task's instructions; not a gate for this verification. Counts match current `07-REVIEW.md` frontmatter. No critical findings support the `passed` status here. |
+| — | — | 07-REVIEW.md (fresh code review, advisory only) | ℹ️ 0 critical / 5 warning / 7 info (12 total) | Referenced for context per this task's instructions; not a gate for this verification. Counts match current `07-REVIEW.md` frontmatter. No critical findings change the `gaps_found` status, which is held open by the pending listening checkpoint. |
 
 ### Human Verification Required
 
-None outstanding. The one behavior-dependent claim this verifier cannot re-run itself — "the
-worklet loads without console errors and both proof cases sound correct in a real browser" —
-already went through a blocking human checkpoint (07-03-PLAN.md Task 2), corroborated by two
-independent tracking documents. 07-04 provably did not touch the harness's runtime behavior or its
-URL (`git diff --exit-code` over `worklets/` across the full gap-closure range), so that checkpoint's
-approval still describes exactly what a human would encounter today.
+The worklet listening checkpoint remains **open** until it is run with `npm run start:harness`.
+`npm start` serves the default development configuration and does **not** serve
+`/dev/worklet-harness.html`, so it cannot validate the harness page or the worklet in a real
+browser. The 07-03 Task 2 checkpoint must not be treated as already approved on the basis of that
+incorrect command: after 07-04 relocated harness output to `dev-dist/` and the named `harness`
+serve configuration, only `npm run start:harness` reaches `http://localhost:4200/dev/worklet-harness.html`.
 
 ### Gaps Summary
 
-**No gaps remain.** The prior verification's single FAILED truth — the dev harness reaching a
-production build under the realistic harness-then-build sequence — is closed, independently
-reproduced by me in this session rather than trusted from 07-04-SUMMARY.md's narrative. The fix is
-structural (harness output moved outside `public/`, the only directory the production asset
-configuration reads) rather than conventional, and is enforced by a fail-closed `postbuild`
-assertion plus an on-demand 3-stage regression gate that I ran myself and confirmed has teeth
-(fail-first on a planted leak, fail-closed on a missing output tree, and a positive control proving
-the harness itself still resolves at its original URL).
+**One gap remains: the D-06/D-07 listening checkpoint is pending.** It stays open until a human
+runs `npm run start:harness` and listens at `http://localhost:4200/dev/worklet-harness.html`.
+`npm start` does not serve that URL. Automated must-haves are 15/16; truth 15 is not verified.
+
+The prior verification's FAILED isolation truth — the dev harness reaching a production build
+under the realistic harness-then-build sequence — is closed, independently reproduced in this
+session rather than trusted from 07-04-SUMMARY.md's narrative. The fix is structural (harness
+output moved outside `public/`, the only directory the production asset configuration reads)
+rather than conventional, and is enforced by a fail-closed `postbuild` assertion plus an
+on-demand 3-stage regression gate (fail-first on a planted leak, fail-closed on a missing output
+tree, and a positive control proving the harness still resolves at its original URL).
 
 The gap-closure plan's own prohibitions — do not touch the DSP kernel, the worklet adapter, the
 `SynthEngine` implementations, or the harness page's runtime behavior — held: `git diff --exit-code`
@@ -216,11 +220,9 @@ race hardening + `AdditiveOperatorBank.validateBlockSize()` wiring) was reviewed
 to be additive/defensive with its own regression tests, introducing no regression to anything the
 prior verification covered.
 
-All 16/16 must-haves are now VERIFIED. `npm run build`, `npm test` (870/870), `npm run lint`, and
-`npm run typecheck:worklet` are all green, run by me directly in this session, not narrated from any
-SUMMARY. ENGINE-01 is fully satisfied and Phase 7's goal — a pure, offline-testable six-operator
-phase-modulation DSP kernel running in a worklet — is achieved with no outstanding deployment-hygiene
-risk.
+`npm run build`, `npm test` (870/870), `npm run lint`, and `npm run typecheck:worklet` are all
+green for the automated surface. ENGINE-01's offline kernel and production-isolation work are
+satisfied; the remaining open item is the listening checkpoint above.
 
 ---
 

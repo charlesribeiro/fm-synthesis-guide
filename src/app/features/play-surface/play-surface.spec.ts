@@ -2,24 +2,47 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { AUDIO_CONTEXT_CTOR } from '../../core/audio/audio-context.token';
 import { AUDIO_WORKLET_NODE_CTOR } from '../../core/audio/audio-worklet-node.token';
+import { SYNTH_ENGINE } from '../../core/audio/synth-engine.token';
 import { FakeAudioContext } from '../../core/audio/testing/fake-audio-context';
 import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../core/audio/testing/fake-audio-worklet-node';
+import { REQUEST_MIDI_ACCESS } from '../../core/browser/midi-access.token';
+import type { RequestMidiAccessLike } from '../../core/browser/midi-access.token';
+import { createFakeRequestMidiAccess, FakeMidiAccess, FakeMidiInput } from '../../core/midi/testing/fake-midi-access';
+import { STORAGE } from '../../core/persistence/storage.token';
+import { FakeStorage } from '../../core/persistence/testing/fake-storage';
 import { MIN_VELOCITY } from '../../domain/dx7/audio/value-conversion';
 import { setGateMessage } from '../../domain/dx7/dsp/worklet-messages';
 import { PlaySurface } from './play-surface';
 
+function findButton(compiled: HTMLElement, label: string): HTMLButtonElement {
+  const buttons = Array.from(compiled.querySelectorAll<HTMLButtonElement>('button'));
+  const found = buttons.find((button) => (button.textContent ?? '').trim() === label);
+  if (!found) {
+    throw new Error(`no button labelled "${label}"`);
+  }
+  return found;
+}
+
 // D-01 (Phase 8): SYNTH_ENGINE now resolves WorkletSynthEngine, which needs
 // both an AudioContext-like constructor AND an AudioWorkletNode-like
 // constructor to leave 'unavailable' — mirrors `playground.spec.ts`'s fakes.
-async function setup(): Promise<ComponentFixture<PlaySurface>> {
+async function setup(
+  requestMidiAccess?: RequestMidiAccessLike | null,
+): Promise<ComponentFixture<PlaySurface>> {
   FakeAudioContext.instances.length = 0;
   FakeAudioWorkletNode.instances.length = 0;
+  TestBed.resetTestingModule();
+  const providers: { provide: unknown; useValue: unknown }[] = [
+    { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
+    { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+    { provide: STORAGE, useValue: new FakeStorage() },
+  ];
+  if (requestMidiAccess !== undefined) {
+    providers.push({ provide: REQUEST_MIDI_ACCESS, useValue: requestMidiAccess });
+  }
   await TestBed.configureTestingModule({
     imports: [PlaySurface],
-    providers: [
-      { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
-      { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
-    ],
+    providers,
   }).compileComponents();
 
   const fixture = TestBed.createComponent(PlaySurface);
@@ -249,5 +272,201 @@ describe('PlaySurface multi-source note ownership', () => {
     await fixture.whenStable();
 
     expect(closeCount()).toBe(2);
+  });
+
+  it('retriggers a note still held by a pointer after MIDI allNotesOff leaves the ready state', async () => {
+    const input = new FakeMidiInput('port-a', 'Test Keys');
+    const access = new FakeMidiAccess([input]);
+    const request = createFakeRequestMidiAccess({ access });
+    const fixture = await setup(request);
+    const compiled = fixture.nativeElement as HTMLElement;
+    findButton(compiled, 'Enable MIDI').click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    const engine = TestBed.inject(SYNTH_ENGINE);
+    const noteOn = vi.spyOn(engine, 'noteOn');
+    const allNotesOff = vi.spyOn(engine, 'allNotesOff');
+    const key = keyByNote(compiled, 60);
+
+    input.emit(Uint8Array.of(0x90, 60, 80));
+    await fixture.whenStable();
+    key.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    noteOn.mockClear();
+    allNotesOff.mockClear();
+
+    access.disconnectInput('port-a');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(allNotesOff).toHaveBeenCalled();
+    expect(noteOn).toHaveBeenCalledWith(60, 100);
+    expect(key.getAttribute('aria-pressed')).toBe('true');
+  });
+});
+
+describe('PlaySurface MIDI enable and notes', () => {
+  function midiHarness(): { input: FakeMidiInput; request: ReturnType<typeof createFakeRequestMidiAccess> } {
+    const input = new FakeMidiInput('port-a', 'Test Keys');
+    const access = new FakeMidiAccess([input]);
+    const request = createFakeRequestMidiAccess({ access });
+    return { input, request };
+  }
+
+  async function enableMidi(fixture: ComponentFixture<PlaySurface>): Promise<HTMLButtonElement> {
+    const compiled = fixture.nativeElement as HTMLElement;
+    const button = findButton(compiled, 'Enable MIDI');
+    button.focus();
+    button.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    return button;
+  }
+
+  it('does not move focus after Enable MIDI succeeds (D-10)', async () => {
+    const { request } = midiHarness();
+    const fixture = await setup(request);
+    const button = await enableMidi(fixture);
+
+    expect(document.activeElement).toBe(button);
+    expect(findButton(fixture.nativeElement as HTMLElement, 'Disable MIDI')).toBe(button);
+  });
+
+  it('starts audio on the Enable MIDI click when audio is still suspended (D-06)', async () => {
+    const { request } = midiHarness();
+    const fixture = await setup(request);
+    expect(FakeAudioContext.instances.length).toBe(0);
+
+    await enableMidi(fixture);
+
+    expect(FakeAudioContext.instances.length).toBe(1);
+  });
+
+  it('routes a MIDI note-on through pressKey so notePlayed fires with MIDI velocity (D-16)', async () => {
+    const { input, request } = midiHarness();
+    const fixture = await setup(request);
+    await enableMidi(fixture);
+    const engine = TestBed.inject(SYNTH_ENGINE);
+    const noteOn = vi.spyOn(engine, 'noteOn');
+    const emitted = collectNotePlayed(fixture);
+
+    input.emit(Uint8Array.of(0x90, 60, 80));
+    await fixture.whenStable();
+
+    expect(emitted).toEqual([60]);
+    expect(noteOn).toHaveBeenCalledWith(60, 80);
+  });
+
+  it('treats velocity-0 note-on as release and never calls noteOn with 0 (D-14)', async () => {
+    const { input, request } = midiHarness();
+    const fixture = await setup(request);
+    await enableMidi(fixture);
+    const engine = TestBed.inject(SYNTH_ENGINE);
+    const noteOn = vi.spyOn(engine, 'noteOn');
+    input.emit(Uint8Array.of(0x90, 60, 80));
+    await fixture.whenStable();
+    noteOn.mockClear();
+
+    expect(() => input.emit(Uint8Array.of(0x90, 60, 0))).not.toThrow();
+    await fixture.whenStable();
+
+    expect(noteOn).not.toHaveBeenCalled();
+    expect(noteOn.mock.calls.some((call) => call[1] === 0)).toBe(false);
+  });
+
+  it('omits velocity on pointer and keyboard presses so they use PLAYABLE_VELOCITY 100', async () => {
+    const fixture = await setup();
+    await enableAudio(fixture);
+    const engine = TestBed.inject(SYNTH_ENGINE);
+    const noteOn = vi.spyOn(engine, 'noteOn');
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    keyByNote(compiled, 60).dispatchEvent(new PointerEvent('pointerdown', { button: 0 }));
+    await fixture.whenStable();
+    expect(noteOn).toHaveBeenCalledWith(60, 100);
+
+    noteOn.mockClear();
+    document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS' })); // D4 (62)
+    await fixture.whenStable();
+    expect(noteOn).toHaveBeenCalledWith(62, 100);
+  });
+
+  it('does not change noteOn count when a CC message arrives after ready (D-11)', async () => {
+    const { input, request } = midiHarness();
+    const fixture = await setup(request);
+    await enableMidi(fixture);
+    const engine = TestBed.inject(SYNTH_ENGINE);
+    const noteOn = vi.spyOn(engine, 'noteOn');
+
+    input.emit(Uint8Array.of(0xb0, 1, 1));
+    await fixture.whenStable();
+
+    expect(noteOn).not.toHaveBeenCalled();
+  });
+
+  it('keeps C4 pressed when MIDI releases while a pointer still holds it (D-17)', async () => {
+    const { input, request } = midiHarness();
+    const fixture = await setup(request);
+    await enableMidi(fixture);
+    const compiled = fixture.nativeElement as HTMLElement;
+    const key = keyByNote(compiled, 60);
+
+    input.emit(Uint8Array.of(0x90, 60, 80));
+    await fixture.whenStable();
+    key.dispatchEvent(new PointerEvent('pointerdown', { button: 0 }));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    input.emit(Uint8Array.of(0x80, 60, 64));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(key.getAttribute('aria-pressed')).toBe('true');
+
+    key.dispatchEvent(new Event('pointerup'));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(key.getAttribute('aria-pressed')).toBe('false');
+  });
+
+  it('sounds MIDI note 48 without adding an on-screen key (D-12, D-15)', async () => {
+    const { input, request } = midiHarness();
+    const fixture = await setup(request);
+    await enableMidi(fixture);
+    const engine = TestBed.inject(SYNTH_ENGINE);
+    const noteOn = vi.spyOn(engine, 'noteOn');
+    const compiled = fixture.nativeElement as HTMLElement;
+
+    input.emit(Uint8Array.of(0x90, 48, 90));
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(noteOn).toHaveBeenCalledWith(48, 90);
+    expect(compiled.querySelector('[data-note="48"]')).toBeNull();
+    expect(compiled.querySelectorAll('[data-note]').length).toBe(12);
+  });
+
+  it('clears the MIDI-held C4 highlight when the selected device disconnects', async () => {
+    const input = new FakeMidiInput('port-a', 'Test Keys');
+    const access = new FakeMidiAccess([input]);
+    const request = createFakeRequestMidiAccess({ access });
+    const fixture = await setup(request);
+    await enableMidi(fixture);
+    const compiled = fixture.nativeElement as HTMLElement;
+    const key = keyByNote(compiled, 60);
+
+    input.emit(Uint8Array.of(0x90, 60, 80));
+    await fixture.whenStable();
+    fixture.detectChanges();
+    expect(key.getAttribute('aria-pressed')).toBe('true');
+
+    access.disconnectInput('port-a');
+    await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(key.getAttribute('aria-pressed')).toBe('false');
   });
 });

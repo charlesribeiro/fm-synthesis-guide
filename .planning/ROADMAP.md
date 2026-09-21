@@ -22,7 +22,7 @@ hardening. Adapted from `docs/ROADMAP_SEED.md`.
 - [x] **Phase 9: DX7-style envelopes and parameter mapping** - Envelope model, ratio/fixed modes (completed 2026-08-16)
 - [x] **Phase 10: Visualizers and comparison tools** - Oscilloscope, spectrum, A/B, randomization (completed 2026-08-19)
 - [x] **Phase 11: Curriculum across all 32 algorithms** - Lesson/experiment/preset per algorithm (completed 2026-08-24)
-- [ ] **Phase 12: MIDI and patch persistence** - Web MIDI, versioned storage, import/export
+- [x] **Phase 12: MIDI and patch persistence** - Web MIDI, versioned storage, import/export (completed 2026-09-09)
 - [ ] **Phase 13: Accessibility and performance hardening** - Keyboard/screen-reader/mobile audit
 - [ ] **Phase 14: Browser tests and release** - Playwright smoke suite, CI, deployment, docs
 
@@ -414,7 +414,19 @@ Plans:
   2. Settings/progress/patches persist across reload with a versioned schema
   3. Malformed persisted or imported data is recovered from without crashing
 
-**Plans**: TBD
+**Plans**: 4/4 plans executed
+
+Plans:
+
+**Wave 1**
+
+- [x] 12-01-PLAN.md — Tracer: schema-version-1 codec, STORAGE, durable LessonProgress, Playground slot facade (PERSIST-01)
+- [x] 12-02-PLAN.md — Tracer: Web MIDI through PlaySurface pressKey, named states, disconnect, velocity (MIDI-01)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [x] 12-03-PLAN.md — Playground restore-on-enter, ToolsPanel slot writes, lesson isolation (PERSIST-01)
+- [x] 12-04-PLAN.md — `/settings` nav, MIDI picker, last-device id, import/export/clear (PERSIST-01, MIDI-01)
 
 ### Phase 13: Accessibility and performance hardening
 
@@ -460,6 +472,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 →
 | 9. Envelopes and parameter mapping | 4/4 | Complete    | 2026-08-16 |
 | 10. Visualizers and comparison tools | 4/4 | Complete    | 2026-08-19 |
 | 11. Curriculum (all 32 algorithms) | 5/5 | Complete    | 2026-08-24 |
-| 12. MIDI and patch persistence | 0/TBD | Not started | - |
+| 12. MIDI and patch persistence | 4/4 | Complete    | 2026-09-09 |
 | 13. Accessibility and performance | 0/TBD | Not started | - |
 | 14. Browser tests and release | 0/TBD | Not started | - |

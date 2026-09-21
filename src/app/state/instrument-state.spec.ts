@@ -7,7 +7,7 @@ import {
   validateOperatorParameters,
   type Dx7Envelope,
 } from '../domain/dx7/models/operator-parameters';
-import { validateFeedbackLevel } from '../domain/dx7/models/patch';
+import { DEFAULT_PATCH, validateFeedbackLevel } from '../domain/dx7/models/patch';
 import { OPERATOR_IDS, type OperatorId } from '../domain/dx7/models/operator';
 import type { RandomSource } from '../domain/dx7/randomization/random-walk-patch';
 
@@ -369,6 +369,44 @@ describe('InstrumentState', () => {
     service.reset();
 
     expect(service.patch()).toEqual(freshPatch);
+  });
+
+  describe('replacePatch', () => {
+    it('restores algorithmId, operators, and feedback in one write after setAlgorithm(32)', () => {
+      const { service } = setup();
+      service.setAlgorithm(32);
+      service.setFeedback(7);
+      const patchSignal = (service as unknown as { _patch: { set: (value: unknown) => void } })._patch;
+      const setSpy = vi.spyOn(patchSignal, 'set');
+
+      service.replacePatch(DEFAULT_PATCH);
+
+      expect(setSpy).toHaveBeenCalledTimes(1);
+      expect(service.algorithmId()).toBe(1);
+      expect(service.feedback()).toBe(0);
+      expect(service.operators()).toEqual(DEFAULT_PATCH.operators);
+    });
+
+    it('throws RangeError for algorithmId 99 and leaves the previous patch reference', () => {
+      const { service } = setup();
+      service.setAlgorithm(32);
+      const before = service.patch();
+
+      expect(() => service.replacePatch({ ...DEFAULT_PATCH, algorithmId: 99 })).toThrow(RangeError);
+      expect(service.patch()).toBe(before);
+      expect(service.algorithmId()).toBe(32);
+    });
+
+    it('does not change snapshots after captureSnapshot then replacePatch', () => {
+      const { service } = setup();
+      service.setFeedback(4);
+      service.captureSnapshot('a');
+
+      service.replacePatch(DEFAULT_PATCH);
+
+      expect(service.hasSnapshot('a')).toBe(true);
+      expect(service.snapshots().a?.feedback).toBe(4);
+    });
   });
 
   // D-03: SNAPSHOT_SLOTS is exactly the two-member frozen array the type promises.

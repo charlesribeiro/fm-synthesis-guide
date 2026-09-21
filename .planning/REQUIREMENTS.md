@@ -75,8 +75,9 @@ Milestone 1). Each maps to a roadmap phase.
 
 ## v2 Requirements
 
-Deferred to future milestones (`docs/ROADMAP_SEED.md` Milestones 2–3). Tracked but not in the
-current roadmap.
+ENGINE-01 through MIDI-01 are mapped on the current roadmap (Phases 7–12). The remaining
+unmapped v2 requirements — HARDEN-01 and RELEASE-01 — are deferred to later milestones
+(`docs/ROADMAP_SEED.md` Milestone 3).
 
 ### Accurate Synthesis Engine
 
@@ -92,8 +93,8 @@ current roadmap.
 ### Full Curriculum and Platform
 
 - [x] **CURR-01**: Every algorithm has a concise lesson, experiment, and original preset
-- **PERSIST-01**: Versioned local persistence with JSON import/export and malformed-data recovery
-- **MIDI-01**: Progressive Web MIDI note on/off, velocity, device connect/disconnect
+- [x] **PERSIST-01**: Versioned local persistence with JSON import/export and malformed-data recovery
+- [x] **MIDI-01**: Progressive Web MIDI note on/off, velocity, device connect/disconnect
 - **HARDEN-01**: Keyboard-only and screen-reader audit, reduced motion, mobile/tablet refinement
 - **RELEASE-01**: Playwright smoke suite, CI, static hosting deployment, documentation
 
@@ -136,17 +137,21 @@ current roadmap.
 | VIZ-01 | Phase 10 | Complete |
 | VIZ-02 | Phase 10 | Complete |
 | CURR-01 | Phase 11 | Complete |
+| PERSIST-01 | Phase 12 | Complete |
+| MIDI-01 | Phase 12 | Complete |
 
 **Coverage:**
 
 - v1 requirements: 21 total
 - Mapped to phases: 21
 - Unmapped: 0 ✓
-- v2 requirements mapped so far: 6 (ENGINE-01 → Phase 7, ENGINE-02 → Phase 8, ENGINE-03 → Phase 9, VIZ-01 → Phase 10, VIZ-02 → Phase 10, CURR-01 → Phase 11)
+- v2 requirements mapped so far: 8 (ENGINE-01 → Phase 7, ENGINE-02 → Phase 8, ENGINE-03 → Phase 9, VIZ-01 → Phase 10, VIZ-02 → Phase 10, CURR-01 → Phase 11, PERSIST-01 → Phase 12, MIDI-01 → Phase 12)
 
 ---
 *Requirements defined: 2026-08-04*
-*Last updated: 2026-08-24 — Phase 11 / CURR-01 is fully closed (all five plans executed; all 32
+*Last updated: 2026-09-09 — Phase 12 / PERSIST-01 and MIDI-01 are closed by automated fakes
+(schema-v1 persistence with confirmed JSON backup import/export/clear; progressive Web MIDI
+through PlaySurface and Settings). Phase 11 / CURR-01 is fully closed (all five plans executed; all 32
 canonical algorithms have a structurally-generated lesson, preset and try-this experiment; the
 grouped, counted `/learn` index makes progress visible; the blocking human-verify checkpoint in
 11-05 approved all six checks with zero findings, including Algorithm 19's `unresolved`-provenance

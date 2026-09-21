@@ -1,22 +1,34 @@
 ---
-status: pending
+status: testing
 phase: 08-algorithm-routing-and-feedback
 source: [08-01-SUMMARY.md, 08-02-SUMMARY.md, 08-03-SUMMARY.md, 08-04-SUMMARY.md]
 started: 2026-08-14T20:25:51.866Z
-updated: 2026-08-14T20:25:51.866Z
+updated: 2026-09-18T20:24:00Z
 ---
 
 ## Current Test
 
-number: —
-name: —
+number: 7
+name: SYNTH_ENGINE resolves WorkletSynthEngine and the routed kernel is audible in the live app
 expected: |
-  Phase UAT blocked on D-12 checkpoint re-run: auditable resume payload must name Additive,
-  Tree/Branch, Rooting, Parallel, and maximum-feedback sample algorithm ids, and must record an
-  explicit pass/fail for every blocking check, Checks 1–9, including held-note switching, the live
-  app, Lesson 6, and honesty-copy evidence (08-04-PLAN resume-signal). Historical bare "approved"
-  is not retained as validated.
-awaiting: human D-12 checkpoint re-run with five sample algorithm ids and Checks 1–9 outcomes
+  D-12 blocking listening checkpoint (headphones, start quiet). Automated tests 1–6, 8–21 already passed (20/27).
+
+  Setup: `npm run start:harness` → http://localhost:4200/dev/worklet-harness.html — Enable audio first.
+  Also `npm start` → Playground and Lesson 6.
+
+  Check 1 — Additive Stacks (any id 1–6): clear musical tone, comfortable, not distorted.
+  Check 2 — Tree/Branch (any id 7–18): distinctly more complex than check 1.
+  Check 3 — Rooting (any id 19–25): different again, clean at feedback 0.
+  Check 4 — Parallel (any id 26–32): Algorithm 32 should sound like stacked tones, not FM growl.
+  Check 5 — Max feedback: replay one of the four at feedback 7 (then max operator level). Harsh/edgy is intended. Must stay bounded: not painfully loud, not growing louder, no clicks/garbage/silence.
+  Check 6 — Held-note algorithm switch: sound changes without stopping/restarting/clicking; then stop → silence.
+  Check 7 — Live app `/playground`: routed worklet, click-free notes, same held-note switch behaviour. Algorithm 1 should sound like a 4-deep stack (6→5→4→3) plus 2→1 tower with feedback on 6 — not a plain sine.
+  Check 8 — `/learn/algorithm-1`: try-this still completes and the described sonic change is audible.
+  Check 9 — Educational-approximation honesty label unchanged; no stronger DX7 claim.
+
+  Do not reply with a bare "approved". Name the five algorithm ids and pass/fail for checks 1–9.
+  Example: approved algorithms: additive=1 tree=8 rooting=20 parallel=32 max-feedback=1; checks 1-9: pass
+awaiting: user response
 
 ## Tests
 

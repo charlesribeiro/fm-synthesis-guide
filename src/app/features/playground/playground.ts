@@ -1,4 +1,6 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { InstrumentState } from '../../state/instrument-state';
+import { PlaygroundPatchSlot } from '../../state/playground-patch-slot';
 import { PlaySurface } from '../play-surface/play-surface';
 import { ToolsPanel } from './tools-panel/tools-panel';
 import { Visualizer } from './visualizer/visualizer';
@@ -23,6 +25,20 @@ import { Visualizer } from './visualizer/visualizer';
   styleUrl: './playground.scss',
 })
 export class Playground {
+  private readonly instrumentState = inject(InstrumentState);
+  private readonly playgroundPatchSlot = inject(PlaygroundPatchSlot);
+
+  /**
+   * D-21: `loadComponent` constructs a new Playground per navigation, so
+   * constructor restore is enough (Assumption A5). Reads the dedicated slot
+   * into live state; never writes it. Not a reactive effect, not a
+   * route-signal subscription — a lesson `startingPatch` left in live state
+   * must not remain on Playground.
+   */
+  constructor() {
+    this.instrumentState.replacePatch(this.playgroundPatchSlot.read());
+  }
+
   /** What Playground mode becomes once its remaining dependency phases land.
    * "Oscilloscope and spectrum display" was removed once plan 10-02 landed
    * the labelled spectrum lane alongside the oscilloscope. "A/B snapshot

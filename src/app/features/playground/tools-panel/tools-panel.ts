@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { InstrumentState } from '../../../state/instrument-state';
+import { PlaygroundPatchSlot } from '../../../state/playground-patch-slot';
 
 /**
  * VIZ-02 (D-09, D-10, D-14, D-15): six explicit controls over `InstrumentState`'s
@@ -23,6 +24,7 @@ import { InstrumentState } from '../../../state/instrument-state';
 })
 export class ToolsPanel {
   private readonly state = inject(InstrumentState);
+  private readonly playgroundPatchSlot = inject(PlaygroundPatchSlot);
 
   /** Whether slot A currently holds a captured patch — read straight
    * through the facade, never mirrored or cached. */
@@ -86,12 +88,14 @@ export class ToolsPanel {
    * guarantee lives in `InstrumentState.reset()` itself. */
   protected resetPatch(): void {
     this.state.reset();
+    this.playgroundPatchSlot.write(this.state.patch());
     this.statusMessage.set('Reset to the default patch. Captured slots are unchanged.');
   }
 
   /** The only call site for `randomize()` in the whole application. */
   protected randomizePatch(): void {
     this.state.randomize();
+    this.playgroundPatchSlot.write(this.state.patch());
     this.statusMessage.set('Randomized the current sound.');
   }
 }

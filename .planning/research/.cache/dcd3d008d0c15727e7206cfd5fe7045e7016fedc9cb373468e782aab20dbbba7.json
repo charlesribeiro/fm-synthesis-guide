@@ -1,0 +1,1 @@
+{"content":"Small JSON settings: localStorage is the matching sync DI seam for Angular constructor hydration; IndexedDB is async and overkill for a single document under 10KB. Payload here is one patch plus lesson ids plus a device id.","source":"web","provider":"websearch","confidence":"MEDIUM","fetched_at":"2026-09-09T12:54:37.812Z","ttl":86400000,"kind":"web"}
