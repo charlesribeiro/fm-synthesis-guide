@@ -184,7 +184,7 @@ describe('AlgorithmDiagram coverage sweep (all 32 algorithms)', () => {
         }
 
         const circleCount = group.querySelectorAll('circle').length;
-        const rectCount = group.querySelectorAll('rect').length;
+        const rectCount = group.querySelectorAll('rect:not(.operator__touch-target)').length;
         if (expectedRole === 'carrier' && (circleCount !== 2 || rectCount !== 0)) {
           failures.push({
             algorithmId: algorithm.id,

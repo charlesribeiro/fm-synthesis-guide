@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { App } from './app';
 import { routes } from './app.routes';
@@ -61,5 +61,18 @@ describe('App', () => {
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
     expect(compiled.querySelector('main#main-content')).not.toBeNull();
+  });
+  it('focuses main content on route navigation', async () => {
+    const fixture = TestBed.createComponent(App);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    
+    const main = fixture.nativeElement.querySelector('#main-content') as HTMLElement;
+    vi.spyOn(main, 'focus');
+    
+    const router = TestBed.inject(Router);
+    await router.navigate(['/learn']);
+    
+    expect(main.focus).toHaveBeenCalled();
   });
 });
