@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 12
-current_phase_name: MIDI and patch persistence
+current_phase: 13
+current_phase_name: Accessibility and performance hardening
 status: planning
-stopped_at: Phase 12 planning not started
-last_updated: "2026-08-24T17:30:11.667Z"
-last_activity: 2026-08-24
-last_activity_desc: Phase 11 complete, transitioned to Phase 12
+stopped_at: Completed 12-04-PLAN.md
+last_updated: "2026-09-09T14:06:24.883Z"
+last_activity: 2026-09-09
+last_activity_desc: Phase 12 complete, transitioned to Phase 13
 progress:
   total_phases: 14
-  completed_phases: 11
-  total_plans: 41
-  completed_plans: 41
+  completed_phases: 12
+  total_plans: 45
+  completed_plans: 45
 ---
 
 # Project State
@@ -24,26 +24,26 @@ See: .planning/PROJECT.md (updated 2026-08-07)
 
 **Core value:** A learner can see a six-operator algorithm's routing diagram, hear the sound it
 produces, change a parameter, and immediately understand why the sound changed.
-**Current focus:** Phase 12 — MIDI and patch persistence
+**Current focus:** Phase 13 — Accessibility and performance hardening
 
 ## Current Position
 
-Phase: 12 — MIDI and patch persistence
+Phase: 13 — Accessibility and performance hardening
 Plan: Not started
 Status: Ready to plan
-Last activity: 2026-08-24 — Phase 11 complete, transitioned to Phase 12
+Last activity: 2026-09-09 — Phase 12 complete, transitioned to Phase 13
 
-**To resume:** start Phase 12 planning (MIDI and patch persistence) from `ROADMAP.md`; that phase has no `*PLAN.md` files yet.
+**To resume:** discuss Phase 13 (accessibility and performance hardening) from `ROADMAP.md`.
 
-Progress: [███████████░░░] 79% — 11/14 phases complete (1–11). Plan counters are the
-repository's 41 `*PLAN.md` files (all complete). Phase 1's `01-01` is listed in ROADMAP
+Progress: [█████████░] 86% — 12/14 phases complete (1–12). Plan counters are the
+repository's 45 `*PLAN.md` files (all complete). Phase 1's `01-01` is listed in ROADMAP
 but is not a `*PLAN.md` file and is excluded from those totals.
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 41 (the 41 `*PLAN.md` files; Phase 1's untracked `01-01` is not counted)
+- Total plans completed: 45 (the 45 `*PLAN.md` files; Phase 1's untracked `01-01` is not counted)
 - Average duration: n/a (single session, not timed per-plan)
 - Total execution time: n/a
 
@@ -51,7 +51,7 @@ but is not a `*PLAN.md` file and is excluded from those totals.
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Angular 22 foundation | untracked (not a PLAN.md; excluded from the 41) | - | - |
+| 1. Angular 22 foundation | untracked (not a PLAN.md; excluded from the 45) | - | - |
 | 02 | 5 | - | - |
 | 03 | 2 | - | - |
 | 04 | 5 | - | - |
@@ -62,6 +62,7 @@ but is not a `*PLAN.md` file and is excluded from those totals.
 | 09 | 4 | - | - |
 | 10 | 4 | - | - |
 | 11 | 5 | - | - |
+| 12 | 4 | - | - |
 
 **Recent Trend:**
 
@@ -106,6 +107,10 @@ but is not a `*PLAN.md` file and is excluded from those totals.
 | Phase 10 P02 | ~15min | 3 tasks | 10 files |
 | Phase 10 P03 | ~15min | 2 tasks | 4 files |
 | Phase 10 P04 | ~5min + checkpoint | 3 tasks | 7 files |
+| Phase 12-midi-and-patch-persistence P01 | 8min | 2 tasks | 16 files |
+| Phase 12-midi-and-patch-persistence P02 | 7min | 2 tasks | 9 files |
+| Phase 12-midi-and-patch-persistence P03 | 3min | 2 tasks | 5 files |
+| Phase 12-midi-and-patch-persistence P04 | 7min | 2 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -163,6 +168,18 @@ Full log in `.planning/PROJECT.md` → Key Decisions. Recent:
 - [Phase ?]: Phase 08 (08-03): WorkletSynthEngine.applyInstrumentStateToWorklet redesigned to diff algorithm/operators/feedback independently and post only the message(s) for what changed (Pitfall 5), fixing D-13 held-note re-patch and making per-operator ratio/detune/mode real, separately-posted parameters (D-15/D-16) reachable only via the reactive InstrumentState path.
 - [Phase ?]: D-12 four-algorithm interpretation confirmed at checkpoint: one per taxonomy group, one replayed at maximum feedback, not a fifth distinct algorithm — every ALGORITHMS row already declares a feedback self-loop
 - [Phase ?]: Phase 08 blocking listening checkpoint (D-02/D-12) approved with zero findings across all nine checks; 08-VALIDATION.md completed with no source changes required
+- [Phase 12]: LessonProgress.markComplete uses Injector.get(SavedDocumentStore) because method-level inject() throws NG0203 outside an injection context.
+- [Phase 12]: PlaygroundPatchSlot.write rejects non-isAlgorithmId algorithmId so a bad playground patch cannot fail-close the whole document on reload.
+- [Phase 12]: SavedDocumentStore constructor never calls replaceCompleted; App and tests call hydrateLive() after both facades exist.
+- [Phase ?]: PlaySurface uses effect()+untracked to release MIDI-owned notes when MidiSession.status leaves ready — imperative MIDIAccess sync (D-09), not derived UI state.
+- [Phase ?]: MIDI toggle is not wrapped in .gate so Playground's Enable-audio assertion that .gate disappears still holds.
+- [Phase ?]: This plan auto-selects the first MIDIAccess.inputs iterator port; MidiSession does not inject SavedDocumentStore (D-20 is 12-04).
+- [Phase ?]: Playground restores via constructor replacePatch(read()), not an effect or router.events subscription, because loadComponent constructs a new instance per navigation (A5, D-21).
+- [Phase ?]: ToolsPanel writes the Playground slot only after Randomize and Reset; Capture/Recall stay session-only and do not serialize A/B snapshots (D-19, D-22).
+- [Phase ?]: LessonDetail production code is unchanged; isolation is the write-spy plus read() remaining DEFAULT_PATCH after opening Algorithm 32.
+- [Phase ?]: MidiSession.enable reselects lastMidiDeviceId when still among inputs, otherwise first values() port; construction never calls requestMIDIAccess (D-20, D-08).
+- [Phase ?]: Settings import is confirm then size cap then parseSavedDocument then replaceDocument; failed import never writes (D-25, D-26).
+- [Phase ?]: Clear saved data applies DEFAULT_PATCH to live InstrumentState only when Router.url is /playground so an open lesson patch is not smashed (D-23).
 
 ### Pending Todos
 
@@ -189,6 +206,6 @@ checkpoint has been stopped.
 
 ## Session Continuity
 
-Last session: 2026-08-24T17:30:11.667Z
-Stopped at: Phase 12 planning not started
-Resume file: .planning/ROADMAP.md
+Last session: 2026-09-09T13:59:34.168Z
+Stopped at: Completed 12-04-PLAN.md
+Resume file: None

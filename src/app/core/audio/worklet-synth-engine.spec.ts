@@ -367,6 +367,29 @@ describe('WorkletSynthEngine', () => {
       );
     });
 
+    it('readTimeDomainInto/readFrequencyInto reject a shorter or longer buffer while a voice is active, and return false without throwing when inactive', async () => {
+      const { service } = setup();
+      const shortTime = new Uint8Array(ANALYSER_FFT_SIZE - 1);
+      const longTime = new Uint8Array(ANALYSER_FFT_SIZE + 1);
+      const shortFrequency = new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT - 1);
+      const longFrequency = new Uint8Array(ANALYSER_FREQUENCY_BIN_COUNT + 1);
+
+      expect(service.readTimeDomainInto(shortTime)).toBe(false);
+      expect(service.readTimeDomainInto(longTime)).toBe(false);
+      expect(service.readFrequencyInto(shortFrequency)).toBe(false);
+      expect(service.readFrequencyInto(longFrequency)).toBe(false);
+
+      await service.initialize();
+      expect(service.readTimeDomainInto(shortTime)).toBe(false);
+      expect(service.readFrequencyInto(longFrequency)).toBe(false);
+
+      service.noteOn(60, 100);
+      expect(() => service.readTimeDomainInto(shortTime)).toThrow(RangeError);
+      expect(() => service.readTimeDomainInto(longTime)).toThrow(RangeError);
+      expect(() => service.readFrequencyInto(shortFrequency)).toThrow(RangeError);
+      expect(() => service.readFrequencyInto(longFrequency)).toThrow(RangeError);
+    });
+
     it('getAnalysisSampleRate returns 0 before initialize() and the context sampleRate after', async () => {
       const { service } = setup();
       expect(service.getAnalysisSampleRate()).toBe(0);

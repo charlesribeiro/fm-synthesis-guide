@@ -1,5 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { STORAGE } from '../../../core/persistence/storage.token';
+import { FakeStorage } from '../../../core/persistence/testing/fake-storage';
 import { InstrumentState } from '../../../state/instrument-state';
+import { PlaygroundPatchSlot } from '../../../state/playground-patch-slot';
 import { DEFAULT_PATCH } from '../../../domain/dx7/models/patch';
 import { ToolsPanel } from './tools-panel';
 
@@ -7,16 +10,19 @@ async function setup(): Promise<{
   fixture: ComponentFixture<ToolsPanel>;
   compiled: HTMLElement;
   state: InstrumentState;
+  slot: PlaygroundPatchSlot;
 }> {
   await TestBed.configureTestingModule({
     imports: [ToolsPanel],
+    providers: [{ provide: STORAGE, useValue: new FakeStorage() }],
   }).compileComponents();
 
   const state = TestBed.inject(InstrumentState);
+  const slot = TestBed.inject(PlaygroundPatchSlot);
   const fixture = TestBed.createComponent(ToolsPanel);
   await fixture.whenStable();
 
-  return { fixture, compiled: fixture.nativeElement as HTMLElement, state };
+  return { fixture, compiled: fixture.nativeElement as HTMLElement, state, slot };
 }
 
 /** Finds a button by its exact or prefix-matched accessible text — never by
@@ -152,6 +158,38 @@ describe('ToolsPanel', () => {
 
     expect(randomizeSpy).toHaveBeenCalledTimes(1);
     expect(state.patch()).not.toBe(patchBefore);
+  });
+
+  it('Reset writes DEFAULT_PATCH to the Playground slot (D-22)', async () => {
+    const { fixture, compiled, slot } = await setup();
+    slot.write({ ...DEFAULT_PATCH, algorithmId: 32, feedback: 3 });
+    expect(slot.read()).not.toEqual(DEFAULT_PATCH);
+
+    resetButton(compiled).click();
+    await fixture.whenStable();
+
+    expect(slot.read()).toEqual(DEFAULT_PATCH);
+  });
+
+  it('Randomize writes the live operators object into the Playground slot (D-22)', async () => {
+    const { fixture, compiled, state, slot } = await setup();
+
+    randomizeButton(compiled).click();
+    await fixture.whenStable();
+
+    expect(slot.read().operators).toBe(state.patch().operators);
+  });
+
+  it('Capture A does not write the Playground slot (D-19)', async () => {
+    const { fixture, compiled, slot } = await setup();
+    slot.write({ ...DEFAULT_PATCH, algorithmId: 32 });
+    const before = slot.read();
+
+    captureAButton(compiled).click();
+    await fixture.whenStable();
+
+    expect(slot.read()).toEqual(before);
+    expect(slot.read().algorithmId).toBe(32);
   });
 
   it('states each slot\'s captured-or-empty condition in words, and the wording for slot A changes after Capture A', async () => {

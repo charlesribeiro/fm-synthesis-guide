@@ -449,16 +449,14 @@ describe('Visualizer', () => {
       expect(spectrumCtx.callCount('fillText')).toBeGreaterThanOrEqual(3);
     });
 
-    it('the band-range builder is consulted while the sample rate is zero, and is not consulted again once a non-null list has been cached', async () => {
+    it('the band-range builder is consulted while the sample rate is zero, reused at a stable rate, and rebuilt when the sample rate changes', async () => {
       // buildBarBinRanges itself is a plain, unmocked pure function
       // (spying on a relative-import ESM export isn't supported under this
       // project's Angular/Vitest unit-test harness); instead this spies on
       // `getAnalysisSampleRate` — the tap method the frame callback reads
-      // exactly once per frame while the cached ranges are still null, and
-      // never again once a non-null list is cached — the same
-      // engine-instance-spy technique already used for `initialize`/
-      // `noteOn`/etc. elsewhere in this file.
-      const { scheduler } = await setup();
+      // every frame so a later engine reinitialize / sample-rate change can
+      // invalidate the cached ranges.
+      const { scheduler, spectrumCtx } = await setup();
       const engine = TestBed.inject(SYNTH_ENGINE);
       const sampleRateSpy = vi.spyOn(engine as unknown as { getAnalysisSampleRate(): number }, 'getAnalysisSampleRate');
 
@@ -474,19 +472,22 @@ describe('Visualizer', () => {
       holdNote();
       analyserFor().cannedTimeDomainData = new Uint8Array(ANALYSER_FFT_SIZE).fill(200);
 
-      // The next tick succeeds (a real, positive sample rate is now
-      // reported) — this is call number 4, and the last one that should
-      // ever happen.
       scheduler.tick(4);
       expect(sampleRateSpy).toHaveBeenCalledTimes(4);
       expect(sampleRateSpy.mock.results.at(-1)?.value).toBeGreaterThan(0);
 
-      // Reused, unchanged, across at least 10 further ticks — the tap's
-      // sample rate is never consulted again once the ranges are cached.
+      // Same sample rate: still consulted every frame (the cache key) across
+      // at least 10 further ticks.
       for (let i = 0; i < 10; i++) {
         scheduler.tick(5 + i);
       }
-      expect(sampleRateSpy).toHaveBeenCalledTimes(4);
+      expect(sampleRateSpy).toHaveBeenCalledTimes(14);
+
+      const fillTextBeforeRateDrop = spectrumCtx.callCount('fillText');
+      sampleRateSpy.mockReturnValue(0);
+      scheduler.tick(20);
+      expect(sampleRateSpy).toHaveBeenCalledTimes(15);
+      expect(spectrumCtx.callCount('fillText')).toBeGreaterThan(fillTextBeforeRateDrop);
     });
 
     it('the object handed to readFrequencyInto is a different object from the one handed to readTimeDomainInto, with lengths 1024 and 2048 respectively', async () => {

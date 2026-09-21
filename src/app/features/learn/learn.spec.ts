@@ -5,6 +5,8 @@ import { RouterTestingHarness } from '@angular/router/testing';
 import { routes } from '../../app.routes';
 import { AUDIO_CONTEXT_CTOR } from '../../core/audio/audio-context.token';
 import { FakeAudioContext } from '../../core/audio/testing/fake-audio-context';
+import { STORAGE } from '../../core/persistence/storage.token';
+import { FakeStorage } from '../../core/persistence/testing/fake-storage';
 import {
   CURRICULUM_GROUP_LABELS,
   CURRICULUM_GROUP_ORDER,
@@ -29,7 +31,7 @@ describe('Learn', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [Learn],
-      providers: [provideRouter(routes)],
+      providers: [provideRouter(routes), { provide: STORAGE, useValue: new FakeStorage() }],
     }).compileComponents();
 
     fixture = TestBed.createComponent(Learn);
@@ -197,7 +199,11 @@ describe('Learn browse-to-lesson round trip (in-app navigation into a lesson, an
       // Destination LessonDetail embeds PlaySurface, which injects the synth
       // engine. Only FakeAudioContext is provided so construction succeeds;
       // the heading assertion below does not exercise audio playback.
-      providers: [provideRouter(routes), { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioContext }],
+      providers: [
+        provideRouter(routes),
+        { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioContext },
+        { provide: STORAGE, useValue: new FakeStorage() },
+      ],
     });
   });
 

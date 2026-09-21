@@ -197,7 +197,7 @@ external packages") — no packages are installed.
 
 ### System Architecture Diagram
 
-```
+```text
 ALGORITHMS (canonical dataset, algorithms.ts)
         │
         │  algorithm.edges, algorithm.teachingTags
@@ -244,7 +244,7 @@ clicks a card → `/learn/:lessonId` (`LessonDetail`, unchanged) → plays the d
 
 No new directories. All new code is additive within existing files/directories:
 
-```
+```text
 src/app/domain/dx7/
 ├── lessons/
 │   ├── lesson-definition.ts   # LessonId union grows from 2 to 32 members; LESSON_IDS grows to 32
@@ -717,6 +717,7 @@ env vars, or external service names change in this phase's scope.
 ## Validation Architecture
 
 ### Test Framework
+
 | Property | Value |
 |----------|-------|
 | Framework | Vitest `^4.0.8` via `@angular/build:unit-test` [VERIFIED: package.json] |
@@ -725,6 +726,7 @@ env vars, or external service names change in this phase's scope.
 | Full suite command | `npm test` (same command — no separate "quick" vs "full" split exists in<br>this project; `npm run build`/`npm test`/`npm run lint` are the three verification gates per<br>CLAUDE.md) |
 
 ### Phase Requirements → Test Map
+
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
 | CURR-01 | All 32 algorithms have a valid, frozen, non-empty lesson row | unit (dataset invariant) | `npm test -- lessons.spec` (via `describe.each`) | ✅ already covers all `LESSONS` rows generically |

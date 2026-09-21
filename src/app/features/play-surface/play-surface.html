@@ -18,6 +18,13 @@
   </div>
 }
 
+<p class="status" [class.status--warning]="midiStatusWarning()" role="status">
+  {{ midiStatusMessage() }}
+</p>
+<button type="button" class="button" (click)="toggleMidi()">
+  {{ midiToggleLabel() }}
+</button>
+
 <div
   class="keyboard"
   role="group"

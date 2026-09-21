@@ -37,7 +37,13 @@ import {
   type AudioWorkletNodeConstructorLike,
   type AudioWorkletNodeLike,
 } from './audio-worklet-node.token';
-import { ANALYSER_FFT_SIZE, type AnalysisTap, type AudioEngineStatus, type SynthEngine } from './synth-engine';
+import {
+  ANALYSER_FFT_SIZE,
+  ANALYSER_FREQUENCY_BIN_COUNT,
+  type AnalysisTap,
+  type AudioEngineStatus,
+  type SynthEngine,
+} from './synth-engine';
 
 interface BuiltWorkletGraph {
   readonly context: AudioContextLike;
@@ -529,12 +535,17 @@ export class WorkletSynthEngine implements SynthEngine, AnalysisTap {
    * — initialization alone is not live audio. Key-up does not clear this:
    * envelope release still feeds the analyser. The same null-guard-then-return
    * convention every other method in this file already uses (T-10-02).
-   * Buffer-length validation is intentionally not duplicated here: the
-   * boundary type and the fake both enforce it, and adding a third check
-   * would be a fourth place for the size convention to drift. */
+   * Inactive-voice callers get that `false` without a length check. An active
+   * voice rejects a buffer whose length is not exactly `ANALYSER_FFT_SIZE` /
+   * `ANALYSER_FREQUENCY_BIN_COUNT`, matching the boundary type and the fake. */
   readTimeDomainInto(target: Uint8Array): boolean {
     if (this.analyser === null || !this.voiceActive) {
       return false;
+    }
+    if (target.length !== ANALYSER_FFT_SIZE) {
+      throw new RangeError(
+        `target buffer must have length ${ANALYSER_FFT_SIZE} (fftSize), received ${target.length}`,
+      );
     }
     this.analyser.getByteTimeDomainData(target);
     return true;
@@ -543,6 +554,11 @@ export class WorkletSynthEngine implements SynthEngine, AnalysisTap {
   readFrequencyInto(target: Uint8Array): boolean {
     if (this.analyser === null || !this.voiceActive) {
       return false;
+    }
+    if (target.length !== ANALYSER_FREQUENCY_BIN_COUNT) {
+      throw new RangeError(
+        `target buffer must have length ${ANALYSER_FREQUENCY_BIN_COUNT} (frequencyBinCount), received ${target.length}`,
+      );
     }
     this.analyser.getByteFrequencyData(target);
     return true;

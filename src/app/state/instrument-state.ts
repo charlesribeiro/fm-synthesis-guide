@@ -295,5 +295,23 @@ export class InstrumentState {
   reset(): void {
     this._patch.set(DEFAULT_PATCH);
   }
+
+  /**
+   * Atomically replaces the live patch (algorithm, six operators, and
+   * feedback) after validation. Used by Playground restore and Settings
+   * import. Does not touch snapshots or persistence.
+   */
+  replacePatch(patch: InstrumentPatch): void {
+    resolveAlgorithm(patch.algorithmId);
+    for (const operatorId of OPERATOR_IDS) {
+      validateOperatorParameters(patch.operators[operatorId]);
+    }
+    validateFeedbackLevel(patch.feedback);
+    this._patch.set({
+      algorithmId: patch.algorithmId,
+      operators: patch.operators,
+      feedback: patch.feedback,
+    });
+  }
 }
 

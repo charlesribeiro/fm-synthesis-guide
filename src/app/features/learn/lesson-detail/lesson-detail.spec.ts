@@ -8,12 +8,17 @@ import { AUDIO_CONTEXT_CTOR } from '../../../core/audio/audio-context.token';
 import { AUDIO_WORKLET_NODE_CTOR } from '../../../core/audio/audio-worklet-node.token';
 import { FakeAudioContext } from '../../../core/audio/testing/fake-audio-context';
 import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../../core/audio/testing/fake-audio-worklet-node';
+import { REQUEST_MIDI_ACCESS } from '../../../core/browser/midi-access.token';
+import { STORAGE } from '../../../core/persistence/storage.token';
+import { FakeStorage } from '../../../core/persistence/testing/fake-storage';
 import { getLesson } from '../../../domain/dx7/lessons/lessons';
 import { tryThisParamValues } from '../../../domain/dx7/lessons/try-this';
 import { ALGORITHMS } from '../../../domain/dx7/models/algorithms';
 import { deriveCarriers } from '../../../domain/dx7/models/derive-role';
+import { DEFAULT_PATCH } from '../../../domain/dx7/models/patch';
 import { InstrumentState } from '../../../state/instrument-state';
 import { LessonProgress } from '../../../state/lesson-progress';
+import { PlaygroundPatchSlot } from '../../../state/playground-patch-slot';
 import { LessonDetail } from './lesson-detail';
 
 function keyByNote(root: HTMLElement, note: number): HTMLButtonElement {
@@ -39,6 +44,8 @@ describe('LessonDetail route', () => {
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });
@@ -85,6 +92,22 @@ describe('LessonDetail route', () => {
 
     expect(() => instrumentState.setFeedback(-1)).toThrow(RangeError);
     expect(() => instrumentState.setAlgorithm(0)).toThrow(RangeError);
+  });
+
+  it('does not write the Playground slot when applying a lesson startingPatch (D-21)', async () => {
+    const slot = TestBed.inject(PlaygroundPatchSlot);
+    const writeSpy = vi.spyOn(slot, 'write');
+
+    const harness = await RouterTestingHarness.create();
+    await harness.navigateByUrl('/learn/algorithm-32', LessonDetail);
+
+    const instrumentState = TestBed.inject(InstrumentState);
+    const lesson = getLesson('algorithm-32');
+
+    expect(writeSpy).toHaveBeenCalledTimes(0);
+    expect(slot.read()).toEqual(DEFAULT_PATCH);
+    expect(instrumentState.algorithmId()).toBe(32);
+    expect(instrumentState.operators()[3]).toEqual(lesson.startingPatch.operators[3]);
   });
 
   it('reapplies the new lesson starting patch when navigating between lesson ids on the same component', async () => {
@@ -189,6 +212,8 @@ describe('LessonDetail route — Algorithm 1 lesson (LESSON-02)', () => {
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });
@@ -347,6 +372,8 @@ describe('LessonDetail route — Algorithm 26 lesson (Phase 11 structural lesson
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });
@@ -413,6 +440,8 @@ describe('LessonDetail route — Algorithms 2 through 6 (11-03-PLAN.md Task 1)',
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });
@@ -463,6 +492,8 @@ describe('LessonDetail route — Algorithms 7 through 12 (11-03-PLAN.md Task 2)'
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });
@@ -515,6 +546,8 @@ describe('LessonDetail route — Algorithms 15 and 17 (11-04-PLAN.md Task 1)', (
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });
@@ -563,6 +596,8 @@ describe('LessonDetail route — Algorithms 19 and 24 (11-04-PLAN.md Task 2)', (
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });
@@ -609,6 +644,8 @@ describe('LessonDetail not-found matrix (T-06-01)', () => {
         provideRouter(routes),
         { provide: AUDIO_CONTEXT_CTOR, useValue: FakeAudioWorkletContext },
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: FakeAudioWorkletNode },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     });
   });

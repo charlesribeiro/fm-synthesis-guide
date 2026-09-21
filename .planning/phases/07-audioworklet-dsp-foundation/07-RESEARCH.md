@@ -1,6 +1,6 @@
 # Phase 7: AudioWorklet DSP foundation - Research
 
-**Researched:** 2026-08-11
+**Researched:** 2026-09-21
 **Domain:** Web Audio `AudioWorkletProcessor` DSP kernels; Angular 22 esbuild-based build integration for non-bundled browser scripts; deterministic offline testing of audio-rate math
 **Confidence:** MEDIUM
 
@@ -155,7 +155,7 @@ here because the worklet script must be reachable as a URL, not merely importabl
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
 | Web Audio API (`AudioWorkletProcessor`, `AudioWorkletNode`, `registerProcessor`) | Browser built-in (Baseline since ~April 2021) [CITED: developer.mozilla.org/en-US/docs/Web/API/AudioWorklet] | The only spec-sanctioned way to run custom real-time audio DSP off the main thread | This is the exact target CLAUDE.md and `GSD_NEW_PROJECT_PROMPT.md` name explicitly ("the accurate architecture target is a custom six-operator AudioWorklet phase-modulation engine") |
-| `esbuild` | `0.28.1` installed (transitively via `@angular/build`), `0.28.2` latest on npm — `[VERIFIED: node_modules/esbuild/package.json read this session; npm view esbuild version this session]` | Bundles the worklet adapter + kernel into one self-contained, import-free script for `addModule()` | Angular 22's own `@angular/build:application` builder is esbuild-based internally — using the same tool for the one file it can't build keeps the toolchain uniform, and it's already resolvable in `node_modules` with zero new transitive risk |
+| `esbuild` | `0.28.2` installed (transitively via `@angular/build`), `0.28.2` latest on npm — `[VERIFIED: node_modules/esbuild/package.json read this session; npm view esbuild version this session]` | Bundles the worklet adapter + kernel into one self-contained, import-free script for `addModule()` | Angular 22's own `@angular/build:application` builder is esbuild-based internally — using the same tool for the one file it can't build keeps the toolchain uniform, and it's already resolvable in `node_modules` with zero new transitive risk |
 | `@types/audioworklet` | `0.0.100` on npm, published ~3 months ago, maintained by Microsoft's `TypeScript-DOM-Lib-Generator` (the same generator that produces `lib.dom.d.ts`) — `[VERIFIED: npm view @types/audioworklet this session; package-legitimacy check verdict OK]` | Supplies ambient TS types for `AudioWorkletProcessor`, `registerProcessor`, `AudioWorkletGlobalScope`, `sampleRate`, `currentFrame` — none of which exist in the installed `lib.dom.d.ts` — `[VERIFIED: node_modules/typescript/lib/lib.dom.d.ts read this session — contains AudioWorkletNode (line 4643) and AudioParamMap (line 4544) but zero occurrences of "registerProcessor" and no AudioWorkletProcessor/AudioWorkletGlobalScope declarations]` | Official, generator-sourced fragment of the same DOM lib this project already depends on for every other Web API type — not a third-party guess at the shape |
 | Vitest `^4.0.8` (already installed) | Already in `package.json` devDependencies | Runs the pure kernel's deterministic sample-block + analytical-reference tests | Already the project's mandatory test runner (CLAUDE.md); no new dependency needed for D-05 |
 
@@ -175,12 +175,12 @@ here because the worklet script must be reachable as a URL, not merely importabl
 ```bash
 npm install --save-dev esbuild @types/audioworklet
 ```
-Note: `esbuild` is already present transitively (via `@angular/build`) at `0.28.1`; adding it explicitly pins the version this project's own build script depends on rather than relying on whatever version Angular's tooling happens to hoist.
+Note: `esbuild` is already present transitively (via `@angular/build`) at `0.28.2`; adding it explicitly pins the version this project's own build script depends on rather than relying on whatever version Angular's tooling happens to hoist.
 
 **Version verification performed this session:**
 ```
 $ node -e "console.log(require('esbuild/package.json').version)"
-0.28.1
+0.28.2
 $ npm view esbuild version
 0.28.2
 $ npm view @types/audioworklet version
@@ -191,7 +191,7 @@ $ npm view @types/audioworklet version
 
 | Package | Registry | Age | Downloads | Source Repo | Verdict | Disposition |
 |---------|----------|-----|-----------|-------------|---------|-------------|
-| `esbuild` | npm | ~8 yrs (evanw/esbuild); latest patch published 2026-08-08 | 255,499,108/wk | github.com/evanw/esbuild | SUS (seam reason: "too-new") | **Approved despite SUS verdict — false positive.** The "too-new" signal reflects the most recent *patch release* date, not package age or trust: 255M weekly downloads and an 8-year-old canonical repo (already the internal bundler for `@angular/build`, already present in this repo's own `node_modules` at `0.28.1`) are unambiguous legitimacy signals. Per protocol, flagging anyway: planner should add a lightweight `checkpoint:human-verify` only if this is the first time it's added as an *explicit* devDependency (it's already a resolved transitive dependency today). |
+| `esbuild` | npm | ~8 yrs (evanw/esbuild); latest patch `0.28.2` matches the version already hoisted here | 255,499,108/wk | github.com/evanw/esbuild | SUS (seam reason: "too-new") | **Approved despite SUS verdict — false positive.** The "too-new" signal reflects the most recent *patch release* date, not package age or trust: 255M weekly downloads and an 8-year-old canonical repo (already the internal bundler for `@angular/build`, already present in this repo's own `node_modules` at `0.28.2`) are unambiguous legitimacy signals. Per protocol, flagging anyway: planner should add a lightweight `checkpoint:human-verify` only if this is the first time it's added as an *explicit* devDependency (it's already a resolved transitive dependency today). |
 | `@types/audioworklet` | npm | Published ~3 months ago (generator-fragment package, not a "new" project) | 197,097/wk | github.com/microsoft/TypeScript-DOM-Lib-Generator | OK | Approved |
 
 **Packages removed due to [SLOP] verdict:** none.
@@ -638,7 +638,7 @@ async initialize(): Promise<void> {
 |------------|------------|-----------|---------|----------|
 | Node.js | Build tooling, `esbuild` prebuild script | ✓ | v22.22.3 (verified this session) | — |
 | npm | Package management | ✓ | 11.8.0 (per `package.json` `packageManager` field) | — |
-| `esbuild` | Bundling the worklet adapter | ✓ (transitively installed) | 0.28.1 installed / 0.28.2 latest | Add as explicit devDependency (see Standard Stack) |
+| `esbuild` | Bundling the worklet adapter | ✓ (transitively installed) | 0.28.2 installed / 0.28.2 latest | Add as explicit devDependency (see Standard Stack) |
 | Real browser with `AudioWorklet` support | D-06/D-07 human-listening checkpoint | ✗ — not available/verifiable in this headless research session | — | None needed as a fallback — this checkpoint is inherently a human-in-a-real-browser step; the planner should schedule it as a blocking manual task, not attempt to automate it |
 | `jsdom` | Vitest's default DOM environment for other specs | ✓ | `^28.0.0` | N/A for this phase's kernel tests — they need no DOM at all |
 
@@ -720,7 +720,7 @@ floor.
   directly-Vitest-tested domain math module
 - `node_modules/typescript/lib/lib.dom.d.ts` (TypeScript 6.0.3) — confirmed absence of
   `registerProcessor`/`AudioWorkletProcessor`/`AudioWorkletGlobalScope` declarations
-- `node_modules/esbuild/package.json` — confirmed `esbuild` 0.28.1 already resolvable in this repo
+- `node_modules/esbuild/package.json` — confirmed `esbuild` 0.28.2 already resolvable in this repo
 - `eslint.config.js`, `tsconfig.json`, `tsconfig.app.json`, `angular.json`, `package.json` — build/lint
   configuration this phase's new files must fit into
 - `docs/ARCHITECTURE.md` §"Audio roadmap", §"Error handling", §"Performance boundaries";
@@ -749,7 +749,14 @@ floor.
   repo's own established `05-RESEARCH.md` Pitfall 6 precedent; Pitfalls 4-6 are standard DSP/build
   engineering practice with lower novelty risk
 
-**Research date:** 2026-08-11
-**Valid until:** 2026-09-10 (30 days — Web Audio spec itself is stable, but Angular's build tooling
+**Research date:** 2026-09-21
+**Valid until:** 2026-10-21 (30 days — Web Audio spec itself is stable, but Angular's build tooling
 moves fast enough that the esbuild-integration specifics here should be re-checked if this phase is
 replanned significantly later)
+
+Angular/esbuild refresh (2026-09-21): `@angular/core` remains `22.1.0` and `@angular/build` is
+`22.1.2` installed (registry latest `22.1.8` under the same `^22.1.2` range). The
+`@angular/build:application` builder is still esbuild-based and still has no first-class
+AudioWorklet emit path, so the pre-bundle-to-`public/worklets/` workaround in this document remains
+the integration used by the repo. Web Audio `AudioWorkletProcessor` / `addModule` research below is
+unchanged.

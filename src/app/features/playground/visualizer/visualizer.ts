@@ -126,10 +126,14 @@ export class Visualizer {
    * which is what makes "exactly one request outstanding" checkable. */
   private frameHandle: number | null = null;
 
-  /** `null` until the engine reports a positive sample rate; built once and
-   * reused unchanged on every subsequent frame — `buildBarBinRanges` is not
-   * called again once this holds a non-null list. */
+  /** `null` until the engine reports a positive sample rate. Keyed to
+   * `barBinRangesSampleRate` so a later `WorkletSynthEngine` reinitialize
+   * (or any other sample-rate change) rebuilds the list. */
   private barBinRanges: readonly BarBinRange[] | null = null;
+
+  /** Sample rate last used to build {@link barBinRanges}; `null` before the
+   * first attempt. Compared every frame so a rate change invalidates the cache. */
+  private barBinRangesSampleRate: number | null = null;
 
   /** Timestamp of the last repaint under the reduced-motion throttle,
    * initialised so the first tick always repaints. */
@@ -197,14 +201,17 @@ export class Visualizer {
           this.tap.readFrequencyInto(this.frequencyBuffer);
         }
 
-        if (this.barBinRanges === null && this.tap !== null) {
+        if (this.tap !== null) {
           const sampleRate = this.tap.getAnalysisSampleRate();
-          this.barBinRanges = buildBarBinRanges(
-            sampleRate,
-            ANALYSER_FFT_SIZE,
-            ANALYSER_FREQUENCY_BIN_COUNT,
-            SPECTRUM_BAR_COUNT,
-          );
+          if (this.barBinRangesSampleRate !== sampleRate) {
+            this.barBinRanges = buildBarBinRanges(
+              sampleRate,
+              ANALYSER_FFT_SIZE,
+              ANALYSER_FREQUENCY_BIN_COUNT,
+              SPECTRUM_BAR_COUNT,
+            );
+            this.barBinRangesSampleRate = sampleRate;
+          }
         }
 
         if (!readOk) {

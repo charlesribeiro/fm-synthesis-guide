@@ -1,12 +1,27 @@
 import { TestBed } from '@angular/core/testing';
 import { LESSON_IDS } from '../domain/dx7/lessons/lesson-definition';
+import { STORAGE } from '../core/persistence/storage.token';
+import { FakeStorage } from '../core/persistence/testing/fake-storage';
 import { LessonProgress } from './lesson-progress';
+import { SavedDocumentStore } from './saved-document-store';
 
 describe('LessonProgress', () => {
-  function setup(): { service: LessonProgress } {
-    TestBed.configureTestingModule({});
-    return { service: TestBed.inject(LessonProgress) };
+  function setup(fake: FakeStorage = new FakeStorage()): {
+    service: LessonProgress;
+    store: SavedDocumentStore;
+    fake: FakeStorage;
+  } {
+    TestBed.configureTestingModule({
+      providers: [{ provide: STORAGE, useValue: fake }],
+    });
+    const store = TestBed.inject(SavedDocumentStore);
+    store.hydrateLive();
+    return { service: TestBed.inject(LessonProgress), store, fake };
   }
+
+  afterEach(() => {
+    TestBed.resetTestingModule();
+  });
 
   it('starts empty on a fresh injector', () => {
     const { service } = setup();
@@ -65,5 +80,35 @@ describe('LessonProgress', () => {
 
     expect(() => service.isComplete('not-a-lesson' as never)).toThrow(RangeError);
     expect(() => service.isComplete('not-a-lesson' as never)).toThrow(/algorithm-32/);
+  });
+
+  it('replaceCompleted throws a RangeError for a value outside LESSON_IDS', () => {
+    const { service } = setup();
+
+    expect(() => service.replaceCompleted(new Set(['not-a-lesson' as never]))).toThrow(RangeError);
+    expect(() => service.replaceCompleted(new Set(['not-a-lesson' as never]))).toThrow(/algorithm-32/);
+  });
+
+  it('replaceCompleted to an empty set clears completion (import/clear path)', () => {
+    const { service } = setup();
+    service.markComplete('algorithm-32');
+
+    service.replaceCompleted(new Set());
+
+    expect(service.completed().size).toBe(0);
+    expect(service.isComplete('algorithm-32')).toBe(false);
+  });
+
+  it('isComplete remains true after a simulated reload that shares one FakeStorage', () => {
+    const fake = new FakeStorage();
+    const first = setup(fake);
+    first.service.markComplete('algorithm-32');
+    expect(first.service.isComplete('algorithm-32')).toBe(true);
+
+    TestBed.resetTestingModule();
+
+    const second = setup(fake);
+
+    expect(second.service.isComplete('algorithm-32')).toBe(true);
   });
 });

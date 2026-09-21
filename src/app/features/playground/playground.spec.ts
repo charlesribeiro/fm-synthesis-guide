@@ -6,12 +6,18 @@ import { FakeAudioContext } from '../../core/audio/testing/fake-audio-context';
 import { FakeAudioWorkletContext, FakeAudioWorkletNode } from '../../core/audio/testing/fake-audio-worklet-node';
 import { ANIMATION_FRAME_SCHEDULER } from '../../core/browser/animation-frame.token';
 import { CANVAS_2D_CONTEXT_FACTORY } from '../../core/browser/canvas-2d.token';
+import { REQUEST_MIDI_ACCESS } from '../../core/browser/midi-access.token';
 import { FakeAnimationFrameScheduler } from '../../core/browser/testing/fake-animation-frame-scheduler';
 import { FakeCanvas2dContext } from '../../core/browser/testing/fake-canvas-2d-context';
+import { STORAGE } from '../../core/persistence/storage.token';
+import { FakeStorage } from '../../core/persistence/testing/fake-storage';
 import { MIN_VELOCITY } from '../../domain/dx7/audio/value-conversion';
 import { setGateMessage } from '../../domain/dx7/dsp/worklet-messages';
+import { DEFAULT_PATCH, type InstrumentPatch } from '../../domain/dx7/models/patch';
 import { SYNTH_ENGINE } from '../../core/audio/synth-engine.token';
 import type { SynthEngine } from '../../core/audio/synth-engine';
+import { InstrumentState } from '../../state/instrument-state';
+import { PlaygroundPatchSlot } from '../../state/playground-patch-slot';
 import { Playground } from './playground';
 
 const APPROXIMATION_LABEL = 'Educational approximation — not a bit-accurate DX7 emulation';
@@ -29,9 +35,9 @@ describe('Playground', () => {
   // animation-frame scheduler and the fake canvas 2D context factory here
   // (10-01-PLAN.md Task 2) so the existing suite below neither starts a
   // real frame loop nor reaches for a real drawing context.
-  async function setup(
+  async function configurePlaygroundModule(
     ctor: typeof FakeAudioWorkletContext | null = FakeAudioWorkletContext,
-  ): Promise<ComponentFixture<Playground>> {
+  ): Promise<void> {
     FakeAudioContext.instances.length = 0;
     FakeAudioWorkletNode.instances.length = 0;
     await TestBed.configureTestingModule({
@@ -41,9 +47,16 @@ describe('Playground', () => {
         { provide: AUDIO_WORKLET_NODE_CTOR, useValue: ctor === null ? null : FakeAudioWorkletNode },
         { provide: ANIMATION_FRAME_SCHEDULER, useValue: new FakeAnimationFrameScheduler() },
         { provide: CANVAS_2D_CONTEXT_FACTORY, useValue: () => new FakeCanvas2dContext() },
+        { provide: STORAGE, useValue: new FakeStorage() },
+        { provide: REQUEST_MIDI_ACCESS, useValue: null },
       ],
     }).compileComponents();
+  }
 
+  async function setup(
+    ctor: typeof FakeAudioWorkletContext | null = FakeAudioWorkletContext,
+  ): Promise<ComponentFixture<Playground>> {
+    await configurePlaygroundModule(ctor);
     fixture = TestBed.createComponent(Playground);
     await fixture.whenStable();
     return fixture;
@@ -640,6 +653,21 @@ describe('Playground', () => {
       await enableAudio(readyFixture);
       assertVisualizerAfterPlaySurface(readyFixture.nativeElement as HTMLElement);
     });
+  });
+
+  it('restores the Playground slot into live InstrumentState on construction, not a previously selected live algorithm (D-21)', async () => {
+    await configurePlaygroundModule();
+    const slot = TestBed.inject(PlaygroundPatchSlot);
+    const instrumentState = TestBed.inject(InstrumentState);
+    const saved: InstrumentPatch = { ...DEFAULT_PATCH, algorithmId: 32 };
+    slot.write(saved);
+    instrumentState.setAlgorithm(1);
+    expect(instrumentState.algorithmId()).toBe(1);
+
+    fixture = TestBed.createComponent(Playground);
+    await fixture.whenStable();
+
+    expect(instrumentState.algorithmId()).toBe(32);
   });
 
   describe('embedded ToolsPanel and full page ordering (10-04-PLAN.md Task 2)', () => {
